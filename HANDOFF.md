@@ -23,7 +23,7 @@ Formato de cada entrada:
   2. Implementado visualizador de subpastas no topo do `MainContent` (tanto modo lista quanto modo grade/cards) com contador de itens, navegação por clique, renomeação in-place e exclusão.
   3. Adicionado suporte completo a guias abertas e Edge Workspaces (`workspaceTabs.ts`, `WorkspaceTabsModal.tsx` e permissão `"tabs"`): permite listar guias abertas por janela/workspace, selecioná-las, salvá-las em lote numa pasta de favoritos ou enviá-las direto para organização pela IA. Também é possível abrir todas as guias de uma pasta de favoritos em uma nova janela ("Workspace") pelo botão nos cards/linhas de pasta.
   4. Organização com IA agora é recursiva para pastas e preserva o contexto semântico das pastas antigas durante a classificação.
-  5. Nenhuma alteração foi commitada ainda (aguardando instrução explícita do usuário conforme as regras).
+  5. Alterações commitadas com sucesso no commit `8a1f168` e sincronizadas em `origin/main`.
 
 ---
 
