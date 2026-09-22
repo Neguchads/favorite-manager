@@ -8,11 +8,13 @@ export const PROTECTED_FOLDER_IDS = new Set(['0', '1', '2', '3', 'mobile', 'sync
  * Ensures that a multi-level folder path (e.g. "Jogos & Games / Sony & PlayStation")
  * exists under rootParentId ('1' = Barra de favoritos).
  * Reuses existing folders whenever possible to avoid duplicate folder creation.
+ * Indexed by `parentId:folderTitle.toLowerCase()` to prevent cross-root or subfolder duplication.
  */
 export async function ensureHierarchicalFolder(
   pathString: string,
   rootParentId: string = '1',
-  existingPathMap: Map<string, string>
+  existingFolderMap: Map<string, string>,
+  onFolderCreated?: (folderId: string) => void
 ): Promise<string> {
   const parts = pathString
     .split(/\s*\/\s*/)
@@ -20,22 +22,23 @@ export async function ensureHierarchicalFolder(
     .filter(Boolean);
 
   let currentParentId = rootParentId;
-  let accumulatedPath = '';
 
   for (const part of parts) {
-    accumulatedPath = accumulatedPath ? `${accumulatedPath} / ${part}` : part;
-    const key = accumulatedPath.toLowerCase();
+    const key = `${currentParentId}:${part.toLowerCase()}`;
 
-    if (existingPathMap.has(key)) {
-      currentParentId = existingPathMap.get(key)!;
+    if (existingFolderMap.has(key)) {
+      currentParentId = existingFolderMap.get(key)!;
     } else {
       // Create folder under currentParentId
       const created = await bookmarksService.create({
         parentId: currentParentId,
         title: part,
       });
-      existingPathMap.set(key, created.id);
+      existingFolderMap.set(key, created.id);
       currentParentId = created.id;
+      if (onFolderCreated) {
+        onFolderCreated(created.id);
+      }
     }
   }
 
@@ -43,37 +46,41 @@ export async function ensureHierarchicalFolder(
 }
 
 /**
- * Builds a lookup map of existing folder paths in the browser tree.
- * Allows matching existing folders like "Jogos & Games" or "Barra de favoritos / GEEK / JOGOS".
+ * Builds a lookup map of existing folders in the browser tree.
+ * Maps `${parentId}:${folderTitle.toLowerCase()}` -> `folderId`
+ * ensuring exact parent-child matching without title collisions or root prefix issues.
  */
 export function buildExistingFolderMap(tree: BookmarkNode[]): Map<string, string> {
   const map = new Map<string, string>();
 
-  function traverse(nodes: BookmarkNode[], currentPath: string) {
+  function traverse(nodes: BookmarkNode[], parentId?: string) {
     for (const node of nodes) {
       if (node.children || !node.url) {
-        const path = currentPath ? `${currentPath} / ${node.title}` : node.title;
-        map.set(path.toLowerCase(), node.id);
-        map.set(node.title.toLowerCase(), node.id);
+        const effectiveParentId = node.parentId || parentId;
+        if (effectiveParentId) {
+          map.set(`${effectiveParentId}:${node.title.toLowerCase()}`, node.id);
+        }
         if (node.children) {
-          traverse(node.children, path);
+          traverse(node.children, node.id);
         }
       }
     }
   }
 
-  traverse(tree, '');
+  traverse(tree, undefined);
   return map;
 }
 
 /**
  * Recursively scans the tree and deletes folders that have ZERO bookmarks and ZERO subfolders.
  * Operates bottom-up (leaves first) so that if all children are pruned, the parent can also be pruned if empty.
- * Never touches system root folders (0, 1, 2, mobile).
+ * Never touches system root folders (0, 1, 2, 3, mobile, synced).
+ * If `candidateFolderIds` is provided, only removes folders that are in the candidate set.
  */
 export async function pruneEmptyFolders(
   tree?: BookmarkNode[],
-  protectedIds: Set<string> = PROTECTED_FOLDER_IDS
+  protectedIds: Set<string> = PROTECTED_FOLDER_IDS,
+  candidateFolderIds?: Set<string>
 ): Promise<number> {
   const currentTree = tree || (await bookmarksService.getTree());
   let prunedCount = 0;
@@ -103,7 +110,9 @@ export async function pruneEmptyFolders(
 
     // Check if truly empty (no bookmarks and no subfolders left)
     const isEmpty = !node.children || node.children.length === 0;
-    if (isEmpty) {
+    const isCandidate = !candidateFolderIds || candidateFolderIds.has(node.id);
+
+    if (isEmpty && isCandidate) {
       try {
         await bookmarksService.remove(node.id);
         prunedCount++;
@@ -129,7 +138,7 @@ export type ProgressCallback = (current: number, total: number, percentage: numb
 /**
  * Executes an AI plan with full hierarchy support, creating master and subfolders
  * and moving bookmarks into their designated targets with high-performance concurrent chunking.
- * Automatically prunes any folders that become empty after the moves.
+ * Automatically prunes any folders that become empty as a result of the moves (selective pruning).
  */
 export async function executeAiPlanWithHierarchy(
   plan: AiProposedPlan,
@@ -138,22 +147,28 @@ export async function executeAiPlanWithHierarchy(
   onProgress?: ProgressCallback,
   cleanEmptyFolders: boolean = true
 ): Promise<{ createdFoldersCount: number; movedCount: number; skippedCount: number; prunedFoldersCount: number }> {
-  const existingPathMap = buildExistingFolderMap(tree);
+  const existingFolderMap = buildExistingFolderMap(tree);
   const targetFolderIdMap = new Map<string, string>();
 
   // Map each existing bookmark to its current parent folder
   const currentParentMap = new Map<string, string>();
-  function mapCurrentParents(nodes: BookmarkNode[]) {
+  const parentLookup = new Map<string, string>();
+
+  function mapTree(nodes: BookmarkNode[], pid?: string) {
     for (const node of nodes) {
-      if (node.parentId) {
-        currentParentMap.set(node.id, node.parentId);
+      const effectiveParentId = node.parentId || pid;
+      if (effectiveParentId) {
+        parentLookup.set(node.id, effectiveParentId);
+        if (node.url) {
+          currentParentMap.set(node.id, effectiveParentId);
+        }
       }
       if (node.children) {
-        mapCurrentParents(node.children);
+        mapTree(node.children, node.id);
       }
     }
   }
-  mapCurrentParents(tree);
+  mapTree(tree);
 
   let createdFoldersCount = 0;
 
@@ -161,12 +176,15 @@ export async function executeAiPlanWithHierarchy(
   for (const folderPath of plan.suggestedFolders) {
     const key = folderPath.toLowerCase();
     if (!targetFolderIdMap.has(key)) {
-      const initialMapSize = existingPathMap.size;
-      const folderId = await ensureHierarchicalFolder(folderPath, rootParentId, existingPathMap);
+      const folderId = await ensureHierarchicalFolder(
+        folderPath,
+        rootParentId,
+        existingFolderMap,
+        () => {
+          createdFoldersCount++;
+        }
+      );
       targetFolderIdMap.set(key, folderId);
-      if (existingPathMap.size > initialMapSize) {
-        createdFoldersCount += existingPathMap.size - initialMapSize;
-      }
     }
   }
 
@@ -218,10 +236,25 @@ export async function executeAiPlanWithHierarchy(
     if (onProgress) onProgress(0, 0, 100);
   }
 
-  // 4. Safely prune folders that became empty as a result of moving
+  // 4. Safely prune ONLY folders that became empty as a result of moving out bookmarks (Bug 5 fix)
   let prunedFoldersCount = 0;
-  if (cleanEmptyFolders) {
-    prunedFoldersCount = await pruneEmptyFolders();
+  if (cleanEmptyFolders && movesToExecute.length > 0) {
+    const candidateIds = new Set<string>();
+
+    for (const move of movesToExecute) {
+      const sourceParentId = currentParentMap.get(move.bookmarkId);
+      if (sourceParentId) {
+        let curr: string | undefined = sourceParentId;
+        while (curr && !PROTECTED_FOLDER_IDS.has(curr)) {
+          candidateIds.add(curr);
+          curr = parentLookup.get(curr);
+        }
+      }
+    }
+
+    if (candidateIds.size > 0) {
+      prunedFoldersCount = await pruneEmptyFolders(undefined, PROTECTED_FOLDER_IDS, candidateIds);
+    }
   }
 
   return { createdFoldersCount, movedCount, skippedCount, prunedFoldersCount };

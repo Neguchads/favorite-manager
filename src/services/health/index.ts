@@ -15,7 +15,8 @@ export function getWaybackUrl(url: string): string {
 }
 
 /**
- * Checks a single URL status using background service worker or direct fetch
+ * Checks a single URL status using background service worker or direct fetch.
+ * Handles 403/405 gracefully to avoid false broken link reports (Bug 7 fix).
  */
 export async function checkSingleUrlStatus(url: string): Promise<{ status: LinkHealthStatus; httpCode?: number; error?: string }> {
   // If chrome.runtime sendMessage available, use background to avoid CORS
@@ -27,8 +28,8 @@ export async function checkSingleUrlStatus(url: string): Promise<{ status: LinkH
       });
 
       if (res) {
-        if (res.ok) {
-          return { status: 'ok', httpCode: res.status };
+        if (res.ok || res.status === 403 || res.status === 405) {
+          return { status: 'ok', httpCode: res.status || 200 };
         }
         if (res.status === 404) {
           return { status: 'broken_404', httpCode: 404 };
@@ -46,15 +47,25 @@ export async function checkSingleUrlStatus(url: string): Promise<{ status: LinkH
     }
   }
 
-  // Fallback: direct fetch
+  // Fallback: direct fetch with fallback for HEAD rejection
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 6000);
-    const response = await fetch(url, {
-      method: 'HEAD',
-      signal: controller.signal,
-      mode: 'no-cors', // In standard web environments where host_permissions are not active
-    });
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        method: 'HEAD',
+        signal: controller.signal,
+        mode: 'no-cors',
+      });
+    } catch {
+      // Retry with GET
+      response = await fetch(url, {
+        method: 'GET',
+        signal: controller.signal,
+        mode: 'no-cors',
+      });
+    }
     clearTimeout(timer);
     return { status: 'ok', httpCode: response.status || 200 };
   } catch (err: any) {

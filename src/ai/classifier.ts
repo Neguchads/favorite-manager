@@ -332,7 +332,7 @@ const DOMAIN_SUBFOLDER_MAP: Record<string, string> = {
 /**
  * Extracts and normalizes search queries and AMP target paths from URLs
  */
-function cleanUrlAndExtractContext(url: string, title: string): { fullText: string; domain: string } {
+function cleanUrlAndExtractContext(url: string, title: string, folderContext: string = ''): { fullText: string; domain: string } {
   let extraText = '';
   let domain = '';
 
@@ -357,15 +357,20 @@ function cleanUrlAndExtractContext(url: string, title: string): { fullText: stri
     extraText += ' ' + u.pathname.replace(/[\/\-_.]+/g, ' ');
   } catch {}
 
+  if (folderContext) {
+    extraText += ' ' + folderContext.replace(/[\/\-_.]+/g, ' ');
+  }
+
   const fullText = `${title || ''} ${domain} ${extraText}`.toLowerCase();
   return { fullText, domain };
 }
 
 /**
- * Deep semantic heuristic classification with hierarchical subfolders
+ * Deep semantic heuristic classification with hierarchical subfolders.
+ * Optionally incorporates original folderContext to respect and normalize existing folder themes.
  */
-export function classifyBookmarkIntelligently(title: string, url: string): string {
-  const { fullText, domain } = cleanUrlAndExtractContext(url, title);
+export function classifyBookmarkIntelligently(title: string, url: string, folderContext: string = ''): string {
+  const { fullText, domain } = cleanUrlAndExtractContext(url, title, folderContext);
 
   // 1. Direct or subdomain dictionary lookup
   if (DOMAIN_SUBFOLDER_MAP[domain]) {
@@ -766,7 +771,7 @@ export async function generateAiPlan(
 
   if (remainingItems.length > 0) {
     const heuristicResults = remainingItems.map((item) => {
-      const suggestedFolder = classifyBookmarkIntelligently(item.title || '', item.url);
+      const suggestedFolder = classifyBookmarkIntelligently(item.title || '', item.url, item.folderPath || '');
       return {
         id: item.id,
         suggestedFolder,

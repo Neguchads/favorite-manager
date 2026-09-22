@@ -14,6 +14,8 @@ export interface FolderOption {
   level: number;
 }
 
+const VIRTUAL_SECTIONS = new Set(['all', 'recent', 'duplicates', 'cleanup', 'stats', 'backups', 'settings']);
+
 export function useBookmarks() {
   const [tree, setTree] = useState<BookmarkNode[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -43,12 +45,22 @@ export function useBookmarks() {
     }
   }, []);
 
+  // Bug 6 Fix: Debounce tree reloads on bookmark changes to group mass operations
   useEffect(() => {
     loadTree();
+
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     const unsubscribe = bookmarksService.subscribe(() => {
-      loadTree();
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        loadTree();
+      }, 300);
     });
-    return () => unsubscribe();
+
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      unsubscribe();
+    };
   }, [loadTree]);
 
   // Flatten nodes map for fast lookup and folder path tracking
@@ -154,6 +166,25 @@ export function useBookmarks() {
     return node?.title || 'Pasta';
   }, [activeSection, nodeMap]);
 
+  // Subfolders under current folder (like real edge://favorites/)
+  const currentSubfolders = useMemo<BookmarkNode[]>(() => {
+    if (searchQuery.trim()) return [];
+
+    let targetNode: BookmarkNode | undefined;
+    if (activeSection === 'bookmarks_bar') {
+      targetNode = nodeMap.get('1');
+    } else if (activeSection === 'other') {
+      targetNode = nodeMap.get('2');
+    } else if (!VIRTUAL_SECTIONS.has(activeSection)) {
+      targetNode = nodeMap.get(activeSection);
+    }
+
+    if (targetNode?.children) {
+      return targetNode.children.filter((b) => !b.url);
+    }
+    return [];
+  }, [activeSection, searchQuery, nodeMap]);
+
   // Items to display based on active section and search
   const displayedItems = useMemo(() => {
     let items: BookmarkNode[] = [];
@@ -220,6 +251,29 @@ export function useBookmarks() {
     sortDirection,
   ]);
 
+  // Recursively collect all bookmarks in a given folder
+  const getBookmarksRecursively = useCallback(
+    (folderId: string): BookmarkNode[] => {
+      const results: BookmarkNode[] = [];
+      const root = nodeMap.get(folderId);
+
+      function collect(node: BookmarkNode) {
+        if (node.url) {
+          results.push(node);
+        }
+        if (node.children) {
+          for (const child of node.children) {
+            collect(child);
+          }
+        }
+      }
+
+      if (root) collect(root);
+      return results;
+    },
+    [nodeMap]
+  );
+
   // Selection helpers
   const toggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
@@ -262,19 +316,26 @@ export function useBookmarks() {
     });
   }, []);
 
-  // CRUD actions
+  // Helper: Resolve a safe valid parent folder ID (Bug 4 fix)
+  const resolveSafeParentId = useCallback(
+    (candidateId?: string): string => {
+      if (candidateId && !VIRTUAL_SECTIONS.has(candidateId) && nodeMap.has(candidateId)) {
+        return candidateId;
+      }
+      if (activeSection === 'bookmarks_bar') return '1';
+      if (activeSection === 'other') return '2';
+      if (!VIRTUAL_SECTIONS.has(activeSection) && nodeMap.has(activeSection)) {
+        return activeSection;
+      }
+      return '1'; // Default: Bookmarks Bar
+    },
+    [activeSection, nodeMap]
+  );
+
+  // CRUD actions (Bug 4 fix applied)
   const createBookmark = useCallback(
     async (title: string, url: string, parentId?: string) => {
-      const targetParent =
-        parentId ||
-        (activeSection !== 'all' &&
-        activeSection !== 'recent' &&
-        activeSection !== 'duplicates' &&
-        activeSection !== 'cleanup' &&
-        activeSection !== 'stats'
-          ? activeSection
-          : '1');
-
+      const targetParent = resolveSafeParentId(parentId);
       const created = await bookmarksService.create({
         parentId: targetParent,
         title,
@@ -283,20 +344,12 @@ export function useBookmarks() {
       await loadTree();
       return created;
     },
-    [activeSection, loadTree]
+    [loadTree, resolveSafeParentId]
   );
 
   const createFolder = useCallback(
     async (title: string, parentId?: string) => {
-      const targetParent =
-        parentId ||
-        (activeSection !== 'all' &&
-        activeSection !== 'recent' &&
-        activeSection !== 'duplicates' &&
-        activeSection !== 'cleanup'
-          ? activeSection
-          : '1');
-
+      const targetParent = resolveSafeParentId(parentId);
       const created = await bookmarksService.create({
         parentId: targetParent,
         title,
@@ -304,7 +357,7 @@ export function useBookmarks() {
       await loadTree();
       return created;
     },
-    [activeSection, loadTree]
+    [loadTree, resolveSafeParentId]
   );
 
   const updateBookmark = useCallback(
@@ -321,7 +374,6 @@ export function useBookmarks() {
 
   const deleteBookmark = useCallback(
     async (id: string) => {
-      // Snapshot before deleting
       await createLocalSnapshot('Exclusão de Favorito');
       await bookmarksService.remove(id);
       setSelectedIds((prev) => {
@@ -335,6 +387,18 @@ export function useBookmarks() {
       await loadTree();
     },
     [loadTree, selectedItem]
+  );
+
+  const deleteFolder = useCallback(
+    async (id: string) => {
+      await createLocalSnapshot('Exclusão de Pasta');
+      await bookmarksService.removeTree(id);
+      if (activeSection === id) {
+        setActiveSection('1');
+      }
+      await loadTree();
+    },
+    [activeSection, loadTree]
   );
 
   const deleteMultiple = useCallback(
@@ -411,6 +475,7 @@ export function useBookmarks() {
     sortDirection,
     toggleSort,
     displayedItems,
+    currentSubfolders,
     currentFolderName,
     allFolders,
     allBookmarks,
@@ -418,10 +483,13 @@ export function useBookmarks() {
     duplicates,
     cleanupReport,
     stats,
+    resolveSafeParentId,
+    getBookmarksRecursively,
     createBookmark,
     createFolder,
     updateBookmark,
     deleteBookmark,
+    deleteFolder,
     deleteMultiple,
     moveBookmark,
     moveMultiple,

@@ -8,7 +8,8 @@
     "storage",
     "unlimitedStorage",
     "sidePanel",
-    "notifications"
+    "notifications",
+    "tabs"
   ],
   "host_permissions": [
     "<all_urls>"

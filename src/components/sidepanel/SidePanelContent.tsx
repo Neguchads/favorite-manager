@@ -28,6 +28,7 @@ export const SidePanelContent: React.FC = () => {
     createBookmark,
     deleteBookmark,
     refreshTree,
+    parentPathMap,
   } = useBookmarks();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -226,6 +227,7 @@ export const SidePanelContent: React.FC = () => {
         onClose={() => setIsAiOpen(false)}
         itemsToOrganize={displayedItems}
         allFolders={allFolders}
+        parentPathMap={parentPathMap}
         onApplyPlan={handleApplyAiPlan}
       />
     </div>

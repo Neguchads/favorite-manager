@@ -8,26 +8,37 @@ import {
   Clock,
   RotateCcw,
   FileText,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { BookmarkNode } from '../../types/bookmarks';
 import {
   createLocalSnapshot,
   listSnapshots,
+  restoreSnapshot,
+  deleteSnapshot,
   SnapshotMetadata,
   exportBookmarksToJson,
   downloadJsonFile,
 } from '../../services/backup';
 import { downloadMarkdownAwesomeList } from '../../services/backup/markdownExporter';
 import { formatDate } from '../../utils/date';
+import { ConfirmDialog } from '../common/ConfirmDialog';
 
 interface BackupViewProps {
   tree: BookmarkNode[];
+  onRefresh?: () => Promise<void>;
 }
 
-export const BackupView: React.FC<BackupViewProps> = ({ tree }) => {
+export const BackupView: React.FC<BackupViewProps> = ({ tree, onRefresh }) => {
   const [snapshots, setSnapshots] = useState<SnapshotMetadata[]>([]);
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Restore confirmation modal
+  const [confirmRestoreId, setConfirmRestoreId] = useState<string | null>(null);
+  const [restoring, setRestoring] = useState(false);
 
   const load = async () => {
     const list = await listSnapshots();
@@ -62,6 +73,33 @@ export const BackupView: React.FC<BackupViewProps> = ({ tree }) => {
     setTimeout(() => setSuccessMsg(null), 3500);
   };
 
+  const handleConfirmRestore = async () => {
+    if (!confirmRestoreId) return;
+    try {
+      setRestoring(true);
+      setErrorMsg(null);
+      await restoreSnapshot(confirmRestoreId);
+      if (onRefresh) {
+        await onRefresh();
+      }
+      await load();
+      setSuccessMsg('Favoritos restaurados com sucesso a partir do snapshot!');
+      setTimeout(() => setSuccessMsg(null), 4000);
+    } catch (err: any) {
+      setErrorMsg(err?.message || 'Falha ao restaurar snapshot');
+    } finally {
+      setRestoring(false);
+      setConfirmRestoreId(null);
+    }
+  };
+
+  const handleDeleteSnapshot = async (id: string) => {
+    await deleteSnapshot(id);
+    await load();
+    setSuccessMsg('Snapshot removido.');
+    setTimeout(() => setSuccessMsg(null), 2500);
+  };
+
   return (
     <div className="p-5 space-y-6 text-xs max-w-4xl">
       {/* Header card */}
@@ -73,7 +111,7 @@ export const BackupView: React.FC<BackupViewProps> = ({ tree }) => {
           </h3>
           <p className="text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
             O Edge Favorite Manager gera automaticamente snapshots antes de qualquer operação em massa
-            (exclusão múltipla, movimentação em lote ou categorização com IA). Seus dados ficam salvos localmente e nunca são sobrescritos sem cópia prévia.
+            (exclusão múltipla, movimentação em lote ou categorização com IA). Você pode restaurar qualquer snapshot instantaneamente com um clique.
           </p>
         </div>
       </div>
@@ -82,6 +120,13 @@ export const BackupView: React.FC<BackupViewProps> = ({ tree }) => {
         <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl text-emerald-800 dark:text-emerald-300 flex items-center space-x-2 animate-in fade-in">
           <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           <span>{successMsg}</span>
+        </div>
+      )}
+
+      {errorMsg && (
+        <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl text-rose-800 dark:text-rose-300 flex items-center space-x-2 animate-in fade-in">
+          <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+          <span>{errorMsg}</span>
         </div>
       )}
 
@@ -183,14 +228,44 @@ export const BackupView: React.FC<BackupViewProps> = ({ tree }) => {
                     {formatDate(snap.timestamp)} • {snap.totalBookmarks} favoritos em {snap.totalFolders} pastas
                   </p>
                 </div>
-                <span className="text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full font-medium">
-                  Salvo Localmente
-                </span>
+
+                <div className="flex items-center space-x-2">
+                  <span className="text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full font-medium">
+                    Salvo Localmente
+                  </span>
+
+                  <button
+                    onClick={() => setConfirmRestoreId(snap.id)}
+                    title="Restaurar este ponto no navegador"
+                    className="px-2.5 py-1 bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 dark:hover:bg-sky-900 text-sky-600 dark:text-sky-300 border border-sky-200 dark:border-sky-800 rounded-md transition-colors flex items-center space-x-1 text-[11px] font-medium"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Restaurar</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleDeleteSnapshot(snap.id)}
+                    title="Excluir este snapshot"
+                    className="p-1 text-slate-400 hover:text-rose-500 rounded transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        isOpen={Boolean(confirmRestoreId)}
+        onClose={() => setConfirmRestoreId(null)}
+        onConfirm={handleConfirmRestore}
+        title="Restaurar Snapshot de Favoritos"
+        message="Tem certeza que deseja restaurar seus favoritos para este ponto? Um novo snapshot de segurança do estado atual será gravado automaticamente antes da restauração."
+        confirmLabel={restoring ? 'Restaurando...' : 'Sim, Restaurar'}
+        isDestructive={false}
+      />
     </div>
   );
 };

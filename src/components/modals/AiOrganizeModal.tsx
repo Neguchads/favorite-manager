@@ -27,6 +27,7 @@ interface AiOrganizeModalProps {
   onClose: () => void;
   itemsToOrganize: BookmarkNode[];
   allFolders: FolderOption[];
+  parentPathMap?: Map<string, string>;
   onApplyPlan: (
     plan: AiProposedPlan,
     onProgress?: (current: number, total: number, percentage: number) => void,
@@ -51,6 +52,7 @@ export const AiOrganizeModal: React.FC<AiOrganizeModalProps> = ({
   onClose,
   itemsToOrganize,
   allFolders,
+  parentPathMap,
   onApplyPlan,
 }) => {
   const [selectedEngine, setSelectedEngine] = useState<'semantic' | 'ollama'>('semantic');
@@ -129,6 +131,7 @@ export const AiOrganizeModal: React.FC<AiOrganizeModalProps> = ({
         id: item.id,
         title: item.title,
         url: item.url || '',
+        folderPath: item.parentId && parentPathMap ? parentPathMap.get(item.parentId) : undefined,
       }));
 
       const result = await generateAiPlan(

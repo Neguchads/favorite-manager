@@ -10,6 +10,7 @@ import { CreateFolderModal } from './components/modals/CreateFolderModal';
 import { EditItemModal } from './components/modals/EditItemModal';
 import { MoveItemsModal } from './components/modals/MoveItemsModal';
 import { AiOrganizeModal } from './components/modals/AiOrganizeModal';
+import { WorkspaceTabsModal } from './components/modals/WorkspaceTabsModal';
 import { CommandPaletteModal } from './components/common/CommandPaletteModal';
 import { ConfirmDialog } from './components/common/ConfirmDialog';
 import { BookmarkNode } from './types/bookmarks';
@@ -17,6 +18,7 @@ import { downloadJsonFile, exportBookmarksToJson } from './services/backup';
 import { downloadMarkdownAwesomeList } from './services/backup/markdownExporter';
 import { AiProposedPlan } from './ai/types';
 import { executeAiPlanWithHierarchy } from './services/bookmarks';
+import { openUrlsInNewWindow } from './services/tabs/workspaceTabs';
 
 export const App: React.FC = () => {
   const {
@@ -41,6 +43,7 @@ export const App: React.FC = () => {
     sortDirection,
     toggleSort,
     displayedItems,
+    currentSubfolders,
     currentFolderName,
     allFolders,
     allBookmarks,
@@ -48,10 +51,13 @@ export const App: React.FC = () => {
     duplicates,
     cleanupReport,
     stats,
+    resolveSafeParentId,
+    getBookmarksRecursively,
     createBookmark,
     createFolder,
     updateBookmark,
     deleteBookmark,
+    deleteFolder,
     deleteMultiple,
     moveMultiple,
     pruneEmptyFolders,
@@ -66,7 +72,11 @@ export const App: React.FC = () => {
   const [editingItem, setEditingItem] = useState<BookmarkNode | null>(null);
   const [isMoveOpen, setIsMoveOpen] = useState(false);
   const [isAiOrganizeOpen, setIsAiOrganizeOpen] = useState(false);
+  const [isWorkspaceTabsOpen, setIsWorkspaceTabsOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+
+  // Custom items for AI organization (e.g. from open tabs/workspaces)
+  const [customAiItems, setCustomAiItems] = useState<BookmarkNode[] | null>(null);
 
   // Global keyboard shortcuts (Ctrl+K and Ctrl+Shift+F)
   useEffect(() => {
@@ -93,11 +103,13 @@ export const App: React.FC = () => {
   const [confirmDelete, setConfirmDelete] = useState<{
     isOpen: boolean;
     ids: string[];
+    isFolder?: boolean;
     title: string;
     message: string;
   }>({
     isOpen: false,
     ids: [],
+    isFolder: false,
     title: '',
     message: '',
   });
@@ -108,13 +120,25 @@ export const App: React.FC = () => {
     setIsEditOpen(true);
   };
 
-  // Delete single handler
+  // Delete single bookmark handler
   const handlePromptDelete = (id: string) => {
     setConfirmDelete({
       isOpen: true,
       ids: [id],
+      isFolder: false,
       title: 'Excluir Favorito',
       message: 'Tem certeza que deseja remover este item? Um snapshot de segurança será gravado antes.',
+    });
+  };
+
+  // Delete folder handler
+  const handlePromptDeleteFolder = (id: string) => {
+    setConfirmDelete({
+      isOpen: true,
+      ids: [id],
+      isFolder: true,
+      title: 'Excluir Pasta',
+      message: 'Tem certeza que deseja excluir esta pasta e todo o seu conteúdo? Um snapshot de segurança será gravado antes.',
     });
   };
 
@@ -124,13 +148,16 @@ export const App: React.FC = () => {
     setConfirmDelete({
       isOpen: true,
       ids,
+      isFolder: false,
       title: 'Excluir Itens Selecionados',
       message: `Tem certeza que deseja excluir ${ids.length} itens selecionados? Você poderá restaurar a partir dos snapshots se necessário.`,
     });
   };
 
   const handleConfirmDelete = async () => {
-    if (confirmDelete.ids.length === 1) {
+    if (confirmDelete.isFolder && confirmDelete.ids.length > 0) {
+      await deleteFolder(confirmDelete.ids[0]);
+    } else if (confirmDelete.ids.length === 1) {
       await deleteBookmark(confirmDelete.ids[0]);
     } else if (confirmDelete.ids.length > 1) {
       await deleteMultiple(confirmDelete.ids);
@@ -144,6 +171,15 @@ export const App: React.FC = () => {
     downloadJsonFile(jsonStr, `favoritos-selecionados-${Date.now()}.json`);
   };
 
+  // Open all bookmarks in a folder in a brand new window (Workspace restoration)
+  const handleOpenFolderInNewWindow = async (folderId: string) => {
+    const bookmarks = getBookmarksRecursively(folderId);
+    const urls = bookmarks.map((b) => b.url).filter(Boolean) as string[];
+    if (urls.length > 0) {
+      await openUrlsInNewWindow(urls);
+    }
+  };
+
   // Apply AI Plan (create master folders and subfolders, then move bookmarks)
   const handleApplyAiPlan = async (
     plan: AiProposedPlan,
@@ -154,6 +190,30 @@ export const App: React.FC = () => {
     await refreshTree();
     return res;
   };
+
+  // Resolve items for AI organization (handles recursive subfolders when in a folder or custom tabs)
+  const itemsForAiOrganize = React.useMemo(() => {
+    if (customAiItems && customAiItems.length > 0) {
+      return customAiItems;
+    }
+    if (selectedIds.size > 0) {
+      return displayedItems.filter((i) => selectedIds.has(i.id));
+    }
+    if (activeSection === 'bookmarks_bar') {
+      return getBookmarksRecursively('1');
+    }
+    if (activeSection === 'other') {
+      return getBookmarksRecursively('2');
+    }
+    if (
+      activeSection !== 'all' &&
+      activeSection !== 'recent' &&
+      !['duplicates', 'cleanup', 'stats', 'backups', 'settings'].includes(activeSection)
+    ) {
+      return getBookmarksRecursively(activeSection);
+    }
+    return allBookmarks;
+  }, [customAiItems, selectedIds, displayedItems, activeSection, getBookmarksRecursively, allBookmarks]);
 
   if (loading && tree.length === 0) {
     return (
@@ -175,7 +235,11 @@ export const App: React.FC = () => {
         isNative={isNative}
         onOpenCreateBookmark={() => setIsCreateBookmarkOpen(true)}
         onOpenCreateFolder={() => setIsCreateFolderOpen(true)}
-        onOpenAiOrganize={() => setIsAiOrganizeOpen(true)}
+        onOpenAiOrganize={() => {
+          setCustomAiItems(null);
+          setIsAiOrganizeOpen(true);
+        }}
+        onOpenWorkspaceTabs={() => setIsWorkspaceTabsOpen(true)}
         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
       />
 
@@ -199,11 +263,17 @@ export const App: React.FC = () => {
           onOpenCreateFolder={() => setIsCreateFolderOpen(true)}
         />
 
-        {/* Central Content */}
+        {/* Central Content (Visualizador com subpastas estilo edge://favorites/) */}
         <MainContent
           activeSection={activeSection}
           currentFolderName={currentFolderName}
           items={displayedItems}
+          subfolders={currentSubfolders}
+          folderItemCount={folderItemCount}
+          onNavigateToFolder={setActiveSection}
+          onEditFolder={handleOpenEdit}
+          onDeleteFolder={handlePromptDeleteFolder}
+          onOpenFolderInNewWindow={handleOpenFolderInNewWindow}
           selectedIds={selectedIds}
           selectedItem={selectedItem}
           viewMode={viewMode}
@@ -248,15 +318,18 @@ export const App: React.FC = () => {
         onOpenMoveModal={() => setIsMoveOpen(true)}
         onDeleteSelected={handlePromptDeleteMultiple}
         onExportSelected={handleExportSelected}
-        onAiAnalyzeSelected={() => setIsAiOrganizeOpen(true)}
+        onAiAnalyzeSelected={() => {
+          setCustomAiItems(null);
+          setIsAiOrganizeOpen(true);
+        }}
       />
 
-      {/* Modals */}
+      {/* Modals - Bug 4 Fix: defaultParentId is always a valid folder ID */}
       <CreateBookmarkModal
         isOpen={isCreateBookmarkOpen}
         onClose={() => setIsCreateBookmarkOpen(false)}
         folders={allFolders}
-        defaultParentId={activeSection.length > 2 ? activeSection : '1'}
+        defaultParentId={resolveSafeParentId()}
         onCreate={createBookmark}
       />
 
@@ -264,7 +337,7 @@ export const App: React.FC = () => {
         isOpen={isCreateFolderOpen}
         onClose={() => setIsCreateFolderOpen(false)}
         folders={allFolders}
-        defaultParentId={activeSection.length > 2 ? activeSection : '1'}
+        defaultParentId={resolveSafeParentId()}
         onCreate={createFolder}
       />
 
@@ -288,14 +361,29 @@ export const App: React.FC = () => {
 
       <AiOrganizeModal
         isOpen={isAiOrganizeOpen}
-        onClose={() => setIsAiOrganizeOpen(false)}
-        itemsToOrganize={
-          selectedIds.size > 0
-            ? displayedItems.filter((i) => selectedIds.has(i.id))
-            : displayedItems
-        }
+        onClose={() => {
+          setIsAiOrganizeOpen(false);
+          setCustomAiItems(null);
+        }}
+        itemsToOrganize={itemsForAiOrganize}
         allFolders={allFolders}
+        parentPathMap={parentPathMap}
         onApplyPlan={handleApplyAiPlan}
+      />
+
+      <WorkspaceTabsModal
+        isOpen={isWorkspaceTabsOpen}
+        onClose={() => setIsWorkspaceTabsOpen(false)}
+        folders={allFolders}
+        defaultParentId={resolveSafeParentId()}
+        onSaved={async (folderId) => {
+          await refreshTree();
+          setActiveSection(folderId);
+        }}
+        onOrganizeTabsWithAi={(tabsAsBookmarks) => {
+          setCustomAiItems(tabsAsBookmarks);
+          setIsAiOrganizeOpen(true);
+        }}
       />
 
       <CommandPaletteModal
@@ -305,7 +393,10 @@ export const App: React.FC = () => {
         parentPathMap={parentPathMap}
         onSelectBookmark={setSelectedItem}
         onSelectSection={setActiveSection}
-        onOpenAiOrganize={() => setIsAiOrganizeOpen(true)}
+        onOpenAiOrganize={() => {
+          setCustomAiItems(null);
+          setIsAiOrganizeOpen(true);
+        }}
         onPruneEmptyFolders={pruneEmptyFolders}
         onExportMarkdown={() => downloadMarkdownAwesomeList(tree)}
       />

@@ -2,6 +2,7 @@ export interface AiBookmarkItem {
   id: string;
   title: string;
   url: string;
+  folderPath?: string;
 }
 
 export interface AiSuggestion {

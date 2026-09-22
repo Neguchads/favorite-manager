@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal } from '../common/Modal';
 import { FolderOption } from '../../hooks/useBookmarks';
 
@@ -22,6 +22,13 @@ export const CreateBookmarkModal: React.FC<CreateBookmarkModalProps> = ({
   const [parentId, setParentId] = useState(defaultParentId || '1');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setParentId(defaultParentId || '1');
+      setError(null);
+    }
+  }, [isOpen, defaultParentId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

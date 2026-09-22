@@ -60,14 +60,19 @@ chrome.commands?.onCommand?.addListener((command) => {
   }
 });
 
-// Real-time Auto-Organization on Bookmark Creation (Ctrl+D)
+// Real-time Auto-Organization on Bookmark Creation (Ctrl+D) - Bug 2 Fix: Opt-in only
 chrome.bookmarks.onCreated.addListener(async (id, bookmark) => {
   if (!bookmark.url) return; // Skip folder creation
 
   try {
     const { autoOrganizeOnCreate } = await chrome.storage.local.get(['autoOrganizeOnCreate']);
-    // Enabled by default unless explicitly disabled
-    if (autoOrganizeOnCreate === false) return;
+    // Bug 2 Fix: MUST be explicitly set to true. Disabled by default to prevent sync/import race conditions.
+    if (autoOrganizeOnCreate !== true) return;
+
+    // If the user explicitly saved into a custom subfolder (not root '1' or '2'), respect their choice
+    if (bookmark.parentId && bookmark.parentId !== '1' && bookmark.parentId !== '2') {
+      return;
+    }
 
     const targetCategory = classifyBookmarkIntelligently(bookmark.title || '', bookmark.url);
     if (!targetCategory || targetCategory === 'Outros & Geral') return;
@@ -108,41 +113,56 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
-  // Helper: CORS-free background link status check
+  // Helper: CORS-free background link status check (Bug 7 Fix: Fallback for 403/405 HEAD responses)
   if (message.type === 'CHECK_LINK_STATUS') {
     (async () => {
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 6000);
-        let status = 0;
-        let ok = false;
+        let res: Response | null = null;
 
         try {
-          const res = await fetch(message.url, {
+          res = await fetch(message.url, {
             method: 'HEAD',
             signal: controller.signal,
             headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) EdgeFavoriteManager/1.1' },
           });
-          status = res.status;
-          ok = res.ok || (status >= 200 && status < 400);
         } catch {
-          // If HEAD fails, fallback to GET
+          // HEAD threw network or abort error
+        }
+
+        // Bug 7 Fix: If HEAD failed or returned 403/405/400 (many servers block HEAD requests), fallback to lightweight GET
+        if (!res || (!res.ok && (res.status === 403 || res.status === 405 || res.status === 400 || res.status === 401))) {
           try {
-            const res2 = await fetch(message.url, {
+            res = await fetch(message.url, {
               method: 'GET',
               signal: controller.signal,
-              headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) EdgeFavoriteManager/1.1' },
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) EdgeFavoriteManager/1.1',
+                'Range': 'bytes=0-1024',
+              },
             });
-            status = res2.status;
-            ok = res2.ok || (status >= 200 && status < 400);
           } catch (err2: any) {
             clearTimeout(timeoutId);
             sendResponse({ status: 0, ok: false, error: err2?.name === 'AbortError' ? 'timeout' : 'network_error' });
             return;
           }
         }
+
         clearTimeout(timeoutId);
-        sendResponse({ status, ok, error: ok ? null : (status === 404 ? 'not_found' : `http_${status}`) });
+
+        if (res) {
+          const status = res.status;
+          // If status is 2xx/3xx, or 403 (server exists and responded, but forbids bot reading), consider online
+          const ok = res.ok || (status >= 200 && status < 400) || status === 403;
+          sendResponse({
+            status,
+            ok,
+            error: ok ? null : (status === 404 ? 'not_found' : `http_${status}`),
+          });
+        } else {
+          sendResponse({ status: 0, ok: false, error: 'network_error' });
+        }
       } catch (e: any) {
         sendResponse({ status: 0, ok: false, error: e?.message || 'unknown' });
       }

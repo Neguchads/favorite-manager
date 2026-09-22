@@ -11,6 +11,7 @@ import {
   Layers,
   HelpCircle,
   Zap,
+  Laptop,
 } from 'lucide-react';
 import { ViewMode } from '../../types/bookmarks';
 
@@ -23,6 +24,7 @@ interface HeaderProps {
   onOpenCreateBookmark: () => void;
   onOpenCreateFolder: () => void;
   onOpenAiOrganize: () => void;
+  onOpenWorkspaceTabs?: () => void;
   onOpenCommandPalette?: () => void;
   isSidePanel?: boolean;
 }
@@ -36,18 +38,17 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenCreateBookmark,
   onOpenCreateFolder,
   onOpenAiOrganize,
+  onOpenWorkspaceTabs,
   onOpenCommandPalette,
   isSidePanel = false,
 }) => {
   const [showSearchHelp, setShowSearchHelp] = useState(false);
-  const [autoOrganize, setAutoOrganize] = useState(true);
+  const [autoOrganize, setAutoOrganize] = useState(false);
 
   useEffect(() => {
     if (typeof chrome !== 'undefined' && chrome.storage?.local) {
       chrome.storage.local.get(['autoOrganizeOnCreate'], (res) => {
-        if (res.autoOrganizeOnCreate !== undefined) {
-          setAutoOrganize(res.autoOrganizeOnCreate);
-        }
+        setAutoOrganize(res.autoOrganizeOnCreate === true);
       });
     }
   }, []);
@@ -252,6 +253,18 @@ export const Header: React.FC<HeaderProps> = ({
             <FolderPlus className="w-3.5 h-3.5 text-amber-500" />
             <span className="hidden sm:inline">Pasta</span>
           </button>
+
+          {/* Workspaces / Open Tabs Button */}
+          {onOpenWorkspaceTabs && (
+            <button
+              onClick={onOpenWorkspaceTabs}
+              title="Salvar guias abertas de Workspaces em favoritos"
+              className="flex items-center space-x-1 px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 transition-colors"
+            >
+              <Laptop className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+              <span className="hidden lg:inline">Workspaces</span>
+            </button>
+          )}
 
           {/* AI Organize Button */}
           <button
