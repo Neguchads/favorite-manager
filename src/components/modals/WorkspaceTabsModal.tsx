@@ -40,7 +40,7 @@ export const WorkspaceTabsModal: React.FC<WorkspaceTabsModalProps> = ({
 }) => {
   const [windows, setWindows] = useState<OpenWindowGroup[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedWindowId, setSelectedWindowId] = useState<number | 'all'>('all');
+  const [selectedWindowIds, setSelectedWindowIds] = useState<Set<number>>(new Set());
   const [selectedTabIds, setSelectedTabIds] = useState<Set<number>>(new Set());
   const [folderTitle, setFolderTitle] = useState('');
   const [targetParentId, setTargetParentId] = useState(defaultParentId || '1');
@@ -55,12 +55,10 @@ export const WorkspaceTabsModal: React.FC<WorkspaceTabsModalProps> = ({
       const data = await getOpenWindowsAndTabs();
       setWindows(data);
 
-      // Auto-select tabs from current window
-      const currentWin = data.find((w) => w.isCurrent) || data[0];
-      if (currentWin) {
-        setSelectedWindowId(currentWin.id);
-        setSelectedTabIds(new Set(currentWin.tabs.map((t) => t.id)));
-      }
+      // Select all windows and their tabs by default
+      const allWinIds = new Set(data.map((w) => w.id));
+      setSelectedWindowIds(allWinIds);
+      setSelectedTabIds(new Set(data.flatMap((w) => w.tabs).map((t) => t.id)));
 
       // Default folder title
       const now = new Date();
@@ -81,14 +79,62 @@ export const WorkspaceTabsModal: React.FC<WorkspaceTabsModalProps> = ({
     }
   }, [isOpen, defaultParentId]);
 
-  // Displayed tabs based on window selection
-  const displayedTabs = useMemo<OpenTab[]>(() => {
-    if (selectedWindowId === 'all') {
-      return windows.flatMap((w) => w.tabs);
+  // Total tabs across all detected windows
+  const totalAvailableTabs = useMemo(() => {
+    return windows.reduce((acc, w) => acc + w.tabs.length, 0);
+  }, [windows]);
+
+  // Are all windows currently checked?
+  const allWindowsSelected = windows.length > 0 && windows.every((w) => selectedWindowIds.has(w.id));
+
+  // Toggle selecting/deselecting all windows
+  const toggleSelectAllWindows = () => {
+    if (allWindowsSelected) {
+      // Unselect all windows and all tabs
+      setSelectedWindowIds(new Set());
+      setSelectedTabIds(new Set());
+    } else {
+      // Select all windows and all tabs
+      const allIds = new Set(windows.map((w) => w.id));
+      setSelectedWindowIds(allIds);
+      setSelectedTabIds(new Set(windows.flatMap((w) => w.tabs).map((t) => t.id)));
     }
-    const win = windows.find((w) => w.id === selectedWindowId);
-    return win?.tabs || [];
-  }, [windows, selectedWindowId]);
+  };
+
+  // Toggle single window in/out of selection
+  const toggleWindow = (winId: number) => {
+    const win = windows.find((w) => w.id === winId);
+    if (!win) return;
+
+    setSelectedWindowIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(winId)) {
+        next.delete(winId);
+        // Remove tabs of unselected window
+        setSelectedTabIds((prevTabs) => {
+          const nextTabs = new Set(prevTabs);
+          win.tabs.forEach((t) => nextTabs.delete(t.id));
+          return nextTabs;
+        });
+      } else {
+        next.add(winId);
+        // Add tabs of selected window
+        setSelectedTabIds((prevTabs) => {
+          const nextTabs = new Set(prevTabs);
+          win.tabs.forEach((t) => nextTabs.add(t.id));
+          return nextTabs;
+        });
+      }
+      return next;
+    });
+  };
+
+  // Displayed tabs based on checked windows
+  const displayedTabs = useMemo<OpenTab[]>(() => {
+    return windows
+      .filter((w) => selectedWindowIds.has(w.id))
+      .flatMap((w) => w.tabs);
+  }, [windows, selectedWindowIds]);
 
   // Toggle single tab
   const toggleTab = (id: number) => {
@@ -100,10 +146,10 @@ export const WorkspaceTabsModal: React.FC<WorkspaceTabsModalProps> = ({
     });
   };
 
-  // Select all / Deselect all
-  const allSelected = displayedTabs.length > 0 && displayedTabs.every((t) => selectedTabIds.has(t.id));
-  const toggleSelectAll = () => {
-    if (allSelected) {
+  // Select all / Deselect all displayed tabs
+  const allTabsSelected = displayedTabs.length > 0 && displayedTabs.every((t) => selectedTabIds.has(t.id));
+  const toggleSelectAllTabs = () => {
+    if (allTabsSelected) {
       setSelectedTabIds((prev) => {
         const next = new Set(prev);
         displayedTabs.forEach((t) => next.delete(t.id));
@@ -116,13 +162,6 @@ export const WorkspaceTabsModal: React.FC<WorkspaceTabsModalProps> = ({
         return next;
       });
     }
-  };
-
-  // Switch window tab filter
-  const handleSelectWindow = (id: number | 'all') => {
-    setSelectedWindowId(id);
-    const tabsForWin = id === 'all' ? windows.flatMap((w) => w.tabs) : (windows.find((w) => w.id === id)?.tabs || []);
-    setSelectedTabIds(new Set(tabsForWin.map((t) => t.id)));
   };
 
   // Save selected tabs as bookmarks in a new folder
@@ -179,6 +218,8 @@ export const WorkspaceTabsModal: React.FC<WorkspaceTabsModalProps> = ({
     }
   };
 
+  const selectedTabsCount = displayedTabs.filter((t) => selectedTabIds.has(t.id)).length;
+
   return (
     <Modal
       isOpen={isOpen}
@@ -198,7 +239,7 @@ export const WorkspaceTabsModal: React.FC<WorkspaceTabsModalProps> = ({
                 Capturar Sessão do Microsoft Edge
               </h4>
               <p className="text-[11px] text-slate-600 dark:text-slate-300">
-                Favorite todas as guias abertas da sua janela ou Workspace com 1 clique.
+                Favorite as guias abertas de todas as janelas ou selecione janelas específicas.
               </p>
             </div>
           </div>
@@ -226,55 +267,82 @@ export const WorkspaceTabsModal: React.FC<WorkspaceTabsModalProps> = ({
           </div>
         )}
 
-        {/* Window Selector Tabs */}
-        {windows.length > 1 && (
-          <div className="flex items-center space-x-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg overflow-x-auto scrollbar-none">
-            {windows.map((win) => (
-              <button
-                key={win.id}
-                onClick={() => handleSelectWindow(win.id)}
-                className={`px-3 py-1.5 rounded-md font-medium text-xs transition-colors shrink-0 flex items-center space-x-1.5 ${
-                  selectedWindowId === win.id
-                    ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-300 shadow-xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
-                }`}
-              >
-                <Layers className="w-3 h-3 text-sky-500" />
-                <span>{win.isCurrent ? 'Janela Atual' : `Janela #${win.id}`}</span>
-                <span className="text-[10px] text-slate-400 font-normal">({win.tabs.length})</span>
-              </button>
-            ))}
-            <button
-              onClick={() => handleSelectWindow('all')}
-              className={`px-3 py-1.5 rounded-md font-medium text-xs transition-colors shrink-0 ${
-                selectedWindowId === 'all'
-                  ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-300 shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
-              }`}
-            >
-              Todas as Janelas ({windows.reduce((acc, w) => acc + w.tabs.length, 0)})
-            </button>
+        {/* Window Selector with Checkboxes */}
+        {windows.length > 0 && (
+          <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              {/* Checkbox: Selecionar Todas as Janelas */}
+              <label className="flex items-center space-x-2 text-xs font-semibold text-slate-800 dark:text-slate-100 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={allWindowsSelected}
+                  onChange={toggleSelectAllWindows}
+                  className="rounded text-sky-600 focus:ring-sky-500 cursor-pointer w-4 h-4"
+                />
+                <span className="flex items-center space-x-1.5">
+                  <Layers className="w-3.5 h-3.5 text-sky-500" />
+                  <span>Selecionar Todas as Janelas</span>
+                </span>
+                <span className="text-[11px] font-normal text-slate-500 dark:text-slate-400">
+                  ({windows.length} {windows.length === 1 ? 'janela' : 'janelas'}, {totalAvailableTabs} guias no total)
+                </span>
+              </label>
+
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                {selectedWindowIds.size} de {windows.length} janelas marcadas
+              </span>
+            </div>
+
+            {/* Individual Window Checkboxes */}
+            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-200/80 dark:border-slate-700/80">
+              {windows.map((win) => {
+                const isSelected = selectedWindowIds.has(win.id);
+                return (
+                  <label
+                    key={win.id}
+                    className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg border text-xs font-medium cursor-pointer transition-all select-none ${
+                      isSelected
+                        ? 'bg-sky-50/80 dark:bg-sky-950/50 border-sky-300 dark:border-sky-600 text-sky-800 dark:text-sky-200 shadow-2xs'
+                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100/60'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleWindow(win.id)}
+                      className="rounded text-sky-600 focus:ring-sky-500 cursor-pointer w-3.5 h-3.5"
+                    />
+                    <span>{win.isCurrent ? 'Janela Atual' : `Janela #${win.id}`}</span>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-normal">
+                      {win.tabs.length}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
           </div>
         )}
 
         {/* Tabs List Header & Select All */}
         <div className="flex items-center justify-between px-1">
           <button
-            onClick={toggleSelectAll}
-            className="flex items-center space-x-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 font-medium"
+            type="button"
+            onClick={toggleSelectAllTabs}
+            disabled={displayedTabs.length === 0}
+            className="flex items-center space-x-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100 font-medium disabled:opacity-50 cursor-pointer"
           >
-            {allSelected ? (
+            {allTabsSelected ? (
               <CheckSquare className="w-4 h-4 text-sky-600 dark:text-sky-400" />
             ) : (
               <Square className="w-4 h-4 text-slate-400" />
             )}
             <span>
-              {allSelected ? 'Desmarcar todas' : 'Selecionar todas'} ({displayedTabs.length} guias)
+              {allTabsSelected ? 'Desmarcar todas' : 'Selecionar todas'} ({displayedTabs.length} guias)
             </span>
           </button>
 
-          <span className="text-[11px] text-slate-400">
-            {displayedTabs.filter((t) => selectedTabIds.has(t.id)).length} selecionadas
+          <span className="text-[11px] text-slate-500 font-medium">
+            {selectedTabsCount} selecionadas
           </span>
         </div>
 
@@ -285,9 +353,13 @@ export const WorkspaceTabsModal: React.FC<WorkspaceTabsModalProps> = ({
               <RefreshCw className="w-5 h-5 animate-spin text-sky-500" />
               <span>Lendo guias abertas do Edge...</span>
             </div>
+          ) : selectedWindowIds.size === 0 ? (
+            <div className="p-8 text-center text-slate-400 text-xs">
+              Nenhuma janela marcada. Marque uma ou mais janelas acima para visualizar suas guias.
+            </div>
           ) : displayedTabs.length === 0 ? (
-            <div className="p-8 text-center text-slate-400">
-              Nenhuma guia web encontrada nesta janela.
+            <div className="p-8 text-center text-slate-400 text-xs">
+              Nenhuma guia web encontrada nas janelas selecionadas.
             </div>
           ) : (
             displayedTabs.map((tab) => {
@@ -329,9 +401,18 @@ export const WorkspaceTabsModal: React.FC<WorkspaceTabsModalProps> = ({
                   </div>
 
                   <div className="min-w-0 flex-1 pr-2">
-                    <p className="font-medium text-slate-800 dark:text-slate-100 truncate text-xs">
-                      {tab.title || '(Sem título)'}
-                    </p>
+                    <div className="flex items-center space-x-1.5">
+                      <p className="font-medium text-slate-800 dark:text-slate-100 truncate text-xs flex-1">
+                        {tab.title || '(Sem título)'}
+                      </p>
+                      {windows.length > 1 && (
+                        <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 shrink-0 font-medium">
+                          {tab.windowId === windows.find((w) => w.isCurrent)?.id
+                            ? 'Janela Atual'
+                            : `Janela #${tab.windowId}`}
+                        </span>
+                      )}
+                    </div>
                     <span className="text-[10px] text-slate-400 font-mono truncate block">
                       {domain || tab.url}
                     </span>
@@ -353,7 +434,7 @@ export const WorkspaceTabsModal: React.FC<WorkspaceTabsModalProps> = ({
               value={folderTitle}
               onChange={(e) => setFolderTitle(e.target.value)}
               placeholder="Ex: Workspace - Faculdade"
-              className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 focus:outline-none focus:border-sky-500"
+              className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 focus:outline-hidden focus:border-sky-500"
             />
           </div>
 
@@ -364,7 +445,7 @@ export const WorkspaceTabsModal: React.FC<WorkspaceTabsModalProps> = ({
             <select
               value={targetParentId}
               onChange={(e) => setTargetParentId(e.target.value)}
-              className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 focus:outline-none focus:border-sky-500"
+              className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 focus:outline-hidden focus:border-sky-500"
             >
               {folders.map((f) => (
                 <option key={f.id} value={f.id}>
@@ -380,7 +461,7 @@ export const WorkspaceTabsModal: React.FC<WorkspaceTabsModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-3.5 py-1.5 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 rounded-lg transition-colors order-last sm:order-first"
+            className="px-3.5 py-1.5 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 rounded-lg transition-colors order-last sm:order-first cursor-pointer"
           >
             Cancelar
           </button>
@@ -390,21 +471,22 @@ export const WorkspaceTabsModal: React.FC<WorkspaceTabsModalProps> = ({
               <button
                 type="button"
                 onClick={handleSaveAndOrganizeWithAi}
-                className="px-3 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-medium rounded-lg transition-colors flex items-center space-x-1.5 shadow-xs"
+                disabled={selectedTabsCount === 0}
+                className="px-3 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-medium rounded-lg transition-colors flex items-center space-x-1.5 shadow-xs disabled:opacity-50 cursor-pointer"
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Salvar & Organizar com IA</span>
+                <span>Salvar & Organizar com IA ({selectedTabsCount})</span>
               </button>
             )}
 
             <button
               type="button"
               onClick={handleSaveToFolder}
-              disabled={saving || displayedTabs.filter((t) => selectedTabIds.has(t.id)).length === 0}
-              className="px-4 py-1.5 bg-sky-600 hover:bg-sky-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center space-x-1.5 shadow-xs"
+              disabled={saving || selectedTabsCount === 0}
+              className="px-4 py-1.5 bg-sky-600 hover:bg-sky-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center space-x-1.5 shadow-xs cursor-pointer"
             >
               <FolderPlus className="w-3.5 h-3.5" />
-              <span>{saving ? 'Salvando...' : 'Salvar em Pasta'}</span>
+              <span>{saving ? 'Salvando...' : `Salvar ${selectedTabsCount} em Pasta`}</span>
             </button>
           </div>
         </div>

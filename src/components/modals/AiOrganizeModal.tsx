@@ -31,7 +31,8 @@ interface AiOrganizeModalProps {
   onApplyPlan: (
     plan: AiProposedPlan,
     onProgress?: (current: number, total: number, percentage: number) => void,
-    cleanEmptyFolders?: boolean
+    cleanEmptyFolders?: boolean,
+    sortAlphabetical?: boolean
   ) => Promise<{ createdFoldersCount: number; movedCount: number; skippedCount: number; prunedFoldersCount: number } | void>;
 }
 
@@ -76,6 +77,7 @@ export const AiOrganizeModal: React.FC<AiOrganizeModalProps> = ({
   const [applying, setApplying] = useState(false);
   const [applyProgress, setApplyProgress] = useState<{ current: number; total: number; percent: number } | null>(null);
   const [cleanEmptyFolders, setCleanEmptyFolders] = useState<boolean>(true);
+  const [sortAlphabetical, setSortAlphabetical] = useState<boolean>(true);
   const [completedResult, setCompletedResult] = useState<{
     movedCount: number;
     prunedFoldersCount: number;
@@ -169,7 +171,8 @@ export const AiOrganizeModal: React.FC<AiOrganizeModalProps> = ({
         (current, total, percentage) => {
           setApplyProgress({ current, total, percent: percentage });
         },
-        cleanEmptyFolders
+        cleanEmptyFolders,
+        sortAlphabetical
       );
 
       if (res) {
@@ -213,11 +216,11 @@ export const AiOrganizeModal: React.FC<AiOrganizeModalProps> = ({
     }
 
     return Array.from(masterMap.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
+      .sort(([a], [b]) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }))
       .map(([masterCategory, subMap]) => {
         let totalItems = 0;
         const subfolders: HierarchicalSubgroup[] = Array.from(subMap.entries())
-          .sort(([a], [b]) => a.localeCompare(b))
+          .sort(([a], [b]) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }))
           .map(([subfolderName, items]) => {
             totalItems += items.length;
             const fullPath = subfolderName === '(Geral)' ? masterCategory : `${masterCategory} / ${subfolderName}`;
@@ -529,6 +532,23 @@ export const AiOrganizeModal: React.FC<AiOrganizeModalProps> = ({
                   </div>
                 );
               })}
+            </div>
+
+            {/* Alphabetical sort toggle */}
+            <div className="flex items-center space-x-2.5 bg-slate-50 dark:bg-slate-800/80 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700">
+              <input
+                type="checkbox"
+                id="sortAlphabeticalToggle"
+                checked={sortAlphabetical}
+                onChange={(e) => setSortAlphabetical(e.target.checked)}
+                className="rounded text-sky-600 focus:ring-sky-500 cursor-pointer w-4 h-4"
+              />
+              <label htmlFor="sortAlphabeticalToggle" className="text-slate-700 dark:text-slate-200 cursor-pointer select-none text-[11px] font-medium flex items-center space-x-1.5 flex-1">
+                <Folder className="w-3.5 h-3.5 text-sky-500 shrink-0" />
+                <span>
+                  <strong>Classificar pastas e subpastas em ordem alfabética (A-Z)</strong> na Barra de Favoritos.
+                </span>
+              </label>
             </div>
 
             {/* Empty folder cleanup toggle */}

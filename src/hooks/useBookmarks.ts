@@ -421,6 +421,28 @@ export function useBookmarks() {
     [clearSelection, loadTree, selectedItem]
   );
 
+  const deleteDuplicates = useCallback(
+    async (ids: string[], groupCount?: number) => {
+      if (ids.length === 0) return;
+      await createLocalSnapshot(
+        `Remoção de ${ids.length} duplicados em 1 clique${groupCount ? ` (${groupCount} grupos)` : ''}`
+      );
+      for (const id of ids) {
+        try {
+          await bookmarksService.remove(id);
+        } catch (e) {
+          console.warn(`Failed to delete duplicate bookmark ${id}:`, e);
+        }
+      }
+      clearSelection();
+      if (selectedItem && ids.includes(selectedItem.id)) {
+        setSelectedItem(null);
+      }
+      await loadTree();
+    },
+    [clearSelection, loadTree, selectedItem]
+  );
+
   const moveBookmark = useCallback(
     async (id: string, targetParentId: string) => {
       await bookmarksService.move(id, { parentId: targetParentId });
@@ -491,6 +513,7 @@ export function useBookmarks() {
     deleteBookmark,
     deleteFolder,
     deleteMultiple,
+    deleteDuplicates,
     moveBookmark,
     moveMultiple,
     refreshTree: loadTree,

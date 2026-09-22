@@ -136,16 +136,68 @@ export async function pruneEmptyFolders(
 export type ProgressCallback = (current: number, total: number, percentage: number) => void;
 
 /**
+ * Sorts child folders and subfolders under parentId in alphabetical order (A-Z).
+ * Folders are placed first in alphabetical order, followed by bookmarks in alphabetical order.
+ * Recursively sorts subfolders if recursive is true.
+ */
+export async function sortFoldersAlphabetically(
+  parentId: string = '1',
+  recursive: boolean = true
+): Promise<void> {
+  try {
+    const subTree = await bookmarksService.getSubTree(parentId);
+    if (!subTree || subTree.length === 0 || !subTree[0].children) return;
+
+    const children = subTree[0].children;
+
+    // Separate folders and bookmarks
+    const folders = children.filter((c) => !c.url);
+    const bookmarks = children.filter((c) => Boolean(c.url));
+
+    // Sort folders alphabetically (A-Z) using pt-BR collation
+    folders.sort((a, b) =>
+      (a.title || '').localeCompare(b.title || '', 'pt-BR', { sensitivity: 'base' })
+    );
+
+    // Sort bookmarks alphabetically (A-Z) using pt-BR collation
+    bookmarks.sort((a, b) =>
+      (a.title || '').localeCompare(b.title || '', 'pt-BR', { sensitivity: 'base' })
+    );
+
+    const sortedChildren = [...folders, ...bookmarks];
+
+    for (let i = 0; i < sortedChildren.length; i++) {
+      const node = sortedChildren[i];
+      try {
+        await bookmarksService.move(node.id, { parentId, index: i });
+      } catch (err) {
+        console.warn(`Erro ao reordenar item [${node.id}] ${node.title}:`, err);
+      }
+    }
+
+    if (recursive) {
+      for (const folder of folders) {
+        await sortFoldersAlphabetically(folder.id, true);
+      }
+    }
+  } catch (err) {
+    console.warn(`Erro ao ordenar pastas sob [${parentId}]:`, err);
+  }
+}
+
+/**
  * Executes an AI plan with full hierarchy support, creating master and subfolders
  * and moving bookmarks into their designated targets with high-performance concurrent chunking.
  * Automatically prunes any folders that become empty as a result of the moves (selective pruning).
+ * Optionally sorts folders and subfolders in alphabetical order (A-Z).
  */
 export async function executeAiPlanWithHierarchy(
   plan: AiProposedPlan,
   tree: BookmarkNode[],
   rootParentId: string = '1',
   onProgress?: ProgressCallback,
-  cleanEmptyFolders: boolean = true
+  cleanEmptyFolders: boolean = true,
+  sortAlphabetical: boolean = true
 ): Promise<{ createdFoldersCount: number; movedCount: number; skippedCount: number; prunedFoldersCount: number }> {
   const existingFolderMap = buildExistingFolderMap(tree);
   const targetFolderIdMap = new Map<string, string>();
@@ -172,8 +224,11 @@ export async function executeAiPlanWithHierarchy(
 
   let createdFoldersCount = 0;
 
-  // 1. Resolve or create all target folders
-  for (const folderPath of plan.suggestedFolders) {
+  // 1. Resolve or create all target folders (sorted alphabetically A-Z)
+  const sortedFolders = [...plan.suggestedFolders].sort((a, b) =>
+    a.localeCompare(b, 'pt-BR', { sensitivity: 'base' })
+  );
+  for (const folderPath of sortedFolders) {
     const key = folderPath.toLowerCase();
     if (!targetFolderIdMap.has(key)) {
       const folderId = await ensureHierarchicalFolder(
@@ -255,6 +310,11 @@ export async function executeAiPlanWithHierarchy(
     if (candidateIds.size > 0) {
       prunedFoldersCount = await pruneEmptyFolders(undefined, PROTECTED_FOLDER_IDS, candidateIds);
     }
+  }
+
+  // 5. Reorder folders and subfolders alphabetically (A-Z) under rootParentId
+  if (sortAlphabetical) {
+    await sortFoldersAlphabetically(rootParentId, true);
   }
 
   return { createdFoldersCount, movedCount, skippedCount, prunedFoldersCount };

@@ -55,6 +55,7 @@ interface MainContentProps {
   onDeleteAllEmptyFolders?: () => void;
   onUpdateBookmark?: (id: string, title: string, url?: string) => Promise<any>;
   onDeleteMultiple?: (ids: string[]) => Promise<void>;
+  onDeleteDuplicates?: (ids: string[], groupCount?: number) => Promise<void>;
   onRefresh?: () => Promise<void>;
 }
 
@@ -91,6 +92,7 @@ export const MainContent: React.FC<MainContentProps> = ({
   onDeleteAllEmptyFolders,
   onUpdateBookmark,
   onDeleteMultiple,
+  onDeleteDuplicates,
   onRefresh,
 }) => {
   const allSelected = items.length > 0 && items.every((i) => selectedIds.has(i.id));
@@ -104,6 +106,8 @@ export const MainContent: React.FC<MainContentProps> = ({
           duplicates={duplicates}
           parentPathMap={parentPathMap}
           onDeleteBookmark={onDelete}
+          onDeleteMultiple={onDeleteMultiple}
+          onDeleteDuplicates={onDeleteDuplicates}
           onInspect={onInspect}
         />
       </main>

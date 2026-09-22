@@ -30,6 +30,13 @@ export function findDuplicates(tree: BookmarkNode[]): BookmarkDuplicateGroup[] {
 
   for (const [normalizedUrl, items] of groupsByNormalized.entries()) {
     if (items.length > 1) {
+      // Sort items by dateAdded ascending so items[0] is guaranteed the oldest/original
+      items.sort((a, b) => {
+        const da = a.dateAdded ?? Infinity;
+        const db = b.dateAdded ?? Infinity;
+        return da - db;
+      });
+
       // Check if all exact or some normalized
       const firstUrl = items[0].url;
       const isExact = items.every((i) => i.url === firstUrl);
