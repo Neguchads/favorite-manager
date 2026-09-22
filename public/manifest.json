@@ -1,0 +1,49 @@
+{
+  "manifest_version": 3,
+  "name": "Edge Favorite Manager",
+  "version": "1.1.0",
+  "description": "Gerenciador profissional de favoritos para Microsoft Edge com organização avançada, busca rápida, detecção de duplicados e IA local.",
+  "permissions": [
+    "bookmarks",
+    "storage",
+    "unlimitedStorage",
+    "sidePanel",
+    "notifications"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "omnibox": {
+    "keyword": "fav"
+  },
+  "commands": {
+    "open_command_palette": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+F",
+        "mac": "Command+Shift+F"
+      },
+      "description": "Abrir Paleta de Comandos e Busca Rápida"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Edge Favorite Manager"
+  },
+  "options_ui": {
+    "page": "index.html",
+    "open_in_tab": true
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  }
+}
