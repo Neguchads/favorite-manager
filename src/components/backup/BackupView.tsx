@@ -10,6 +10,8 @@ import {
   FileText,
   Trash2,
   AlertTriangle,
+  UploadCloud,
+  FileCode,
 } from 'lucide-react';
 import { BookmarkNode } from '../../types/bookmarks';
 import {
@@ -22,19 +24,26 @@ import {
   downloadJsonFile,
 } from '../../services/backup';
 import { downloadMarkdownAwesomeList } from '../../services/backup/markdownExporter';
+import { downloadNetscapeHtmlFile } from '../../services/backup/htmlExporter';
 import { formatDate } from '../../utils/date';
 import { ConfirmDialog } from '../common/ConfirmDialog';
+import { ImportBookmarksModal } from '../modals/ImportBookmarksModal';
+import { FolderOption } from '../../hooks/useBookmarks';
 
 interface BackupViewProps {
   tree: BookmarkNode[];
   onRefresh?: () => Promise<void>;
+  folders?: FolderOption[];
 }
 
-export const BackupView: React.FC<BackupViewProps> = ({ tree, onRefresh }) => {
+export const BackupView: React.FC<BackupViewProps> = ({ tree, onRefresh, folders = [] }) => {
   const [snapshots, setSnapshots] = useState<SnapshotMetadata[]>([]);
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Import modal state
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   // Restore confirmation modal
   const [confirmRestoreId, setConfirmRestoreId] = useState<string | null>(null);
@@ -48,6 +57,13 @@ export const BackupView: React.FC<BackupViewProps> = ({ tree, onRefresh }) => {
   useEffect(() => {
     load();
   }, []);
+
+  const handleExportHtml = () => {
+    const dateStr = new Date().toISOString().slice(0, 10);
+    downloadNetscapeHtmlFile(tree, `favoritos_edge_backup_${dateStr}.html`);
+    setSuccessMsg('Download do arquivo Netscape HTML (.html) oficial iniciado! Compatível com todos os navegadores.');
+    setTimeout(() => setSuccessMsg(null), 4000);
+  };
 
   const handleExportJson = () => {
     const jsonStr = exportBookmarksToJson(tree);
@@ -107,11 +123,11 @@ export const BackupView: React.FC<BackupViewProps> = ({ tree, onRefresh }) => {
         <ShieldCheck className="w-6 h-6 text-sky-600 dark:text-sky-400 shrink-0 mt-0.5" />
         <div>
           <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
-            Segurança em Primeiro Lugar
+            Segurança, Backup e Importação de Favoritos
           </h3>
           <p className="text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
-            O Edge Favorite Manager gera automaticamente snapshots antes de qualquer operação em massa
-            (exclusão múltipla, movimentação em lote ou categorização com IA). Você pode restaurar qualquer snapshot instantaneamente com um clique.
+            O Edge Favorite Manager gera automaticamente snapshots antes de qualquer operação em massa.
+            Você pode importar arquivos HTML de favoritos de qualquer navegador, exportar em múltiplos formatos e restaurar snapshots instantaneamente.
           </p>
         </div>
       </div>
@@ -130,63 +146,111 @@ export const BackupView: React.FC<BackupViewProps> = ({ tree, onRefresh }) => {
         </div>
       )}
 
-      {/* Action buttons */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between">
+      {/* Prominent Import Section */}
+      <div className="p-4 bg-gradient-to-r from-sky-50 to-indigo-50 dark:from-slate-800 dark:to-slate-800/80 rounded-xl border border-sky-200 dark:border-slate-700 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex items-center space-x-3.5">
+          <div className="w-10 h-10 rounded-xl bg-sky-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-sky-500/20">
+            <UploadCloud className="w-5 h-5" />
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100">
+              Importar Favoritos de Arquivo (HTML / JSON)
+            </h4>
+            <p className="text-slate-600 dark:text-slate-300 text-[11px] mt-0.5">
+              Importe o arquivo <code className="font-mono text-sky-600 dark:text-sky-400">bookmarks.html</code> do Edge, Chrome ou Firefox. Suporta manter a estrutura original ou <strong>organização inteligente com IA</strong>.
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={() => setIsImportModalOpen(true)}
+          className="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white font-semibold rounded-lg transition-colors flex items-center space-x-2 shrink-0 shadow-sm shadow-sky-500/20"
+        >
+          <UploadCloud className="w-4 h-4" />
+          <span>Abrir Assistente de Importação</span>
+        </button>
+      </div>
+
+      {/* Export & Snapshot action buttons */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* 1. HTML Netscape Export */}
+        <div className="p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center space-x-2 text-sky-600 dark:text-sky-400 font-semibold mb-1">
-              <Download className="w-4 h-4" />
-              <span>Exportar Arquivo JSON</span>
+              <FileCode className="w-4 h-4" />
+              <span>HTML Oficial (.html)</span>
             </div>
             <p className="text-slate-500 dark:text-slate-400 text-[11px] mb-4">
-              Gera um arquivo .json completo contendo toda a hierarquia de pastas, links e metadados para você guardar em seu computador.
+              Padrão Netscape aceito nativamente por Microsoft Edge, Chrome, Safari e Firefox para restauração direta.
+            </p>
+          </div>
+          <button
+            onClick={handleExportHtml}
+            className="w-full py-2 bg-sky-600 hover:bg-sky-500 text-white font-medium rounded-lg transition-colors flex items-center justify-center space-x-1.5 shadow-2xs"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Baixar HTML (.html)</span>
+          </button>
+        </div>
+
+        {/* 2. JSON Export */}
+        <div className="p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center space-x-2 text-blue-600 dark:text-blue-400 font-semibold mb-1">
+              <Download className="w-4 h-4" />
+              <span>Backup JSON (.json)</span>
+            </div>
+            <p className="text-slate-500 dark:text-slate-400 text-[11px] mb-4">
+              Gera um arquivo JSON estruturado com toda a árvore de pastas, URLs e metadados para backups avançados.
             </p>
           </div>
           <button
             onClick={handleExportJson}
-            className="w-full py-2 bg-sky-600 hover:bg-sky-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center space-x-1.5"
+            className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-lg transition-colors flex items-center justify-center space-x-1.5 shadow-2xs"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>Baixar Backup JSON</span>
+            <span>Baixar JSON</span>
           </button>
         </div>
 
-        <div className="p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between">
+        {/* 3. Markdown Awesome List Export */}
+        <div className="p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center space-x-2 text-emerald-600 dark:text-emerald-400 font-semibold mb-1">
               <FileText className="w-4 h-4" />
-              <span>Awesome List (Markdown)</span>
+              <span>Awesome List (.md)</span>
             </div>
             <p className="text-slate-500 dark:text-slate-400 text-[11px] mb-4">
-              Exporta sua coleção inteira como um README.md formatado com índice e subpastas temáticas pronto para o GitHub, Notion ou Obsidian.
+              Exporta sua coleção inteira como um README.md formatado com índice temático pronto para o GitHub ou Obsidian.
             </p>
           </div>
           <button
             onClick={handleExportMarkdown}
-            className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center space-x-1.5"
+            className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-lg transition-colors flex items-center justify-center space-x-1.5 shadow-2xs"
           >
             <FileText className="w-3.5 h-3.5" />
             <span>Baixar README.md</span>
           </button>
         </div>
 
-        <div className="p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between">
+        {/* 4. Instant Snapshot */}
+        <div className="p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400 font-semibold mb-1">
               <Camera className="w-4 h-4" />
-              <span>Snapshot de Segurança</span>
+              <span>Snapshot Local</span>
             </div>
             <p className="text-slate-500 dark:text-slate-400 text-[11px] mb-4">
-              Salva o estado exato dos seus favoritos no storage interno da extensão para recuperação instantânea em caso de acidente.
+              Ponto de restauração instantâneo salvo no navegador. Permite recuperação com 1 clique.
             </p>
           </div>
           <button
             onClick={handleCreateSnapshot}
             disabled={loading}
-            className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center space-x-1.5 disabled:opacity-50"
+            className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg transition-colors flex items-center justify-center space-x-1.5 disabled:opacity-50 shadow-2xs"
           >
             <HardDriveDownload className="w-3.5 h-3.5" />
-            <span>{loading ? 'Criando Snapshot...' : 'Criar Novo Snapshot'}</span>
+            <span>{loading ? 'Criando Snapshot...' : 'Criar Snapshot'}</span>
           </button>
         </div>
       </div>
@@ -210,34 +274,45 @@ export const BackupView: React.FC<BackupViewProps> = ({ tree, onRefresh }) => {
         </div>
 
         {snapshots.length === 0 ? (
-          <div className="p-6 text-center text-slate-400">
-            Nenhum snapshot gravado ainda. Eles serão criados automaticamente antes de operações em massa ou quando você clicar em criar acima.
+          <div className="p-8 text-center text-slate-400">
+            <Camera className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600 mb-2" />
+            <p className="font-medium text-slate-600 dark:text-slate-300">
+              Nenhum snapshot gravado ainda
+            </p>
+            <p className="text-[11px] mt-1 text-slate-400">
+              Snapshots são criados automaticamente antes de reorganizações em massa ou manualmente clicando no botão acima.
+            </p>
           </div>
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-slate-700/60">
             {snapshots.map((snap) => (
               <div
                 key={snap.id}
-                className="px-4 py-3 flex items-center justify-between hover:bg-slate-50/60 dark:hover:bg-slate-700/40"
+                className="p-3.5 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors"
               >
-                <div>
-                  <p className="font-semibold text-slate-800 dark:text-slate-200">
-                    {snap.label}
-                  </p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    {formatDate(snap.timestamp)} • {snap.totalBookmarks} favoritos em {snap.totalFolders} pastas
-                  </p>
+                <div className="flex items-start space-x-3">
+                  <div className="w-7 h-7 rounded-lg bg-sky-100 dark:bg-sky-900/50 flex items-center justify-center text-sky-600 dark:text-sky-400 shrink-0 mt-0.5">
+                    <Camera className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">
+                      {snap.label}
+                    </span>
+                    <div className="flex items-center space-x-2 text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      <span>{formatDate(snap.timestamp)}</span>
+                      <span>•</span>
+                      <span>{snap.totalBookmarks} favoritos</span>
+                      <span>•</span>
+                      <span>{snap.totalFolders} pastas</span>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <span className="text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full font-medium">
-                    Salvo Localmente
-                  </span>
-
                   <button
                     onClick={() => setConfirmRestoreId(snap.id)}
-                    title="Restaurar este ponto no navegador"
-                    className="px-2.5 py-1 bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 dark:hover:bg-sky-900 text-sky-600 dark:text-sky-300 border border-sky-200 dark:border-sky-800 rounded-md transition-colors flex items-center space-x-1 text-[11px] font-medium"
+                    className="px-2.5 py-1 bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 dark:hover:bg-sky-900/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 rounded-md font-medium transition-colors flex items-center space-x-1"
+                    title="Restaurar este snapshot no Edge"
                   >
                     <RotateCcw className="w-3 h-3" />
                     <span>Restaurar</span>
@@ -245,8 +320,8 @@ export const BackupView: React.FC<BackupViewProps> = ({ tree, onRefresh }) => {
 
                   <button
                     onClick={() => handleDeleteSnapshot(snap.id)}
-                    title="Excluir este snapshot"
-                    className="p-1 text-slate-400 hover:text-rose-500 rounded transition-colors"
+                    className="p-1 text-slate-400 hover:text-rose-500 rounded"
+                    title="Excluir snapshot"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -257,14 +332,23 @@ export const BackupView: React.FC<BackupViewProps> = ({ tree, onRefresh }) => {
         )}
       </div>
 
+      {/* Restore Confirmation Dialog */}
       <ConfirmDialog
         isOpen={Boolean(confirmRestoreId)}
-        onClose={() => setConfirmRestoreId(null)}
+        title="Confirmar Restauração de Snapshot"
+        message="Atenção: A restauração substituirá os favoritos atuais do Edge pelo estado salvo neste snapshot. Um novo snapshot do estado atual será gravado automaticamente como garantia antes da restauração. Deseja prosseguir?"
+        confirmLabel={restoring ? 'Restaurando...' : 'Sim, Restaurar Favoritos'}
+        isDestructive={true}
         onConfirm={handleConfirmRestore}
-        title="Restaurar Snapshot de Favoritos"
-        message="Tem certeza que deseja restaurar seus favoritos para este ponto? Um novo snapshot de segurança do estado atual será gravado automaticamente antes da restauração."
-        confirmLabel={restoring ? 'Restaurando...' : 'Sim, Restaurar'}
-        isDestructive={false}
+        onClose={() => setConfirmRestoreId(null)}
+      />
+
+      {/* Import Bookmarks Modal */}
+      <ImportBookmarksModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        folders={folders}
+        onRefreshTree={onRefresh}
       />
     </div>
   );

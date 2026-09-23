@@ -15,6 +15,7 @@ import {
   Sun,
   Moon,
   Monitor,
+  UploadCloud,
 } from 'lucide-react';
 import { ViewMode } from '../../types/bookmarks';
 import { ThemePreference } from '../../hooks/useTheme';
@@ -32,6 +33,7 @@ interface HeaderProps {
   onOpenAiOrganize: () => void;
   onOpenWorkspaceTabs?: () => void;
   onOpenCommandPalette?: () => void;
+  onOpenImport?: () => void;
   isSidePanel?: boolean;
 }
 
@@ -48,6 +50,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAiOrganize,
   onOpenWorkspaceTabs,
   onOpenCommandPalette,
+  onOpenImport,
   isSidePanel = false,
 }) => {
   const [showSearchHelp, setShowSearchHelp] = useState(false);
@@ -313,6 +316,18 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <Laptop className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
               <span className="hidden lg:inline">Workspaces</span>
+            </button>
+          )}
+
+          {/* Import Bookmarks HTML/JSON Button */}
+          {onOpenImport && (
+            <button
+              onClick={onOpenImport}
+              title="Importar arquivo de favoritos (HTML do Edge/Chrome ou backup JSON)"
+              className="flex items-center space-x-1 px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 transition-colors"
+            >
+              <UploadCloud className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+              <span className="hidden sm:inline">Importar</span>
             </button>
           )}
 

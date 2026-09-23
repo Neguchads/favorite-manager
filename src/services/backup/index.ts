@@ -231,3 +231,9 @@ export function downloadJsonFile(content: string, filename: string = 'edge-bookm
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
+export * from './htmlParser';
+export * from './htmlExporter';
+export * from './importer';
+export * from './markdownExporter';
+

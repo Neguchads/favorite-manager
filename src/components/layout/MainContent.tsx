@@ -29,7 +29,7 @@ import { CleanupView } from '../cleanup/CleanupView';
 import { StatsView } from '../stats/StatsView';
 import { BackupView } from '../backup/BackupView';
 import { ContextMenu, ContextMenuState } from '../common/ContextMenu';
-import { BreadcrumbNode } from '../../hooks/useBookmarks';
+import { BreadcrumbNode, FolderOption } from '../../hooks/useBookmarks';
 import { openUrlInNewTab, openUrlInNewWindow } from '../../services/tabs/workspaceTabs';
 
 interface MainContentProps {
@@ -75,6 +75,7 @@ interface MainContentProps {
   onDeleteMultiple?: (ids: string[]) => Promise<void>;
   onDeleteDuplicates?: (ids: string[], groupCount?: number) => Promise<void>;
   onRefresh?: () => Promise<void>;
+  folders?: FolderOption[];
   onSortAlphabetically?: (
     targetFolderId?: string,
     recursive?: boolean
@@ -124,6 +125,7 @@ export const MainContent: React.FC<MainContentProps> = ({
   onDeleteMultiple,
   onDeleteDuplicates,
   onRefresh,
+  folders = [],
   onSortAlphabetically,
 }) => {
   const [isSortingAZ, setIsSortingAZ] = useState(false);
@@ -336,7 +338,7 @@ export const MainContent: React.FC<MainContentProps> = ({
   if (activeSection === 'backups') {
     return (
       <main className="flex-1 h-full overflow-y-auto bg-slate-50/50 dark:bg-slate-900/40">
-        <BackupView tree={tree} onRefresh={onRefresh} />
+        <BackupView tree={tree} onRefresh={onRefresh} folders={folders} />
       </main>
     );
   }

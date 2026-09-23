@@ -13,6 +13,7 @@ import { BatchEditModal } from './components/modals/BatchEditModal';
 import { MoveItemsModal } from './components/modals/MoveItemsModal';
 import { AiOrganizeModal } from './components/modals/AiOrganizeModal';
 import { WorkspaceTabsModal } from './components/modals/WorkspaceTabsModal';
+import { ImportBookmarksModal } from './components/modals/ImportBookmarksModal';
 import { CommandPaletteModal } from './components/common/CommandPaletteModal';
 import { ConfirmDialog } from './components/common/ConfirmDialog';
 import { BookmarkNode } from './types/bookmarks';
@@ -86,6 +87,7 @@ export const App: React.FC = () => {
   const [isAiOrganizeOpen, setIsAiOrganizeOpen] = useState(false);
   const [isWorkspaceTabsOpen, setIsWorkspaceTabsOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
 
   // Custom items for AI organization (e.g. from open tabs/workspaces)
   const [customAiItems, setCustomAiItems] = useState<BookmarkNode[] | null>(null);
@@ -303,6 +305,7 @@ export const App: React.FC = () => {
         }}
         onOpenWorkspaceTabs={() => setIsWorkspaceTabsOpen(true)}
         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+        onOpenImport={() => setIsImportOpen(true)}
       />
 
       {error && (
@@ -370,6 +373,7 @@ export const App: React.FC = () => {
           onDeleteMultiple={deleteMultiple}
           onDeleteDuplicates={deleteDuplicates}
           onRefresh={refreshTree}
+          folders={allFolders}
           onSortAlphabetically={sortAlphabetically}
         />
 
@@ -495,6 +499,13 @@ export const App: React.FC = () => {
         }}
         onPruneEmptyFolders={pruneEmptyFolders}
         onExportMarkdown={() => downloadMarkdownAwesomeList(tree)}
+      />
+
+      <ImportBookmarksModal
+        isOpen={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        folders={allFolders}
+        onRefreshTree={refreshTree}
       />
 
       <ConfirmDialog

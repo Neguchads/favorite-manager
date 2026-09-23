@@ -14,6 +14,32 @@ Formato de cada entrada:
 
 ---
 
+## 2026-09-23 — Antigravity — importação e exportação de favoritos em formato Netscape HTML (.html) oficial e JSON com pré-visualização e organização por IA
+- Arquivos alterados: `src/services/backup/htmlParser.ts` (novo), `src/services/backup/htmlExporter.ts` (novo), `src/services/backup/importer.ts` (novo), `src/components/modals/ImportBookmarksModal.tsx` (novo), `src/services/backup/index.ts`, `src/components/backup/BackupView.tsx`, `src/components/layout/Header.tsx`, `src/components/layout/MainContent.tsx`, `src/App.tsx`.
+- Verificado: `npm run build` executado com sucesso e 0 erros (tsc + vite build em 4.50s, saída em `dist/`).
+- Pendente / próximo passo: Prosseguir com as próximas melhorias solicitadas pelo usuário (Desfazer Global Ctrl+Z, Regras Customizadas do Usuário, etc.).
+- Avisos para o outro agente:
+  1. **Parser Robusto de HTML Netscape (`htmlParser.ts`)**:
+     - Converte qualquer arquivo de favoritos `.html` (padrão universal Netscape Bookmark File 1 usado pelo Edge, Chrome, Firefox, Safari) para a estrutura hierárquica `ParsedBookmarkItem` e nós planos.
+     - Lê tags `<DL><p>`, `<DT><H3>` (pastas com timestamps) e `<DT><A HREF="...">` (links com atributos `ICON`, `ADD_DATE`).
+     - Trata entidades HTML (`&amp;`, `&quot;`, `&lt;`, `&gt;`) e recupera links mesmo se o arquivo tiver tags mal formatadas ou incompletas.
+  2. **Exportador Oficial Netscape HTML (`htmlExporter.ts`)**:
+     - Função `generateNetscapeHtml(tree)` e `downloadNetscapeHtmlFile(tree, filename)`.
+     - Permite ao usuário baixar um arquivo `.html` pronto para ser importado diretamente em `edge://favorites/` ou em qualquer outro navegador.
+  3. **Assistente de Importação com IA (`ImportBookmarksModal.tsx` & `importer.ts`)**:
+     - Área de drag-and-drop para arquivos `.html`, `.htm` ou `.json`.
+     - Pré-visualização com total de favoritos e pastas detectadas.
+     - Duas estratégias de importação:
+       - **Manter Estrutura Original**: Recria pastas e subpastas exatamente como no arquivo, opcionalmente agrupadas em uma pasta dedicada "Importados (DD/MM/AAAA)".
+       - **Organizar com IA & Heurística**: Passa todos os links pelo classificador semântico e categoriza automaticamente nas pastas temáticas ideais (*Desenvolvimento*, *Estudos*, *Jogos*, *Finanças*, etc.).
+     - Criação automática de snapshot prévio de segurança antes de gravar qualquer link no Edge.
+     - Barra de progresso visual em tempo real mostrando item atual sendo processado.
+  4. **Integração na Interface**:
+     - Botão "Importar" adicionado no cabeçalho superior (`Header.tsx`).
+     - Card proeminente de importação e opção de exportação HTML adicionados em `BackupView.tsx`.
+
+---
+
 ## 2026-09-23 — Antigravity — popup compacto com árvore de pastas completa, filtro por pastas e salvamento direto da guia ativa
 - Arquivos alterados: `popup.html`, `src/components/popup/PopupContent.tsx`, `src/components/popup/SaveCurrentTabCard.tsx` (novo), `src/components/popup/PopupFolderTree.tsx` (novo).
 - Verificado: `npm run build` executado com sucesso e 0 erros (tsc + vite build em 6.51s, saída em `dist/`).
