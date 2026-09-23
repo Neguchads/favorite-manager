@@ -14,6 +14,43 @@ Formato de cada entrada:
 
 ---
 
+## 2026-09-23 — Antigravity — popup compacto com árvore de pastas completa, filtro por pastas e salvamento direto da guia ativa
+- Arquivos alterados: `popup.html`, `src/components/popup/PopupContent.tsx`, `src/components/popup/SaveCurrentTabCard.tsx` (novo), `src/components/popup/PopupFolderTree.tsx` (novo).
+- Verificado: `npm run build` executado com sucesso e 0 erros (tsc + vite build em 6.51s, saída em `dist/`).
+- Pendente / próximo passo: Testes no Microsoft Edge via `edge://extensions` (recarregar extensão a partir de `dist/`).
+- Avisos para o outro agente:
+  1. **Salvamento da Guia Ativa no Popup (`SaveCurrentTabCard.tsx`)**:
+     - Ao abrir o popup, consulta `chrome.tabs.query({ active: true, currentWindow: true })`.
+     - Se a página não estiver salva: exibe card compacto com favicon, título editável, seletor de pasta de destino (`allFolders`) e botão de salvar.
+     - Se já favoritada: exibe badge de favoritada com o nome/caminho da pasta onde reside, com botão de mover para outra pasta ou remover.
+  2. **Árvore de Pastas no Próprio Popup (`PopupFolderTree.tsx`)**:
+     - Eliminado o antigo banner "abra em tela cheia para ver a árvore de pastas".
+     - Adicionado alternador de visualização no popup entre "Favoritos" (lista) e "Árvore de Pastas" (hierarquia completa).
+     - Árvore navegável com chevrons de expandir/recolher, contadores de itens, botões "Expandir tudo / Recolher tudo" e busca instantânea de pastas.
+     - Cada pasta permite selecionar para filtrar a lista, salvar a guia atual diretamente nela com 1 clique (ícone de estrela) ou criar uma subpasta (`+`).
+  3. **Filtro por Pastas no Popup**:
+     - Na lista de favoritos, adicionado dropdown direto "📁 Filtrar Pasta..." com todas as pastas formatadas por caminho hierárquico.
+     - Ao selecionar uma pasta, exibe badge com o nome e contagem de itens, botões para entrar em subpastas diretas e botão `✕` para limpar o filtro.
+  4. **Dimensões e Tema**:
+     - `popup.html` ampliado para `440px x 600px` (aproveitamento ideal do limite do Edge).
+     - Integração com `useTheme()` para modo escuro sincronizado.
+
+---
+
+## 2026-09-23 — Antigravity — expansão semântica profunda do classificador e didática universal de organização de favoritos
+- Arquivos alterados: `src/ai/classifier.ts`.
+- Verificado: `npm run build` executado com sucesso e 0 erros (tsc + vite build em 17.43s, saída em `dist/`).
+- Pendente / próximo passo: Testes no Microsoft Edge via `edge://extensions`.
+- Avisos para o outro agente:
+  1. **Análise do arquivo real `favoritos_23_09_2026. html.html` (3.199 favoritos, 87 pastas)**: Identificado que 764 links estavam acumulados em `Barra de favoritos / ALL / Outros & Geral` e que 517 links eram de plataformas genéricas (Google, YouTube, Wikipedia, Bing).
+  2. **Motor Semântico Expandido (`classifier.ts`)**:
+     - Implementado desempacotador e normalizador de títulos (`cleanUrlAndExtractContext`), limpando prefixos de abas `(41)`, sufixos `- YouTube` e decodificando parâmetros de busca e slugs de URL com `decodeURIComponent`.
+     - Adicionadas dezenas de âncoras de domínio especializadas no `DOMAIN_SUBFOLDER_MAP` (musescore, ubc, dyndolod, wabbajack, engeteles, doutorie, passeidireto, geogebra, naomeperturbe, jusbrasil, veganize, etc.).
+     - Expressões regulares expandidas para cobrir culinária e nutrição (`Gastronomia & Nutrição`), reforma e marcenaria residencial, jogos específicos (mods, Skyrim, PoE, emuladores), música clássica/teoria, estudos e idiomas (`Alemão`, `Inglês Shadowing`, etc.), e cidadania/leis.
+  3. Mudanças ainda não foram commitadas (aguardando pedido explícito do usuário).
+
+---
+
 ## 2026-09-23 — Antigravity — revisão completa de contraste, legibilidade e tokens do Modo Escuro (Dark Mode)
 - Arquivos alterados: `tailwind.config.js`, `src/components/layout/MainContent.tsx`, `src/components/list/BookmarkItemRow.tsx`, `src/components/list/BookmarkCard.tsx`, `src/components/list/FolderItemRow.tsx`, `src/components/layout/Header.tsx`, `src/components/layout/Sidebar.tsx`, `src/components/layout/RightInspector.tsx`, `src/components/tree/FolderTreeNode.tsx`, `src/components/modals/WorkspaceTabsModal.tsx`, `src/components/modals/BatchEditModal.tsx`, `src/components/modals/MoveItemsModal.tsx`, `src/components/duplicates/DuplicatesView.tsx`.
 - Verificado: `npm run build` executado com sucesso e 0 erros (tsc + vite build em 3.14s, saída em `dist/`).

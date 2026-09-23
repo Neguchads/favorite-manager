@@ -327,6 +327,41 @@ const DOMAIN_SUBFOLDER_MAP: Record<string, string> = {
   'folha.uol.com.br': 'Notícias & Atualidades',
   'cnnbrasil.com.br': 'Notícias & Atualidades',
   'bbc.com': 'Notícias & Atualidades',
+
+  // Âncoras Adicionais Especializadas
+  'musescore.org': 'Música / Partituras & Cifras',
+  'ubc.org.br': 'Música / Geral',
+  'atelierlabussiere.com': 'Música / Instrumentos & Luthiaria',
+  'dyndolod.info': 'Jogos & Games / Mods & Comunidade',
+  'unknowncheats.me': 'Jogos & Games / Mods & Comunidade',
+  'gamehacking.org': 'Jogos & Games / Mods & Comunidade',
+  'wabbajack.org': 'Jogos & Games / Mods & Comunidade',
+  'loadorderlibrary.com': 'Jogos & Games / Mods & Comunidade',
+  'x360ce.com': 'Jogos & Games / Emuladores & ROMs',
+  'snesforever.com.br': 'Jogos & Games / Emuladores & ROMs',
+  'doutorie.com.br': 'Mecânica & Engenharia / Automotiva & Veículos',
+  'engeteles.com.br': 'Mecânica & Engenharia / Técnico Mecânico & Inspeção',
+  'motosblog.com.br': 'Mecânica & Engenharia / Automotiva & Veículos',
+  'latinncap.com': 'Mecânica & Engenharia / Automotiva & Veículos',
+  'totalenergies.com.br': 'Mecânica & Engenharia / Automotiva & Veículos',
+  'serasaconsumidor.com.br': 'Negócios & Carreira / Finanças & Investimentos',
+  'passeidireto.com': 'Estudos & Educação / Biblioteca & Livros (PDF)',
+  'monsterconcursos.com.br': 'Estudos & Educação / Cursos & Concursos',
+  'pensador.com': 'Estudos & Educação / Humanas & Filosofia',
+  'geogebra.org': 'Estudos & Educação / Ciências Exatas',
+  'socrative.com': 'Estudos & Educação / Faculdades & Formação Técnica',
+  'oba.org.br': 'Estudos & Educação / Ciências Exatas',
+  'naomeperturbe.com.br': 'Governo & Cidadania / Serviços Públicos & Cidadania',
+  'dni-br.com': 'Governo & Cidadania / Serviços Públicos & Cidadania',
+  'jusbrasil.com.br': 'Governo & Cidadania / Serviços Públicos & Cidadania',
+  'veganize.com.br': 'Saúde, Fitness & Bem-Estar / Gastronomia & Nutrição',
+  'cantinhovegetariano.com.br': 'Saúde, Fitness & Bem-Estar / Gastronomia & Nutrição',
+  'tempodecozimento.com.br': 'Saúde, Fitness & Bem-Estar / Gastronomia & Nutrição',
+  'bodynutry.ind.br': 'Saúde, Fitness & Bem-Estar / Suplementos & Nutrição',
+  'ativo.com': 'Saúde, Fitness & Bem-Estar / Fitness & Treinos',
+  'tidbcloud.com': 'Programação, Dev & IA / Ferramentas & Dev Geral',
+  'graphify.com': 'Programação, Dev & IA / Inteligência Artificial',
+  'open-vsx.org': 'Programação, Dev & IA / Ferramentas & Dev Geral',
 };
 
 /**
@@ -336,9 +371,31 @@ function cleanUrlAndExtractContext(url: string, title: string, folderContext: st
   let extraText = '';
   let domain = '';
 
+  // Clean title: remove notification prefixes like (41) or (2), and platform suffixes like - YouTube
+  const cleanTitle = (title || '')
+    .replace(/^\(\d+\)\s*/, '')
+    .replace(/\s*-\s*YouTube$/i, '')
+    .replace(/\s*–\s*Wikipédia.*$/i, '')
+    .replace(/\s*-\s*Pesquisa Google$/i, '')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&');
+
   try {
     const u = new URL(url);
     domain = u.hostname.replace(/^www\./, '').toLowerCase();
+
+    // Decode path and query for high accuracy search extraction
+    try {
+      if (u.search) {
+        extraText += ' ' + decodeURIComponent(u.search.replace(/\+/g, ' '));
+      }
+      if (u.pathname) {
+        extraText += ' ' + decodeURIComponent(u.pathname.replace(/[\/\-_.]+/g, ' '));
+      }
+    } catch {
+      extraText += ' ' + u.search + ' ' + u.pathname;
+    }
 
     // Unpack Google AMP
     if (domain.includes('google.') && u.pathname.startsWith('/amp/s/')) {
@@ -352,16 +409,13 @@ function cleanUrlAndExtractContext(url: string, title: string, folderContext: st
     if (u.searchParams.has('query')) extraText += ' ' + u.searchParams.get('query');
     if (u.searchParams.has('search')) extraText += ' ' + u.searchParams.get('search');
     if (u.searchParams.has('search_query')) extraText += ' ' + u.searchParams.get('search_query');
-
-    // Path slug
-    extraText += ' ' + u.pathname.replace(/[\/\-_.]+/g, ' ');
   } catch {}
 
   if (folderContext) {
     extraText += ' ' + folderContext.replace(/[\/\-_.]+/g, ' ');
   }
 
-  const fullText = `${title || ''} ${domain} ${extraText}`.toLowerCase();
+  const fullText = `${cleanTitle} ${domain} ${extraText}`.toLowerCase();
   return { fullText, domain };
 }
 
@@ -410,12 +464,12 @@ export function classifyBookmarkIntelligently(title: string, url: string, folder
 
   // 3. JOGOS & GAMES (with subfolders)
   const isGame =
-    /\b(nexusmods|fitgirl|torrentgamesps3|psxdownloads|mixmods|coolrom|steam|steampowered|epicgames|roblox|twitch|poe\.ninja|mobalytics|maxroll|elderscrolls|fallout|skyrim|ps[1-5]|playstation|xbox|nintendo|switch|game|jogos?|gameplay|emulador|rpcs3|pcsx2|retroarch|roms?|curseforge|modding|gamevicio|kotaku|voxel|speedrun|minecraft|diablo|elden\s?ring|dark\s?souls|gta|resident\s?evil|assassin'?s\s?creed|thewitcher|witcher|god\s?of\s?war|gran\s?turismo|gt6|horizon\s?zero|red\s?dead|pokemon|pokémon|zelda|mario|pathofexile|path\s?of\s?exile|poe2|poe\s?2|filterblade|craftofexile|poe2db|poe2builder|ppsspp|vimm\.net|cdromance|mugen|mugenation|mugenguild|modrinth|faithfulpack|inforcraft|terralith|aom\.heavengames|smite2|skse|soul\s?reaver|retroachievements|bonkerslots|icy-veins|overwolf|taskbarhero|filecrypt|ggmax|steamdb)\b/i.test(
+    /\b(nexusmods|fitgirl|torrentgamesps3|psxdownloads|mixmods|coolrom|steam|steampowered|epicgames|roblox|twitch|poe\.ninja|mobalytics|maxroll|elderscrolls|fallout|skyrim|ps[1-5]|playstation|xbox|nintendo|switch|game|jogos?|gameplay|emulador|rpcs3|pcsx2|retroarch|roms?|curseforge|modding|gamevicio|kotaku|voxel|speedrun|minecraft|diablo|elden\s?ring|dark\s?souls|gta|resident\s?evil|assassin'?s\s?creed|thewitcher|witcher|god\s?of\s?war|gran\s?turismo|gt6|horizon\s?zero|red\s?dead|pokemon|pokémon|zelda|mario|pathofexile|path\s?of\s?exile|poe2|poe\s?2|filterblade|craftofexile|poe2db|poe2builder|ppsspp|vimm\.net|cdromance|mugen|mugenation|mugenguild|modrinth|faithfulpack|inforcraft|terralith|aom\.heavengames|smite2|skse|soul\s?reaver|retroachievements|bonkerslots|icy-veins|overwolf|taskbarhero|filecrypt|ggmax|steamdb|devil\s?may\s?cry|mortal\s?kombat|mk|fatalit|mordhau|ryse|crimson\s?desert|dante|cheats|unknowncheats|gamehacking|nenyooo|wabbajack|loadorderlibrary|x360ce|gamepad|ipega|kart|kart[oó]dromo|gtplanet|dyndolod|lod|delirious|divines|skidrow|reloaded|yougametubebr)\b/i.test(
       fullText
     );
 
   if (isGame) {
-    if (/\b(ps[1-5]|playstation|psx|ps3|ps4|ps5|gt6|gran\s?turismo|torrentgamesps3|psxdownloads|sony|dualsense|dualshock|cdromance|soul\s?reaver)\b/i.test(fullText)) {
+    if (/\b(ps[1-5]|playstation|psx|ps3|ps4|ps5|gt6|gran\s?turismo|torrentgamesps3|psxdownloads|sony|dualsense|dualshock|cdromance|soul\s?reaver|dante|devil\s?may\s?cry)\b/i.test(fullText)) {
       return 'Jogos & Games / Sony & PlayStation';
     }
     if (/\b(nintendo|switch|wii|gamecube|n64|3ds|ds|zelda|mario|pok[eé]mon|metroid|citra|yuzu|snes)\b/i.test(fullText)) {
@@ -424,16 +478,16 @@ export function classifyBookmarkIntelligently(title: string, url: string, folder
     if (/\b(xbox|game\s?pass|xbox\s?360|xbox\s?one|series\s?[xs]|halo|forza|gears)\b/i.test(fullText)) {
       return 'Jogos & Games / Xbox';
     }
-    if (/\b(nexusmods|mixmods|curseforge|mods?|modding|enb|skse|modorganizer|vortex|shader|modrinth|faithfulpack|filterblade|mugen|mugenation|mugenguild)\b/i.test(fullText)) {
+    if (/\b(nexusmods|mixmods|curseforge|mods?|modding|enb|skse|modorganizer|vortex|shader|modrinth|faithfulpack|filterblade|mugen|mugenation|mugenguild|dyndolod|lod|wabbajack|loadorderlibrary|unknowncheats|gamehacking|nenyooo|mordhau)\b/i.test(fullText)) {
       return 'Jogos & Games / Mods & Comunidade';
     }
-    if (/\b(coolrom|emulador|emulator|retroarch|rpcs3|pcsx2|roms?|bios|iso|ppsspp|vimm\.net|retroachievements)\b/i.test(fullText)) {
+    if (/\b(coolrom|emulador|emulator|retroarch|rpcs3|pcsx2|roms?|bios|iso|ppsspp|vimm\.net|retroachievements|x360ce|snesforever)\b/i.test(fullText)) {
       return 'Jogos & Games / Emuladores & ROMs';
     }
-    if (/\b(poe\.ninja|mobalytics|maxroll|fandom|skyrim|fallout|elderscrolls|wiki|guia|build|detonado|ign|gamevicio|poe2db|poe2builder|craftofexile|icy-veins|taskbarhero|timesaver|cheat)\b/i.test(fullText)) {
+    if (/\b(poe\.ninja|mobalytics|maxroll|fandom|skyrim|fallout|elderscrolls|wiki|guia|build|detonado|ign|gamevicio|poe2db|poe2builder|craftofexile|icy-veins|taskbarhero|timesaver|cheat|fatalit|neoseeker)\b/i.test(fullText)) {
       return 'Jogos & Games / Wikis, Guias & Databases';
     }
-    if (/\b(steam|epic\s?games|gog|fitgirl|itch\.io|roblox|pc\s?gamer|twitch|minecraft|path\s?of\s?exile|pathofexile|steamdb|ea\.com|capcom)\b/i.test(fullText)) {
+    if (/\b(steam|epic\s?games|gog|fitgirl|itch\.io|roblox|pc\s?gamer|twitch|minecraft|path\s?of\s?exile|pathofexile|steamdb|ea\.com|capcom|skidrow|reloaded|delirious|divines)\b/i.test(fullText)) {
       return 'Jogos & Games / PC & Lojas';
     }
     return 'Jogos & Games / Outros Games';
@@ -441,12 +495,12 @@ export function classifyBookmarkIntelligently(title: string, url: string, folder
 
   // 4. ELETROELETRÔNICA
   const isElectro =
-    /\b(eletr[oô]nica|el[eé]trica|circuito|esquem[aá]tico|arduino|esp32|esp8266|raspberry|transistor|resistor|capacitor|diodo|kicad|easyeda|alldatasheet|mouser|digikey|datasheet|mult[ií]metro|oscilosc[oó]pio|aterramento|disjuntor|painel\s?solar|inversor|unifilar|eletricista|quadro\s?de\s?distribui[cç][aã]o|tinkercad|soldagem\s?eletr[oô]nica|transformador|bateria\s?18650|jammer|fio\/cabo|bitola|cabos?\s?el[eé]tricos?|amplificador|alto-falante|kostal)\b/i.test(
+    /\b(eletr[oô]nica|el[eé]trica|circuito|esquem[aá]tico|arduino|esp32|esp8266|raspberry|transistor|resistor|capacitor|diodo|kicad|easyeda|alldatasheet|mouser|digikey|datasheet|mult[ií]metro|oscilosc[oó]pio|aterramento|disjuntor|painel\s?solar|inversor|unifilar|eletricista|quadro\s?de\s?distribui[cç][aã]o|tinkercad|soldagem\s?eletr[oô]nica|transformador|bateria\s?18650|jammer|fio\/cabo|bitola|cabos?\s?el[eé]tricos?|amplificador|alto-falante|kostal|microcontrolandos|proteus)\b/i.test(
       fullText
     );
 
   if (isElectro) {
-    if (/\b(arduino|esp32|esp8266|raspberry|microcontrolador|microcontroller|embarcados)\b/i.test(fullText)) {
+    if (/\b(arduino|esp32|esp8266|raspberry|microcontrolador|microcontroller|embarcados|microcontrolandos)\b/i.test(fullText)) {
       return 'Eletroeletrônica / Microcontroladores & DIY';
     }
     if (/\b(easyeda|kicad|proteus|fritzing|pcb|circuito|esquem[aá]tico|schematic|falstad)\b/i.test(fullText)) {
@@ -463,7 +517,7 @@ export function classifyBookmarkIntelligently(title: string, url: string, folder
 
   // 5. MECÂNICA & ENGENHARIA
   const isMech =
-    /\b(mec[aâ]nica|automotivo|automotiva|autopapo|ve[ií]culo|scania|trator|tractor|usinagem|torno|fresa|cnc|solidworks|autodesk|grabcad|thingiverse|printables|motor|motores|oficina|lojadomecanico|pe[cç]as\s?auto|chassi|freio|suspens[aã]o|inspe[cç][aã]o\s?veicular|t[eé]cnico\s?mec[aâ]nico|c[aâ]mbio|embreagem|inje[cç][aã]o\s?eletr[oô]nica|torque|gestauto|iveco|caminh[aã]o|motoniveladora|retroescavadeira|escavadeira|caterpillar|komatsu|john\s?deere|volvo\s?trucks|mercedes.*axor|pneu|calibragem|óleo.*caminhão|vistoriapro|seguradora\s?lider|dpvat|kartodromo|reboque|volkswagenag|elsa2go|koenigsegg|porsche|rennsport|sedan|bmw)\b/i.test(
+    /\b(mec[aâ]nica|automotivo|automotiva|autopapo|ve[ií]culo|scania|trator|tractor|usinagem|torno|fresa|cnc|solidworks|autodesk|grabcad|thingiverse|printables|motor|motores|oficina|lojadomecanico|pe[cç]as\s?auto|chassi|freio|suspens[aã]o|inspe[cç][aã]o\s?veicular|t[eé]cnico\s?mec[aâ]nico|c[aâ]mbio|embreagem|inje[cç][aã]o\s?eletr[oô]nica|torque|gestauto|iveco|caminh[aã]o|motoniveladora|retroescavadeira|escavadeira|caterpillar|komatsu|john\s?deere|volvo\s?trucks|mercedes.*axor|pneu|calibragem|óleo.*caminhão|vistoriapro|seguradora\s?lider|dpvat|kartodromo|reboque|volkswagenag|elsa2go|koenigsegg|porsche|rennsport|sedan|bmw|doutor\s?carro|doutorie|rolamento|sonda\s?lambda|yamaha|xt660|honda|pantogr[aá]fico|raven|elevador\s?raven|sekurit|vidros\s?originais|latinncap|verniz|massa\s?corrida|lixamento|lixa\s?\d+|sanca\s?de\s?gesso)\b/i.test(
       fullText
     );
 
@@ -471,13 +525,13 @@ export function classifyBookmarkIntelligently(title: string, url: string, folder
     if (/\b(solidworks|grabcad|autocad|fusion|thingiverse|printables|3d|cad|cam|modelagem|perspectiva\s?isom[eé]trica)\b/i.test(fullText)) {
       return 'Mecânica & Engenharia / CAD 3D & Modelagem';
     }
-    if (/\b(usinagem|torno|fresa|cnc|ret[ií]fica|ferramentas?|lojadomecanico|equipamentos|mundomanuais|motoniveladora|retroescavadeira|escavadeira|caterpillar|komatsu|chave\s?para\s?escavadeira)\b/i.test(fullText)) {
+    if (/\b(usinagem|torno|fresa|cnc|ret[ií]fica|ferramentas?|lojadomecanico|equipamentos|mundomanuais|motoniveladora|retroescavadeira|escavadeira|caterpillar|komatsu|chave\s?para\s?escavadeira|verniz|massa\s?corrida|lixamento|lixa|sanca)\b/i.test(fullText)) {
       return 'Mecânica & Engenharia / Usinagem & Ferramentas Pesadas';
     }
-    if (/\b(inspe[cç][aã]o\s?veicular|t[eé]cnico\s?mec[aâ]nico|manuten[cç][aã]o\s?mec[aâ]nica|abnt|senai|gestauto|ficha\s?de\s?inspeção|vistoriapro|norma\s?t[eé]cnica\s?din)\b/i.test(fullText)) {
+    if (/\b(inspe[cç][aã]o\s?veicular|t[eé]cnico\s?mec[aâ]nico|manuten[cç][aã]o\s?mec[aâ]nica|abnt|senai|gestauto|ficha\s?de\s?inspeção|vistoriapro|norma\s?t[eé]cnica\s?din|engeteles|rolamento|falhas\s?em\s?rolamentos|latinncap)\b/i.test(fullText)) {
       return 'Mecânica & Engenharia / Técnico Mecânico & Inspeção';
     }
-    if (/\b(autopapo|ve[ií]culo|carro|moto|scania|trator|caminh[aã]o|motor|c[aâ]mbio|suspens[aã]o|oficina|freio|chassi|iveco|volvo|mercedes|pneu|calibragem|nissan|koenigsegg|porsche|gol\s?1\.0|bmw)\b/i.test(fullText)) {
+    if (/\b(autopapo|ve[ií]culo|carro|moto|scania|trator|caminh[aã]o|motor|c[aâ]mbio|suspens[aã]o|oficina|freio|chassi|iveco|volvo|mercedes|pneu|calibragem|nissan|koenigsegg|porsche|gol\s?1\.0|bmw|doutor\s?carro|doutorie|sonda\s?lambda|yamaha|xt660|honda|sekurit|pantogr[aá]fico|raven)\b/i.test(fullText)) {
       return 'Mecânica & Engenharia / Automotiva & Veículos';
     }
     return 'Mecânica & Engenharia / Geral';
@@ -485,7 +539,7 @@ export function classifyBookmarkIntelligently(title: string, url: string, folder
 
   // 6. MÚSICA
   const isMusic =
-    /\b(m[uú]sica|music|som|audio|[aá]udio|spotify|deezer|cifraclub|violino|viola|viol[aã]o|teclado|piano|luthier|partitura|partituras|solfejo|hin[aá]rio|hinos?|ccb|congregacao\s?crista|cifra|tablatura|songsterr|sound|acorde|afina[cç][aã]o|nota\s?l[aá]|440\s?hz|bach|chaconne|cello|pozzoli|orquestra|filarmonica|tocata|sinfonia|cifradventista|muse\s?sounds)\b/i.test(
+    /\b(m[uú]sica|music|som|audio|[aá]udio|spotify|deezer|cifraclub|violino|viola|viol[aã]o|teclado|piano|luthier|luteria|partitura|partituras|solfejo|hin[aá]rio|hinos?|ccb|congregacao\s?crista|cifra|tablatura|songsterr|sound|acorde|afina[cç][aã]o|nota\s?l[aá]|440\s?hz|bach|chaconne|cello|pozzoli|orquestra|filarmonica|tocata|sinfonia|cifradventista|muse\s?sounds|mozart|requiem|polifonia|oitavado|ubc|musescore|atelierlabussiere)\b/i.test(
       fullText
     );
 
@@ -493,16 +547,16 @@ export function classifyBookmarkIntelligently(title: string, url: string, folder
     if (/\b(ccb|congregacao\s?crista|hinos?|hin[aá]rio|ensaios?|reuni[aã]o\s?de\s?jovens|sistema\s?de\s?administra[cç][aã]o\s?musical|evangelizarccb|cifradventista)\b/i.test(fullText)) {
       return 'Música / CCB & Hinários';
     }
-    if (/\b(violino|viola|viol[aã]o|teclado|piano|luthier|instrumentos?|cravelha|espalheira|arco|cordas|cello)\b/i.test(fullText)) {
+    if (/\b(violino|viola|viol[aã]o|teclado|piano|luthier|luteria|instrumentos?|cravelha|espalheira|arco|cordas|cello|atelierlabussiere)\b/i.test(fullText)) {
       return 'Música / Instrumentos & Luthiaria';
     }
-    if (/\b(partitura|partituras|cifra|cifras|tablatura|cifraclub|songsterr|ultimate\s?guitar|sheet)\b/i.test(fullText)) {
+    if (/\b(partitura|partituras|cifra|cifras|tablatura|cifraclub|songsterr|ultimate\s?guitar|sheet|musescore)\b/i.test(fullText)) {
       return 'Música / Partituras & Cifras';
     }
-    if (/\b(teoria|solfejo|bona|escalas|harmonia|compasso|ritmo|pozzoli|440\s?hz|afina[cç][aã]o|tonalidades)\b/i.test(fullText)) {
+    if (/\b(teoria|solfejo|bona|escalas|harmonia|compasso|ritmo|pozzoli|440\s?hz|afina[cç][aã]o|tonalidades|polifonia|oitavado)\b/i.test(fullText)) {
       return 'Música / Teoria & Solfejo';
     }
-    if (/\b(spotify|deezer|youtube\s?music|soundcloud|bandcamp|orquestra|filarmonica|sinfonia|bach)\b/i.test(fullText)) {
+    if (/\b(spotify|deezer|youtube\s?music|soundcloud|bandcamp|orquestra|filarmonica|sinfonia|bach|mozart|requiem)\b/i.test(fullText)) {
       return 'Música / Streaming & Clássica';
     }
     return 'Música / Geral';
@@ -510,21 +564,21 @@ export function classifyBookmarkIntelligently(title: string, url: string, folder
 
   // 7. TECNOLOGIA & INFORMÁTICA
   const isTech =
-    /\b(android|samsung|motorola|xiaomi|smartphone|celular|windows|formatar|formata[cç][aã]o|bios|driver|drivers|intel|amd|ryzen|geforce|rtx|gtx|processador|placa\s?m[aã]e|mem[oó]ria\s?ram|ssd|hd|pendrive|hardware|clubedohardware|hardware\.com|techtudo|canaltech|olhar\s?digital|oficinadanet|tudocelular|nextpit|apkpure|rexdl|apkmirror|root|magisk|twrp|bootloader|rom\s?custom|firmware|192\.168|roteador|modem|wi-?fi|rede|dns|ip|airdroid|remotedesktop|anydesk|teamviewer|xdaforums|hwinfo|egpu|quickcpu|can\s?you\s?run\s?it|virustotal|hybrid-analysis|any\.run|edge\s?extensions|microsoftedge|truecaller)\b/i.test(
+    /\b(android|samsung|motorola|xiaomi|smartphone|celular|windows|formatar|formata[cç][aã]o|bios|driver|drivers|intel|amd|ryzen|geforce|rtx|gtx|processador|placa\s?m[aã]e|mem[oó]ria\s?ram|ssd|hd|pendrive|hardware|clubedohardware|hardware\.com|techtudo|canaltech|olhar\s?digital|oficinadanet|tudocelular|nextpit|apkpure|rexdl|apkmirror|root|magisk|twrp|bootloader|rom\s?custom|firmware|192\.168|roteador|modem|wi-?fi|rede|dns|ip|airdroid|remotedesktop|anydesk|teamviewer|xdaforums|hwinfo|egpu|quickcpu|can\s?you\s?run\s?it|virustotal|hybrid-analysis|any\.run|edge\s?extensions|microsoftedge|truecaller|fiberhome|dd-wrt|supersu|lenovo|tpm|minhaclaro|claro\.com|vivo\.com|tim\.com|downdetector|razer|surround|hdmi|dvi|dhcp)\b/i.test(
       fullText
     );
 
   if (isTech) {
-    if (/\b(android|samsung|motorola|xiaomi|celular|smartphone|apk|apkpure|rexdl|root|magisk|twrp|bootloader|rom\s?custom|tudocelular|xdaforums|truecaller)\b/i.test(fullText)) {
+    if (/\b(android|samsung|motorola|xiaomi|celular|smartphone|apk|apkpure|rexdl|root|magisk|twrp|bootloader|rom\s?custom|tudocelular|xdaforums|truecaller|supersu)\b/i.test(fullText)) {
       return 'Tecnologia & Informática / Android & Dispositivos Móveis';
     }
-    if (/\b(windows|formatar|formata[cç][aã]o|driver|drivers|office|word|excel|sistema\s?operacional|powershell|cmd|quickcpu|microsoftedge)\b/i.test(fullText)) {
+    if (/\b(windows|formatar|formata[cç][aã]o|driver|drivers|office|word|excel|sistema\s?operacional|powershell|cmd|quickcpu|microsoftedge|tpm|lenovo|edge\s?extensions)\b/i.test(fullText)) {
       return 'Tecnologia & Informática / Windows & Sistemas';
     }
-    if (/\b(hardware|clubedohardware|intel|amd|ryzen|geforce|processador|placa\s?m[aã]e|mem[oó]ria\s?ram|ssd|fonte|perif[eé]ricos|hwinfo|egpu|can\s?you\s?run\s?it)\b/i.test(fullText)) {
+    if (/\b(hardware|clubedohardware|intel|amd|ryzen|geforce|processador|placa\s?m[aã]e|mem[oó]ria\s?ram|ssd|fonte|perif[eé]ricos|hwinfo|egpu|can\s?you\s?run\s?it|razer|hdmi|dvi|dhcp)\b/i.test(fullText)) {
       return 'Tecnologia & Informática / Hardware & Componentes';
     }
-    if (/\b(192\.168|roteador|modem|wi-?fi|rede|dns|ip|airdroid|remotedesktop|anydesk|virustotal|hybrid-analysis|any\.run)\b/i.test(fullText)) {
+    if (/\b(192\.168|roteador|modem|wi-?fi|rede|dns|ip|airdroid|remotedesktop|anydesk|virustotal|hybrid-analysis|any\.run|fiberhome|dd-wrt|downdetector|minhaclaro|claro|vivo|tim)\b/i.test(fullText)) {
       return 'Tecnologia & Informática / Redes & Segurança';
     }
     return 'Tecnologia & Informática / Geral';
@@ -532,21 +586,21 @@ export function classifyBookmarkIntelligently(title: string, url: string, folder
 
   // 8. SAÚDE, FITNESS & BEM-ESTAR
   const isHealth =
-    /\b(sa[uú]de|fitness|suplemento|suplementos|emagrecimento|perder\s?barriga|dieta|prote[ií]na|tuasaude|natusvita|gsuplementos|growth|treino|muscula[cç][aã]o|academia|receita|receitas|rem[eé]dio|medicamento|hapvida|m[eé]dico|hospital|nutri|calorias|vitaminas?|anatomia|peso|jejum|carboidrato|creatina|whey|mutant\s?mass|calos|doctor\s?feet|farmacia|l'oreal|glandulas\s?sebaceas|astigmatismo|lenscope|óculos)\b/i.test(
+    /\b(sa[uú]de|fitness|suplemento|suplementos|emagrecimento|perder\s?barriga|dieta|prote[ií]na|tuasaude|natusvita|gsuplementos|growth|treino|muscula[cç][aã]o|academia|receita|receitas|rem[eé]dio|medicamento|hapvida|m[eé]dico|hospital|nutri|calorias|vitaminas?|anatomia|peso|jejum|carboidrato|creatina|whey|mutant\s?mass|calos|doctor\s?feet|farmacia|l'oreal|glandulas\s?sebaceas|astigmatismo|lenscope|óculos|ocitocina|horm[oô]nio|desejo\s?sexual|antiss[oó]dio|hipertens[aã]o|reten[cç][aã]o|gordura\s?localizada|resist[eê]ncia\s?na\s?corrida|ativo\.com|inhame|pudim|bolo|torta|cozimento|culin[aá]ria|vegano|vegetariano|presunto\s?vegetariano|dicas\s?veganas|descascar\s?batatas|veganize|cantinho\s?vegetariano|bodynutry)\b/i.test(
       fullText
     );
 
   if (isHealth) {
-    if (/\b(suplemento|suplementos|prote[ií]na|creatina|whey|natusvita|gsuplementos|growth|vitaminas?|mutant\s?mass)\b/i.test(fullText)) {
+    if (/\b(suplemento|suplementos|prote[ií]na|creatina|whey|natusvita|gsuplementos|growth|vitaminas?|mutant\s?mass|bodynutry)\b/i.test(fullText)) {
       return 'Saúde, Fitness & Bem-Estar / Suplementos & Nutrição';
     }
-    if (/\b(fitness|treino|muscula[cç][aã]o|academia|exerc[ií]cio|emagrecimento|perder\s?barriga|peso)\b/i.test(fullText)) {
+    if (/\b(fitness|treino|muscula[cç][aã]o|academia|exerc[ií]cio|emagrecimento|perder\s?barriga|peso|corrida|resist[eê]ncia\s?na\s?corrida|ativo\.com)\b/i.test(fullText)) {
       return 'Saúde, Fitness & Bem-Estar / Fitness & Treinos';
     }
-    if (/\b(receita|receitas|culin[aá]ria|alimento|alimentos|ch[aá]|suco|comida|dieta|carboidrato)\b/i.test(fullText)) {
-      return 'Saúde, Fitness & Bem-Estar / Receitas Saudáveis';
+    if (/\b(receita|receitas|culin[aá]ria|alimento|alimentos|ch[aá]|suco|comida|dieta|carboidrato|vegano|vegetariano|pudim|bolo|torta|cozimento|batata|veganize|cantinho\s?vegetariano|presunto\s?vegetariano)\b/i.test(fullText)) {
+      return 'Saúde, Fitness & Bem-Estar / Gastronomia & Nutrição';
     }
-    if (/\b(tuasaude|hapvida|m[eé]dico|hospital|rem[eé]dio|medicamento|sintoma|sintomas|doen[cç]a|exame|anatomia|doctor\s?feet|farmacia|lenscope|óculos)\b/i.test(fullText)) {
+    if (/\b(tuasaude|hapvida|m[eé]dico|hospital|rem[eé]dio|medicamento|sintoma|sintomas|doen[cç]a|exame|anatomia|doctor\s?feet|farmacia|lenscope|óculos|ocitocina|horm[oô]nio|antiss[oó]dio|hipertens[aã]o)\b/i.test(fullText)) {
       return 'Saúde, Fitness & Bem-Estar / Medicina & Cuidados';
     }
     return 'Saúde, Fitness & Bem-Estar / Geral';
@@ -554,33 +608,33 @@ export function classifyBookmarkIntelligently(title: string, url: string, folder
 
   // 9. ESTUDOS & EDUCAÇÃO
   const isEdu =
-    /\b(estudo|estudos|curso|cursos|concurso|concursos|portaleduca|sestsenat|enem|fuvest|vestibular|prova|scribd|pdfcoffee|archive\.org|z-lib|livro|livros|biblioteca|faculdade|universidade|uninter|estacio|fatecie|senac|mec|e-mec|abnt|scielo|scholar|idioma|idiomas|ingl[eê]s|portugu[eê]s|gram[aá]tica|matem[aá]tica|f[ií]sica|qu[ií]mica|filosofia|hist[oó]ria|biologia|fauna|flora|artigo|tese|aula|aulas|geometria|c[aá]lculo|lacconcursos|mesalva|guiadoestudante|qconcursos|bvirtual|scilab|maxima|matlab|worldcat|doceru|conjugacao|abed|documento\s?do\s?estudante|forma\s?brasil|certifica[cç][aã]o\s?por\s?compet[eê]ncia|ietaam|pronounce|toucan|memorizar)\b/i.test(
+    /\b(estudo|estudos|curso|cursos|concurso|concursos|portaleduca|sestsenat|enem|fuvest|vestibular|prova|scribd|pdfcoffee|archive\.org|z-lib|livro|livros|biblioteca|faculdade|universidade|uninter|estacio|fatecie|senac|mec|e-mec|abnt|scielo|scholar|idioma|idiomas|ingl[eê]s|portugu[eê]s|gram[aá]tica|matem[aá]tica|f[ií]sica|qu[ií]mica|filosofia|hist[oó]ria|biologia|fauna|flora|artigo|tese|aula|aulas|geometria|c[aá]lculo|lacconcursos|mesalva|guiadoestudante|qconcursos|bvirtual|scilab|maxima|matlab|worldcat|doceru|conjugacao|abed|documento\s?do\s?estudante|forma\s?brasil|certifica[cç][aã]o\s?por\s?compet[eê]ncia|ietaam|pronounce|toucan|memorizar|alem[aã]o|german|shadowing|speaking|conversas|conversação|ouino|duolingo|geogebra|socrative|oba\b|pensador|passeidireto|c[eé]lula|contronyms|kroton|senai|monsterconcursos)\b/i.test(
       fullText
     );
 
   if (isEdu) {
-    if (/\b(concurso|concursos|enem|fuvest|vestibular|portaleduca|sestsenat|lacconcursos|mesalva|guiadoestudante|qconcursos|prova|gabarito|edital|quest[aã]o)\b/i.test(fullText)) {
+    if (/\b(concurso|concursos|enem|fuvest|vestibular|portaleduca|sestsenat|lacconcursos|mesalva|guiadoestudante|qconcursos|prova|gabarito|edital|quest[aã]o|monsterconcursos)\b/i.test(fullText)) {
       return 'Estudos & Educação / Cursos & Concursos';
     }
-    if (/\b(scribd|pdfcoffee|archive\.org|biblioteca|livro|livros|pdf|e-?book|apostila|leitura|books\.google|bvirtual|worldcat|doceru)\b/i.test(fullText)) {
+    if (/\b(scribd|pdfcoffee|archive\.org|biblioteca|livro|livros|pdf|e-?book|apostila|leitura|books\.google|bvirtual|worldcat|doceru|passeidireto)\b/i.test(fullText)) {
       return 'Estudos & Educação / Biblioteca & Livros (PDF)';
     }
-    if (/\b(faculdade|universidade|uninter|estacio|fatecie|senac|e-?mec|mec\.gov|gradua[cç][aã]o|p[oó]s-gradua[cç][aã]o|forma\s?brasil|certifica[cç][aã]o\s?por\s?compet[eê]ncia|ietaam|abed)\b/i.test(fullText)) {
+    if (/\b(faculdade|universidade|uninter|estacio|fatecie|senac|e-?mec|mec\.gov|gradua[cç][aã]o|p[oó]s-gradua[cç][aã]o|forma\s?brasil|certifica[cç][aã]o\s?por\s?compet[eê]ncia|ietaam|abed|kroton|senai|socrative)\b/i.test(fullText)) {
       return 'Estudos & Educação / Faculdades & Formação Técnica';
     }
     if (/\b(abnt|scielo|scholar|artigo\s?cient[ií]fico|tese|disserta[cç][aã]o|norma\s?t[eé]cnica)\b/i.test(fullText)) {
       return 'Estudos & Educação / Artigos & Normas Técnicas';
     }
-    if (/\b(idioma|idiomas|ingl[eê]s|english|portugu[eê]s|gram[aá]tica|dicion[aá]rio|vocabulary|pronounce|toucan|conjugacao)\b/i.test(fullText)) {
+    if (/\b(idioma|idiomas|ingl[eê]s|english|portugu[eê]s|gram[aá]tica|dicion[aá]rio|vocabulary|pronounce|toucan|conjugacao|alem[aã]o|german|shadowing|speaking|conversas|conversação|ouino|duolingo|contronyms)\b/i.test(fullText)) {
       return 'Estudos & Educação / Idiomas & Gramática';
     }
-    if (/\b(matem[aá]tica|f[ií]sica|qu[ií]mica|c[aá]lculo|geometria|[aá]lgebra|scilab|maxima|matlab)\b/i.test(fullText)) {
+    if (/\b(matem[aá]tica|f[ií]sica|qu[ií]mica|c[aá]lculo|geometria|[aá]lgebra|scilab|maxima|matlab|geogebra|oba\b)\b/i.test(fullText)) {
       return 'Estudos & Educação / Ciências Exatas';
     }
-    if (/\b(filosofia|hist[oó]ria|sociologia|geografia)\b/i.test(fullText)) {
+    if (/\b(filosofia|hist[oó]ria|sociologia|geografia|pensador)\b/i.test(fullText)) {
       return 'Estudos & Educação / Humanas & Filosofia';
     }
-    if (/\b(biologia|fauna|flora|animais|plantas)\b/i.test(fullText)) {
+    if (/\b(biologia|fauna|flora|animais|plantas|c[eé]lula)\b/i.test(fullText)) {
       return 'Estudos & Educação / Biologia & Ciências';
     }
     return 'Estudos & Educação / Geral';
@@ -588,18 +642,18 @@ export function classifyBookmarkIntelligently(title: string, url: string, folder
 
   // 10. NEGÓCIOS & CARREIRA
   const isBusiness =
-    /\b(sebrae|contabilizei|cnpj|mei|abrir\s?empresa|empresa|neg[oó]cio|emprego|empregos|vagas?|trabalho|curr[ií]culo|banco|investimento|b3|statusinvest|fundamentus|infomoney|bv\.com|meutudo|arpejo|renda|finan[cç]as|paypal|ita[uú]|mercadopago|mepoupe|guardardinheiro|abac|idinheiro|consorcio|aluguel|financiamento|inpi|marca|patente|registrodemarca|zendesk|b2b|universia|carreiras|aterpa|escola\s?do\s?trabalhador|ponto\s?mais|f[eé]rias|minimum-wage|green\s?card|vale\.com|abb|hotmart)\b/i.test(
+    /\b(sebrae|contabilizei|cnpj|mei|abrir\s?empresa|empresa|neg[oó]cio|emprego|empregos|vagas?|trabalho|curr[ií]culo|banco|investimento|b3|statusinvest|fundamentus|infomoney|bv\.com|meutudo|arpejo|renda|finan[cç]as|paypal|ita[uú]|mercadopago|mepoupe|guardardinheiro|abac|idinheiro|consorcio|aluguel|financiamento|inpi|marca|patente|registrodemarca|zendesk|b2b|universia|carreiras|aterpa|escola\s?do\s?trabalhador|ponto\s?mais|f[eé]rias|minimum-wage|green\s?card|vale\.com|abb|hotmart|serasa|tabela\s?para\s?juntar|poupar|tesouro\s?direto|genial|empiricus|canal\s?dark)\b/i.test(
       fullText
     );
 
   if (isBusiness) {
-    if (/\b(sebrae|contabilizei|cnpj|mei|abrir\s?empresa|contabilidade|empresa|neg[oó]cio|inpi|marcas?|patente|zendesk|b2b)\b/i.test(fullText)) {
+    if (/\b(sebrae|contabilizei|cnpj|mei|abrir\s?empresa|contabilidade|empresa|neg[oó]cio|inpi|marcas?|patente|zendesk|b2b|canal\s?dark)\b/i.test(fullText)) {
       return 'Negócios & Carreira / Empreendedorismo & Marcas';
     }
     if (/\b(emprego|empregos|vagas?|trabalho|curr[ií]culo|contrata|processo\s?seletivo|universia|carreiras|vale\.com|escola\s?do\s?trabalhador|abb|green\s?card)\b/i.test(fullText)) {
       return 'Negócios & Carreira / Empregos & Oportunidades';
     }
-    if (/\b(banco|investimento|investir|b3|statusinvest|fundamentus|infomoney|ações|fiis|tesouro|carteira|cr[eé]dito|empr[eé]stimo|renda|paypal|ita[uú]|mercadopago|mepoupe|guardardinheiro|abac|idinheiro|financiamento|hotmart)\b/i.test(fullText)) {
+    if (/\b(banco|investimento|investir|b3|statusinvest|fundamentus|infomoney|ações|fiis|tesouro|carteira|cr[eé]dito|empr[eé]stimo|renda|paypal|ita[uú]|mercadopago|mepoupe|guardardinheiro|abac|idinheiro|financiamento|hotmart|serasa|poupar|genial|empiricus)\b/i.test(fullText)) {
       return 'Negócios & Carreira / Finanças & Investimentos';
     }
     return 'Negócios & Carreira / Geral';
@@ -607,18 +661,18 @@ export function classifyBookmarkIntelligently(title: string, url: string, folder
 
   // 11. ESPIRITUALIDADE & RELIGIÃO
   const isReligion =
-    /\b(b[ií]blia|estudosdabiblia|congregacaocristanobrasil|conteudoespirita|emsonho|sonhos?\.com|guiadaalma|evangelho|deus|ora[cç][aã]o|espiritismo|espiritualidade|teologia|mitologia|lendas|folclore|amorc|rosacruz|abrame|v[oó]s\s?sois\s?deuses|gematria|astrologia|hor[oó]scopo|mapa\s?astral|astrolink|viastral|personare|numerologia|kabbalah|cabala|sacramentos|significado\s?espiritual)\b/i.test(
+    /\b(b[ií]blia|estudosdabiblia|congregacaocristanobrasil|conteudoespirita|emsonho|sonhos?\.com|guiadaalma|evangelho|deus|ora[cç][aã]o|espiritismo|espiritualidade|teologia|mitologia|lendas|folclore|amorc|rosacruz|abrame|v[oó]s\s?sois\s?deuses|gematria|astrologia|hor[oó]scopo|mapa\s?astral|astrolink|viastral|personare|numerologia|kabbalah|cabala|sacramentos|significado\s?espiritual|awakened|spine|caduceu|elohim|hebrew|transliteration|hermetically)\b/i.test(
       fullText
     );
 
   if (isReligion) {
-    if (/\b(b[ií]blia|estudosdabiblia|congregacao|hino|vers[ií]culo|evangelho|teologia|apologetica|exodo|sacramentos)\b/i.test(fullText)) {
+    if (/\b(b[ií]blia|estudosdabiblia|congregacao|hino|vers[ií]culo|evangelho|teologia|apologetica|exodo|sacramentos|elohim|hebrew)\b/i.test(fullText)) {
       return 'Espiritualidade & Religião / Estudos Bíblicos & Fé';
     }
     if (/\b(astrologia|hor[oó]scopo|mapa\s?astral|astrolink|viastral|personare|numerologia|kabbalah|cabala|gematria|fases\s?da\s?lua|calendario\s?lunar)\b/i.test(fullText)) {
       return 'Espiritualidade & Religião / Astrologia, Cabala & Numerologia';
     }
-    if (/\b(sonho|sonhos|significado\s?dos\s?sonhos|espiritismo|espirita|guiadaalma|amorc|rosacruz|mitologia|lendas|folclore)\b/i.test(fullText)) {
+    if (/\b(sonho|sonhos|significado\s?dos\s?sonhos|espiritismo|espirita|guiadaalma|amorc|rosacruz|mitologia|lendas|folclore|awakened|caduceu|hermetically)\b/i.test(fullText)) {
       return 'Espiritualidade & Religião / Misticismo, Sonhos & Filosofia';
     }
     return 'Espiritualidade & Religião / Geral';
@@ -626,12 +680,12 @@ export function classifyBookmarkIntelligently(title: string, url: string, folder
 
   // 12. GOVERNO & CIDADANIA
   const isGov =
-    /\b(gov\.br|detran|detran\.mg|planalto|prefeitura|contagem|fazenda|receita\s?federal|cnh|ipva|multa|legisla[cç][aã]o|lei|decreto|di[aá]rio\s?oficial|título\s?de\s?eleitor|inss|previd[eê]ncia|vakinha|crea|confea|resolvvi)\b/i.test(
+    /\b(gov\.br|detran|detran\.mg|planalto|prefeitura|contagem|fazenda|receita\s?federal|cnh|ipva|multa|legisla[cç][aã]o|lei|decreto|di[aá]rio\s?oficial|título\s?de\s?eleitor|inss|previd[eê]ncia|vakinha|crea|confea|resolvvi|advogado|jusbrasil|contran|tse|naomeperturbe|dni)\b/i.test(
       fullText
     );
 
   if (isGov) {
-    if (/\b(detran|cnh|ipva|multa|ve[ií]culo|tr[aâ]nsito)\b/i.test(fullText)) {
+    if (/\b(detran|cnh|ipva|multa|ve[ií]culo|tr[aâ]nsito|contran)\b/i.test(fullText)) {
       return 'Governo & Cidadania / Detran & Trânsito';
     }
     return 'Governo & Cidadania / Serviços Públicos & Cidadania';
