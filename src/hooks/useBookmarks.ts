@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { BookmarkNode, NavigationSection, SortField, SortDirection, ViewMode } from '../types/bookmarks';
-import { bookmarksService, pruneEmptyFolders } from '../services/bookmarks';
+import { bookmarksService, pruneEmptyFolders, sortFoldersAlphabetically } from '../services/bookmarks';
 import { parseSearchQuery, matchesSearch } from '../utils/search';
 import { extractDomain } from '../utils/url';
 import { findDuplicates } from '../services/duplicates';
@@ -475,6 +475,19 @@ export function useBookmarks() {
     return count;
   }, [loadTree]);
 
+  const sortAlphabetically = useCallback(
+    async (targetFolderId?: string, recursive: boolean = true) => {
+      const targetId =
+        targetFolderId ||
+        (activeSection === 'all' ? 'all' : resolveSafeParentId());
+      await createLocalSnapshot('Organização alfabética A-Z (pastas e favoritos)');
+      const res = await sortFoldersAlphabetically(targetId, recursive);
+      await loadTree();
+      return res;
+    },
+    [activeSection, loadTree, resolveSafeParentId]
+  );
+
   return {
     tree,
     loading,
@@ -519,5 +532,6 @@ export function useBookmarks() {
     refreshTree: loadTree,
     parentPathMap,
     pruneEmptyFolders: pruneEmptyFoldersAction,
+    sortAlphabetically,
   };
 }

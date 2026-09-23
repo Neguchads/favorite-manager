@@ -136,17 +136,31 @@ export async function pruneEmptyFolders(
 export type ProgressCallback = (current: number, total: number, percentage: number) => void;
 
 /**
- * Sorts child folders and subfolders under parentId in alphabetical order (A-Z).
+ * Sorts child folders, subfolders and all bookmarks under parentId in alphabetical order (A-Z).
  * Folders are placed first in alphabetical order, followed by bookmarks in alphabetical order.
- * Recursively sorts subfolders if recursive is true.
+ * Recursively sorts subfolders and all bookmarks inside them if recursive is true.
  */
 export async function sortFoldersAlphabetically(
   parentId: string = '1',
   recursive: boolean = true
-): Promise<void> {
+): Promise<{ sortedFoldersCount: number; sortedBookmarksCount: number }> {
+  let sortedFoldersCount = 0;
+  let sortedBookmarksCount = 0;
+
+  if (parentId === 'all') {
+    const res1 = await sortFoldersAlphabetically('1', recursive);
+    const res2 = await sortFoldersAlphabetically('2', recursive);
+    return {
+      sortedFoldersCount: res1.sortedFoldersCount + res2.sortedFoldersCount,
+      sortedBookmarksCount: res1.sortedBookmarksCount + res2.sortedBookmarksCount,
+    };
+  }
+
   try {
     const subTree = await bookmarksService.getSubTree(parentId);
-    if (!subTree || subTree.length === 0 || !subTree[0].children) return;
+    if (!subTree || subTree.length === 0 || !subTree[0].children) {
+      return { sortedFoldersCount: 0, sortedBookmarksCount: 0 };
+    }
 
     const children = subTree[0].children;
 
@@ -154,14 +168,14 @@ export async function sortFoldersAlphabetically(
     const folders = children.filter((c) => !c.url);
     const bookmarks = children.filter((c) => Boolean(c.url));
 
-    // Sort folders alphabetically (A-Z) using pt-BR collation
+    // Sort folders alphabetically (A-Z) using pt-BR natural collation
     folders.sort((a, b) =>
-      (a.title || '').localeCompare(b.title || '', 'pt-BR', { sensitivity: 'base' })
+      (a.title || '').localeCompare(b.title || '', 'pt-BR', { sensitivity: 'base', numeric: true })
     );
 
-    // Sort bookmarks alphabetically (A-Z) using pt-BR collation
+    // Sort bookmarks alphabetically (A-Z) using pt-BR natural collation
     bookmarks.sort((a, b) =>
-      (a.title || '').localeCompare(b.title || '', 'pt-BR', { sensitivity: 'base' })
+      (a.title || '').localeCompare(b.title || '', 'pt-BR', { sensitivity: 'base', numeric: true })
     );
 
     const sortedChildren = [...folders, ...bookmarks];
@@ -175,14 +189,21 @@ export async function sortFoldersAlphabetically(
       }
     }
 
+    sortedFoldersCount += folders.length;
+    sortedBookmarksCount += bookmarks.length;
+
     if (recursive) {
       for (const folder of folders) {
-        await sortFoldersAlphabetically(folder.id, true);
+        const subRes = await sortFoldersAlphabetically(folder.id, true);
+        sortedFoldersCount += subRes.sortedFoldersCount;
+        sortedBookmarksCount += subRes.sortedBookmarksCount;
       }
     }
   } catch (err) {
     console.warn(`Erro ao ordenar pastas sob [${parentId}]:`, err);
   }
+
+  return { sortedFoldersCount, sortedBookmarksCount };
 }
 
 /**

@@ -546,7 +546,7 @@ export const AiOrganizeModal: React.FC<AiOrganizeModalProps> = ({
               <label htmlFor="sortAlphabeticalToggle" className="text-slate-700 dark:text-slate-200 cursor-pointer select-none text-[11px] font-medium flex items-center space-x-1.5 flex-1">
                 <Folder className="w-3.5 h-3.5 text-sky-500 shrink-0" />
                 <span>
-                  <strong>Classificar pastas e subpastas em ordem alfabética (A-Z)</strong> na Barra de Favoritos.
+                  <strong>Classificar todas as pastas, subpastas e favoritos em ordem alfabética (A-Z)</strong>.
                 </span>
               </label>
             </div>

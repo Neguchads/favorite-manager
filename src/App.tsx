@@ -64,6 +64,7 @@ export const App: React.FC = () => {
     pruneEmptyFolders,
     parentPathMap,
     refreshTree,
+    sortAlphabetically,
   } = useBookmarks();
 
   // Modals state
@@ -308,6 +309,7 @@ export const App: React.FC = () => {
           onDeleteMultiple={deleteMultiple}
           onDeleteDuplicates={deleteDuplicates}
           onRefresh={refreshTree}
+          onSortAlphabetically={sortAlphabetically}
         />
 
         {/* Right Inspector Drawer */}

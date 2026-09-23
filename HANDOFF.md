@@ -14,6 +14,26 @@ Formato de cada entrada:
 
 ---
 
+## 2026-09-23 — Antigravity — ordenação alfabética completa A-Z (pastas, subpastas e favoritos internos)
+- Arquivos alterados: `src/services/bookmarks/hierarchy.ts`, `src/hooks/useBookmarks.ts`, `src/App.tsx`, `src/components/layout/MainContent.tsx`, `src/components/modals/AiOrganizeModal.tsx`.
+- Verificado: `npm run build` executado com sucesso e 0 erros (tsc + vite build em 6.24s, saída em `dist/`).
+- Pendente / próximo passo: Testes no Microsoft Edge via `edge://extensions` (recarregar pacote em `dist/`).
+- Avisos para o outro agente:
+  1. `sortFoldersAlphabetically` em `hierarchy.ts` agora ordena recursivamente tanto pastas e subpastas quanto TODOS os favoritos dentro de cada pasta (A-Z com collation natural pt-BR `numeric: true`).
+  2. Adicionado o botão "Organizar Tudo A-Z" na toolbar do `MainContent` com feedback animado e banner de conclusão, permitindo organizar a pasta atual ou a barra inteira permanentemente no Chrome/Edge com 1 clique (com snapshot prévio de segurança).
+  3. Integrado ao hook `useBookmarks` (`sortAlphabetically`) e atualizado na modal de IA `AiOrganizeModal` (rótulo reflete ordenação de pastas, subpastas e favoritos).
+  4. Mudanças ainda não foram commitadas (aguardando pedido explícito do usuário).
+
+---
+
+## 2026-09-22 — Antigravity — botão de reanalisar/pesquisar duplicações na aba de duplicados
+- Arquivos alterados: `src/components/duplicates/DuplicatesView.tsx`, `src/components/layout/MainContent.tsx`.
+- Verificado: `npm run build` executado com sucesso e 0 erros (tsc + vite build em 3.17s, saída em `dist/`).
+- Pendente / próximo passo: Testes no Microsoft Edge via `edge://extensions` (recarregar pacote em `dist/`).
+- Avisos para o outro agente: Adicionado o botão "Pesquisar Duplicações" na aba de Duplicados (tanto no cabeçalho de ações quanto na tela de estado vazio), permitindo recarregar e reanalisar a árvore inteira de favoritos sob demanda com feedback visual animado. Mudanças ainda não foram commitadas (aguardando pedido do usuário).
+
+---
+
 ## 2026-09-22 — Antigravity — seleção múltipla de janelas/workspaces e ordenação alfabética (A-Z) de pastas e subpastas
 - Arquivos alterados: `src/components/modals/WorkspaceTabsModal.tsx`, `src/services/bookmarks/hierarchy.ts`, `src/components/modals/AiOrganizeModal.tsx`, `src/App.tsx`, `src/ai/classifier.ts`.
 - Verificado: `npm run build` executado com sucesso e 0 erros (tsc + vite build em 3.33s, saída em `dist/`).

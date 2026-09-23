@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Folder,
   Plus,
   CheckSquare,
   Square,
+  ArrowDownAZ,
+  Loader2,
+  CheckCircle2,
 } from 'lucide-react';
 import {
   BookmarkDuplicateGroup,
@@ -57,6 +60,10 @@ interface MainContentProps {
   onDeleteMultiple?: (ids: string[]) => Promise<void>;
   onDeleteDuplicates?: (ids: string[], groupCount?: number) => Promise<void>;
   onRefresh?: () => Promise<void>;
+  onSortAlphabetically?: (
+    targetFolderId?: string,
+    recursive?: boolean
+  ) => Promise<{ sortedFoldersCount: number; sortedBookmarksCount: number }>;
 }
 
 export const MainContent: React.FC<MainContentProps> = ({
@@ -94,7 +101,35 @@ export const MainContent: React.FC<MainContentProps> = ({
   onDeleteMultiple,
   onDeleteDuplicates,
   onRefresh,
+  onSortAlphabetically,
 }) => {
+  const [isSortingAZ, setIsSortingAZ] = useState(false);
+  const [sortSuccessMessage, setSortSuccessMessage] = useState<string | null>(null);
+
+  const handleSortAlphabetically = async () => {
+    if (!onSortAlphabetically || isSortingAZ) return;
+    try {
+      setIsSortingAZ(true);
+      setSortSuccessMessage(null);
+      let targetId: string = activeSection;
+      if (activeSection === 'bookmarks_bar') targetId = '1';
+      else if (activeSection === 'other') targetId = '2';
+      else if (activeSection === 'all') targetId = 'all';
+
+      const res = await onSortAlphabetically(targetId, true);
+      setSortSuccessMessage(
+        `${res.sortedBookmarksCount} favoritos e ${res.sortedFoldersCount} pastas organizados de A-Z com sucesso!`
+      );
+      setTimeout(() => {
+        setSortSuccessMessage(null);
+      }, 4000);
+    } catch (err) {
+      console.error('Erro ao ordenar A-Z:', err);
+    } finally {
+      setIsSortingAZ(false);
+    }
+  };
+
   const allSelected = items.length > 0 && items.every((i) => selectedIds.has(i.id));
   const someSelected = items.some((i) => selectedIds.has(i.id));
 
@@ -109,6 +144,7 @@ export const MainContent: React.FC<MainContentProps> = ({
           onDeleteMultiple={onDeleteMultiple}
           onDeleteDuplicates={onDeleteDuplicates}
           onInspect={onInspect}
+          onRefresh={onRefresh}
         />
       </main>
     );
@@ -231,8 +267,42 @@ export const MainContent: React.FC<MainContentProps> = ({
               <span className="text-[10px]">{sortDirection === 'asc' ? '↑' : '↓'}</span>
             )}
           </button>
+
+          {onSortAlphabetically && (
+            <>
+              <div className="h-4 w-px bg-slate-200 dark:bg-slate-700 mx-1" />
+              <button
+                onClick={handleSortAlphabetically}
+                disabled={isSortingAZ}
+                title="Classificar definitivamente todas as pastas, subpastas e favoritos em ordem alfabética (A-Z)"
+                className="px-2.5 py-1 rounded text-xs font-medium transition-all flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer disabled:opacity-50"
+              >
+                {isSortingAZ ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-sky-600 dark:text-sky-400" />
+                ) : (
+                  <ArrowDownAZ className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+                )}
+                <span>{isSortingAZ ? 'Ordenando...' : 'Organizar Tudo A-Z'}</span>
+              </button>
+            </>
+          )}
         </div>
       </div>
+
+      {sortSuccessMessage && (
+        <div className="px-4 py-2 bg-emerald-50 dark:bg-emerald-950/40 border-b border-emerald-200 dark:border-emerald-800 flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-300 transition-all">
+          <div className="flex items-center space-x-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{sortSuccessMessage}</span>
+          </div>
+          <button
+            onClick={() => setSortSuccessMessage(null)}
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs font-medium"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Items Container */}
       <div className="flex-1 overflow-y-auto">

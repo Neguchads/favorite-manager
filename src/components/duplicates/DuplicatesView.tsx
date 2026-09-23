@@ -22,6 +22,7 @@ interface DuplicatesViewProps {
   onDeleteMultiple?: (ids: string[]) => Promise<void>;
   onDeleteDuplicates?: (ids: string[], groupCount?: number) => Promise<void>;
   onInspect: (item: BookmarkNode) => void;
+  onRefresh?: () => Promise<void>;
 }
 
 export const DuplicatesView: React.FC<DuplicatesViewProps> = ({
@@ -31,11 +32,13 @@ export const DuplicatesView: React.FC<DuplicatesViewProps> = ({
   onDeleteMultiple,
   onDeleteDuplicates,
   onInspect,
+  onRefresh,
 }) => {
   const [keepStrategy, setKeepStrategy] = useState<'oldest' | 'newest'>('oldest');
   const [customKeepMap, setCustomKeepMap] = useState<Record<string, string>>({});
   const [searchFilter, setSearchFilter] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
   const [requireConfirm, setRequireConfirm] = useState(false);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -146,6 +149,27 @@ export const DuplicatesView: React.FC<DuplicatesViewProps> = ({
     );
   };
 
+  // Scan / re-analyze duplicate bookmarks across the tree
+  const handleScanDuplicates = async () => {
+    if (isScanning) return;
+    setIsScanning(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    try {
+      if (onRefresh) {
+        await Promise.all([
+          onRefresh(),
+          new Promise((resolve) => setTimeout(resolve, 350)),
+        ]);
+      }
+      setSuccessMessage('Pesquisa de duplicações concluída com sucesso!');
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Falha ao pesquisar duplicados.');
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
   // Empty state
   if (duplicates.length === 0) {
     return (
@@ -159,6 +183,17 @@ export const DuplicatesView: React.FC<DuplicatesViewProps> = ({
         <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mt-1">
           Todos os seus favoritos possuem links únicos e normalizados.
         </p>
+
+        <button
+          type="button"
+          onClick={handleScanDuplicates}
+          disabled={isScanning}
+          className="mt-4 flex items-center space-x-2 px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-all cursor-pointer disabled:opacity-50"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${isScanning ? 'animate-spin' : ''}`} />
+          <span>{isScanning ? 'Pesquisando...' : 'Pesquisar Duplicações'}</span>
+        </button>
+
         {successMessage && (
           <div className="mt-4 p-2.5 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 rounded-lg text-xs flex items-center space-x-2">
             <Check className="w-4 h-4" />
@@ -243,24 +278,37 @@ export const DuplicatesView: React.FC<DuplicatesViewProps> = ({
             </span>
           </div>
 
-          <button
-            type="button"
-            onClick={handleDeleteAll}
-            disabled={isDeleting || allDuplicateIds.length === 0}
-            className="flex items-center justify-center space-x-2 px-4 py-2 bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-700 hover:to-amber-700 text-white font-semibold text-xs rounded-xl shadow-md shadow-rose-600/20 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 cursor-pointer shrink-0"
-          >
-            {isDeleting ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                <span>Excluindo {allDuplicateIds.length} duplicados...</span>
-              </>
-            ) : (
-              <>
-                <Zap className="w-4 h-4 fill-white" />
-                <span>Apagar Todos os Duplicados ({allDuplicateIds.length}) com 1 Clique</span>
-              </>
-            )}
-          </button>
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleScanDuplicates}
+              disabled={isScanning || isDeleting}
+              className="flex items-center space-x-1.5 px-3 py-2 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold shadow-2xs transition-colors cursor-pointer disabled:opacity-50"
+              title="Reanalisa a árvore de favoritos em busca de duplicações"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-sky-500 ${isScanning ? 'animate-spin' : ''}`} />
+              <span>{isScanning ? 'Pesquisando...' : 'Pesquisar Duplicações'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleDeleteAll}
+              disabled={isDeleting || isScanning || allDuplicateIds.length === 0}
+              className="flex items-center justify-center space-x-2 px-4 py-2 bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-700 hover:to-amber-700 text-white font-semibold text-xs rounded-xl shadow-md shadow-rose-600/20 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 cursor-pointer"
+            >
+              {isDeleting ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Excluindo {allDuplicateIds.length} duplicados...</span>
+                </>
+              ) : (
+                <>
+                  <Zap className="w-4 h-4 fill-white" />
+                  <span>Apagar Todos os Duplicados ({allDuplicateIds.length}) com 1 Clique</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Success / Error Messages */}
