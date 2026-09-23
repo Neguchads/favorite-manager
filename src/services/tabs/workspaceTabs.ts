@@ -174,3 +174,45 @@ export async function openUrlsInNewWindow(urls: string[]): Promise<boolean> {
   }
   return true;
 }
+
+/**
+ * Opens a URL in a new browser tab
+ */
+export function openUrlInNewTab(url: string): void {
+  if (typeof chrome !== 'undefined' && chrome.tabs?.create) {
+    chrome.tabs.create({ url });
+  } else {
+    window.open(url, '_blank');
+  }
+}
+
+/**
+ * Opens a URL or list of URLs in a new browser window
+ */
+export function openUrlInNewWindow(url: string, incognito: boolean = false): void {
+  if (typeof chrome !== 'undefined' && chrome.windows?.create) {
+    chrome.windows.create({ url: [url], incognito, focused: true });
+  } else {
+    window.open(url, '_blank');
+  }
+}
+
+/**
+ * Opens a list of URLs in an InPrivate/Incognito window
+ */
+export async function openUrlsInIncognitoWindow(urls: string[]): Promise<boolean> {
+  const validUrls = urls.filter(isRealWebUrl);
+  if (validUrls.length === 0) return false;
+
+  if (typeof chrome !== 'undefined' && chrome.windows?.create) {
+    await new Promise<void>((resolve) => {
+      chrome.windows.create({ url: validUrls, incognito: true, focused: true }, () => resolve());
+    });
+    return true;
+  }
+
+  for (const url of validUrls) {
+    window.open(url, '_blank');
+  }
+  return true;
+}

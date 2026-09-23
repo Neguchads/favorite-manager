@@ -18,7 +18,7 @@ import { downloadJsonFile, exportBookmarksToJson } from './services/backup';
 import { downloadMarkdownAwesomeList } from './services/backup/markdownExporter';
 import { AiProposedPlan } from './ai/types';
 import { executeAiPlanWithHierarchy } from './services/bookmarks';
-import { openUrlsInNewWindow } from './services/tabs/workspaceTabs';
+import { openUrlsInNewWindow, openUrlsInIncognitoWindow } from './services/tabs/workspaceTabs';
 
 export const App: React.FC = () => {
   const {
@@ -45,6 +45,7 @@ export const App: React.FC = () => {
     displayedItems,
     currentSubfolders,
     currentFolderName,
+    breadcrumbs,
     allFolders,
     allBookmarks,
     folderItemCount,
@@ -60,6 +61,7 @@ export const App: React.FC = () => {
     deleteFolder,
     deleteMultiple,
     deleteDuplicates,
+    moveBookmark,
     moveMultiple,
     pruneEmptyFolders,
     parentPathMap,
@@ -79,27 +81,6 @@ export const App: React.FC = () => {
 
   // Custom items for AI organization (e.g. from open tabs/workspaces)
   const [customAiItems, setCustomAiItems] = useState<BookmarkNode[] | null>(null);
-
-  // Global keyboard shortcuts (Ctrl+K and Ctrl+Shift+F)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        setIsCommandPaletteOpen((prev) => !prev);
-      }
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'f') {
-        e.preventDefault();
-        setIsCommandPaletteOpen((prev) => !prev);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-
-    if (window.location.hash === '#palette') {
-      setIsCommandPaletteOpen(true);
-    }
-
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
 
   // Confirm delete dialog state
   const [confirmDelete, setConfirmDelete] = useState<{
@@ -166,6 +147,46 @@ export const App: React.FC = () => {
     }
   };
 
+  // Global Edge-style keyboard shortcuts (Ctrl+K, Ctrl+Shift+F, Ctrl+A, Delete)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isInput =
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable);
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+        return;
+      }
+
+      if (!isInput) {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
+          e.preventDefault();
+          selectAll(displayedItems);
+        } else if (e.key === 'Delete' && selectedIds.size > 0) {
+          e.preventDefault();
+          handlePromptDeleteMultiple();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    if (window.location.hash === '#palette') {
+      setIsCommandPaletteOpen(true);
+    }
+
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [displayedItems, selectedIds, selectAll]);
+
   // Export selected to JSON
   const handleExportSelected = () => {
     const selectedItems = displayedItems.filter((i) => selectedIds.has(i.id));
@@ -180,6 +201,22 @@ export const App: React.FC = () => {
     if (urls.length > 0) {
       await openUrlsInNewWindow(urls);
     }
+  };
+
+  // Open all bookmarks in a folder in an InPrivate window
+  const handleOpenFolderInIncognito = async (folderId: string) => {
+    const bookmarks = getBookmarksRecursively(folderId);
+    const urls = bookmarks.map((b) => b.url).filter(Boolean) as string[];
+    if (urls.length > 0) {
+      await openUrlsInIncognitoWindow(urls);
+    }
+  };
+
+  // Open move modal directly for a single item
+  const handleOpenMoveForItem = (item: BookmarkNode) => {
+    clearSelection();
+    toggleSelect(item.id);
+    setIsMoveOpen(true);
   };
 
   // Apply AI Plan (create master folders and subfolders, then move bookmarks)
@@ -271,12 +308,14 @@ export const App: React.FC = () => {
           duplicateCount={stats.duplicateCount}
           cleanupCount={stats.emptyFoldersCount + stats.missingTitlesCount}
           onOpenCreateFolder={() => setIsCreateFolderOpen(true)}
+          onDropBookmark={moveBookmark}
         />
 
         {/* Central Content (Visualizador com subpastas estilo edge://favorites/) */}
         <MainContent
           activeSection={activeSection}
           currentFolderName={currentFolderName}
+          breadcrumbs={breadcrumbs}
           items={displayedItems}
           subfolders={currentSubfolders}
           folderItemCount={folderItemCount}
@@ -284,6 +323,7 @@ export const App: React.FC = () => {
           onEditFolder={handleOpenEdit}
           onDeleteFolder={handlePromptDeleteFolder}
           onOpenFolderInNewWindow={handleOpenFolderInNewWindow}
+          onOpenFolderInIncognito={handleOpenFolderInIncognito}
           selectedIds={selectedIds}
           selectedItem={selectedItem}
           viewMode={viewMode}
@@ -297,6 +337,9 @@ export const App: React.FC = () => {
           onEdit={handleOpenEdit}
           onDelete={handlePromptDelete}
           onOpenCreateBookmark={() => setIsCreateBookmarkOpen(true)}
+          onOpenCreateFolder={() => setIsCreateFolderOpen(true)}
+          onOpenMoveModal={handleOpenMoveForItem}
+          onMoveBookmark={moveBookmark}
           parentPathMap={parentPathMap}
           searchQuery={searchQuery}
           duplicates={duplicates}

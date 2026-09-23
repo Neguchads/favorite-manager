@@ -13,6 +13,7 @@ interface BookmarkItemRowProps {
   onInspect: (item: BookmarkNode) => void;
   onEdit: (item: BookmarkNode) => void;
   onDelete: (id: string) => void;
+  onContextMenu?: (e: React.MouseEvent, item: BookmarkNode) => void;
 }
 
 export const BookmarkItemRow: React.FC<BookmarkItemRowProps> = ({
@@ -24,6 +25,7 @@ export const BookmarkItemRow: React.FC<BookmarkItemRowProps> = ({
   onInspect,
   onEdit,
   onDelete,
+  onContextMenu,
 }) => {
   const [imgError, setImgError] = useState(false);
   const domain = extractDomain(item.url);
@@ -31,8 +33,27 @@ export const BookmarkItemRow: React.FC<BookmarkItemRowProps> = ({
 
   return (
     <div
+      draggable={true}
+      onDragStart={(e) => {
+        e.dataTransfer.setData(
+          'application/json',
+          JSON.stringify({ type: 'bookmark', id: item.id })
+        );
+        e.dataTransfer.setData('text/plain', item.url || '');
+        e.dataTransfer.effectAllowed = 'move';
+      }}
       onClick={() => onInspect(item)}
-      className={`group flex items-center justify-between px-3 py-2 border-b border-slate-100 dark:border-slate-800/80 cursor-pointer transition-colors text-xs ${
+      onDoubleClick={() => {
+        if (item.url) window.open(item.url, '_blank');
+      }}
+      onContextMenu={(e) => {
+        if (onContextMenu) {
+          e.preventDefault();
+          e.stopPropagation();
+          onContextMenu(e, item);
+        }
+      }}
+      className={`group flex items-center justify-between px-3 py-2 border-b border-slate-100 dark:border-slate-800/80 cursor-pointer transition-colors text-xs select-none ${
         isInspected
           ? 'bg-sky-50/80 dark:bg-sky-950/40'
           : isSelected

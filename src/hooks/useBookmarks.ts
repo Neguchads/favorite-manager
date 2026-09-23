@@ -14,6 +14,11 @@ export interface FolderOption {
   level: number;
 }
 
+export interface BreadcrumbNode {
+  id: string;
+  title: string;
+}
+
 const VIRTUAL_SECTIONS = new Set(['all', 'recent', 'duplicates', 'cleanup', 'stats', 'backups', 'settings']);
 
 export function useBookmarks() {
@@ -165,6 +170,42 @@ export function useBookmarks() {
     const node = nodeMap.get(activeSection);
     return node?.title || 'Pasta';
   }, [activeSection, nodeMap]);
+
+  // Hierarchical breadcrumbs trail (like native edge://favorites/)
+  const breadcrumbs = useMemo<BreadcrumbNode[]>(() => {
+    if (activeSection === 'all') return [{ id: 'all', title: 'Todos os favoritos' }];
+    if (activeSection === 'bookmarks_bar') return [{ id: 'bookmarks_bar', title: 'Barra de favoritos' }];
+    if (activeSection === 'other') return [{ id: 'other', title: 'Outros favoritos' }];
+    if (activeSection === 'recent') return [{ id: 'recent', title: 'Adicionados Recentemente' }];
+    if (activeSection === 'duplicates') return [{ id: 'duplicates', title: 'Favoritos Duplicados' }];
+    if (activeSection === 'cleanup') return [{ id: 'cleanup', title: 'Central de Limpeza' }];
+    if (activeSection === 'stats') return [{ id: 'stats', title: 'Estatísticas' }];
+    if (activeSection === 'backups') return [{ id: 'backups', title: 'Backups & Snapshots' }];
+
+    const crumbs: BreadcrumbNode[] = [];
+    let currId: string | undefined = activeSection;
+
+    while (currId && currId !== '0') {
+      const node = nodeMap.get(currId);
+      if (!node) break;
+      let title = node.title;
+      let targetSectionId = node.id;
+      if (node.id === '1') {
+        title = 'Barra de favoritos';
+        targetSectionId = 'bookmarks_bar';
+      } else if (node.id === '2') {
+        title = 'Outros favoritos';
+        targetSectionId = 'other';
+      } else if (node.id === '3') {
+        title = 'Favoritos móveis';
+      }
+
+      crumbs.unshift({ id: targetSectionId, title });
+      currId = node.parentId && node.parentId !== '0' ? node.parentId : undefined;
+    }
+
+    return crumbs.length > 0 ? crumbs : [{ id: activeSection, title: currentFolderName }];
+  }, [activeSection, nodeMap, currentFolderName]);
 
   // Subfolders under current folder (like real edge://favorites/)
   const currentSubfolders = useMemo<BookmarkNode[]>(() => {
@@ -512,6 +553,7 @@ export function useBookmarks() {
     displayedItems,
     currentSubfolders,
     currentFolderName,
+    breadcrumbs,
     allFolders,
     allBookmarks,
     folderItemCount,

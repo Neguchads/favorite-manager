@@ -13,6 +13,7 @@ interface BookmarkCardProps {
   onInspect: (item: BookmarkNode) => void;
   onEdit: (item: BookmarkNode) => void;
   onDelete: (id: string) => void;
+  onContextMenu?: (e: React.MouseEvent, item: BookmarkNode) => void;
 }
 
 export const BookmarkCard: React.FC<BookmarkCardProps> = ({
@@ -24,6 +25,7 @@ export const BookmarkCard: React.FC<BookmarkCardProps> = ({
   onInspect,
   onEdit,
   onDelete,
+  onContextMenu,
 }) => {
   const [imgError, setImgError] = useState(false);
   const domain = extractDomain(item.url);
@@ -31,8 +33,27 @@ export const BookmarkCard: React.FC<BookmarkCardProps> = ({
 
   return (
     <div
+      draggable={true}
+      onDragStart={(e) => {
+        e.dataTransfer.setData(
+          'application/json',
+          JSON.stringify({ type: 'bookmark', id: item.id })
+        );
+        e.dataTransfer.setData('text/plain', item.url || '');
+        e.dataTransfer.effectAllowed = 'move';
+      }}
       onClick={() => onInspect(item)}
-      className={`group relative p-3 rounded-xl border cursor-pointer transition-all flex flex-col justify-between ${
+      onDoubleClick={() => {
+        if (item.url) window.open(item.url, '_blank');
+      }}
+      onContextMenu={(e) => {
+        if (onContextMenu) {
+          e.preventDefault();
+          e.stopPropagation();
+          onContextMenu(e, item);
+        }
+      }}
+      className={`group relative p-3 rounded-xl border cursor-pointer transition-all flex flex-col justify-between select-none ${
         isInspected
           ? 'border-sky-500 bg-sky-50/40 dark:bg-sky-950/30 shadow-sm ring-1 ring-sky-500'
           : isSelected

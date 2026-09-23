@@ -14,6 +14,19 @@ Formato de cada entrada:
 
 ---
 
+## 2026-09-23 — Antigravity — paridade funcional total com edge://favorites/ (Breadcrumbs, Drag & Drop, Menu de Contexto e Atalhos)
+- Arquivos alterados: `src/components/common/ContextMenu.tsx` (novo), `src/components/layout/MainContent.tsx`, `src/components/layout/Sidebar.tsx`, `src/components/list/BookmarkCard.tsx`, `src/components/list/BookmarkItemRow.tsx`, `src/components/list/FolderCard.tsx`, `src/components/list/FolderItemRow.tsx`, `src/components/tree/FolderTreeNode.tsx`, `src/hooks/useBookmarks.ts`, `src/services/tabs/workspaceTabs.ts`, `src/App.tsx`.
+- Verificado: `npm run build` executado com sucesso e 0 erros (tsc + vite build em 6.52s, saída em `dist/`).
+- Pendente / próximo passo: Testes no Microsoft Edge via `edge://extensions` (recarregar pacote em `dist/`).
+- Avisos para o outro agente:
+  1. **Breadcrumbs navegáveis**: Trilha hierárquica clicável no topo do `MainContent` (`breadcrumbs` gerado em `useBookmarks.ts`), permitindo voltar rapidamente para qualquer nível de pasta com 1 clique.
+  2. **Menu de Contexto Completo (Botão Direito)**: Componente `ContextMenu.tsx` estilo Fluent/Edge que reage a cliques com botão direito em links (abrir em nova guia/janela/InPrivate, copiar link, editar, mover, excluir), pastas (abrir todas em janela/InPrivate, nova subpasta aqui, novo favorito aqui, renomear, excluir) e área de fundo da pasta (novo favorito, nova pasta, organizar A-Z, recarregar).
+  3. **Drag & Drop Nativo (HTML5)**: Favoritos (`draggable`) podem ser arrastados e soltos tanto sobre as subpastas no `MainContent` (modo lista e cards) quanto sobre qualquer pasta da árvore na `Sidebar` (`FolderTreeNode`), movendo o item instantaneamente no Chrome/Edge com anel visual de destaque.
+  4. **Duplo clique e atalhos de teclado**: Duplo clique em favorito abre imediatamente em nova guia; duplo clique em pasta navega para dentro dela; atalho `Ctrl+A` seleciona todos os itens da visualização atual; tecla `Delete` abre diálogo de exclusão em massa para os selecionados.
+  5. Mudanças ainda não foram commitadas (aguardando pedido explícito do usuário).
+
+---
+
 ## 2026-09-23 — Antigravity — ordenação alfabética completa A-Z (pastas, subpastas e favoritos internos)
 - Arquivos alterados: `src/services/bookmarks/hierarchy.ts`, `src/hooks/useBookmarks.ts`, `src/App.tsx`, `src/components/layout/MainContent.tsx`, `src/components/modals/AiOrganizeModal.tsx`.
 - Verificado: `npm run build` executado com sucesso e 0 erros (tsc + vite build em 6.24s, saída em `dist/`).

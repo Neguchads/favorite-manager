@@ -8,6 +8,7 @@ interface FolderTreeNodeProps {
   onSelectSection: (sectionId: string) => void;
   folderItemCount: Record<string, number>;
   level?: number;
+  onDropBookmark?: (bookmarkId: string, targetFolderId: string) => void;
 }
 
 export const FolderTreeNode: React.FC<FolderTreeNodeProps> = ({
@@ -16,8 +17,10 @@ export const FolderTreeNode: React.FC<FolderTreeNodeProps> = ({
   onSelectSection,
   folderItemCount,
   level = 0,
+  onDropBookmark,
 }) => {
   const [isOpen, setIsOpen] = useState(level === 0);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   // Subfolders only
   const subFolders = (node.children || []).filter((child) => !child.url);
@@ -34,16 +37,47 @@ export const FolderTreeNode: React.FC<FolderTreeNodeProps> = ({
       ? 'Favoritos móveis'
       : node.title;
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (!isDragOver) setIsDragOver(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const rawData = e.dataTransfer.getData('application/json') || e.dataTransfer.getData('text/plain');
+    if (rawData && onDropBookmark) {
+      try {
+        const parsed = JSON.parse(rawData);
+        if (parsed.type === 'bookmark' && parsed.id) {
+          onDropBookmark(parsed.id, node.id);
+        }
+      } catch (err) {
+        console.warn('Erro ao processar favorito arrastado para pasta da árvore:', err);
+      }
+    }
+  };
+
   return (
     <div className="select-none">
       <div
-        className={`group flex items-center justify-between px-2 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${
-          isSelected
+        className={`group flex items-center justify-between px-2 py-1.5 rounded-lg text-xs cursor-pointer transition-all ${
+          isDragOver
+            ? 'bg-sky-100 dark:bg-sky-950/80 text-sky-700 dark:text-sky-300 ring-2 ring-sky-500/60 font-semibold'
+            : isSelected
             ? 'bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 font-medium'
             : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-200'
         }`}
         style={{ paddingLeft: `${Math.max(level * 12 + 8, 8)}px` }}
         onClick={() => onSelectSection(node.id)}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
       >
         <div className="flex items-center space-x-1.5 min-w-0 flex-1">
           {hasSubFolders ? (
@@ -76,7 +110,9 @@ export const FolderTreeNode: React.FC<FolderTreeNodeProps> = ({
         {count > 0 && (
           <span
             className={`text-[10px] px-1.5 py-0.2 rounded-full shrink-0 ml-1.5 ${
-              isSelected
+              isDragOver
+                ? 'bg-sky-500 text-white font-bold'
+                : isSelected
                 ? 'bg-sky-200/70 text-sky-800 dark:bg-sky-900 dark:text-sky-200'
                 : 'bg-slate-200/60 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
             }`}
@@ -96,6 +132,7 @@ export const FolderTreeNode: React.FC<FolderTreeNodeProps> = ({
               onSelectSection={onSelectSection}
               folderItemCount={folderItemCount}
               level={level + 1}
+              onDropBookmark={onDropBookmark}
             />
           ))}
         </div>
