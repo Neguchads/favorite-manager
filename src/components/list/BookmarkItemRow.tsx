@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ExternalLink, Edit2, Trash2, Globe } from 'lucide-react';
+import { ExternalLink, Edit2, Trash2, Globe, FolderInput } from 'lucide-react';
 import { BookmarkNode } from '../../types/bookmarks';
 import { extractDomain, getFaviconUrl } from '../../utils/url';
 import { formatDateShort } from '../../utils/date';
@@ -13,6 +13,7 @@ interface BookmarkItemRowProps {
   onInspect: (item: BookmarkNode) => void;
   onEdit: (item: BookmarkNode) => void;
   onDelete: (id: string) => void;
+  onMove?: (item: BookmarkNode) => void;
   onContextMenu?: (e: React.MouseEvent, item: BookmarkNode) => void;
 }
 
@@ -25,6 +26,7 @@ export const BookmarkItemRow: React.FC<BookmarkItemRowProps> = ({
   onInspect,
   onEdit,
   onDelete,
+  onMove,
   onContextMenu,
 }) => {
   const [imgError, setImgError] = useState(false);
@@ -149,6 +151,19 @@ export const BookmarkItemRow: React.FC<BookmarkItemRowProps> = ({
         >
           <Edit2 className="w-3.5 h-3.5" />
         </button>
+
+        {onMove && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onMove(item);
+            }}
+            title="Mover para outra pasta"
+            className="p-1 text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 rounded"
+          >
+            <FolderInput className="w-3.5 h-3.5" />
+          </button>
+        )}
 
         <button
           onClick={(e) => {

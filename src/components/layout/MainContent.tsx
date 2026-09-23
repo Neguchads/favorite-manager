@@ -8,6 +8,7 @@ import {
   Loader2,
   CheckCircle2,
   ChevronRight,
+  ChevronsUpDown,
   Copy,
 } from 'lucide-react';
 import {
@@ -37,9 +38,11 @@ interface MainContentProps {
   items: BookmarkNode[];
   subfolders?: BookmarkNode[];
   folderItemCount?: Record<string, number>;
+  folderSubfolderCount?: Record<string, number>;
   onNavigateToFolder?: (folderId: string) => void;
   onEditFolder?: (folder: BookmarkNode) => void;
   onDeleteFolder?: (folderId: string) => void;
+  onMoveFolder?: (folder: BookmarkNode) => void;
   onOpenFolderInNewWindow?: (folderId: string) => void;
   onOpenFolderInIncognito?: (folderId: string) => void;
   selectedIds: Set<string>;
@@ -83,9 +86,11 @@ export const MainContent: React.FC<MainContentProps> = ({
   items,
   subfolders = [],
   folderItemCount = {},
+  folderSubfolderCount = {},
   onNavigateToFolder = () => {},
   onEditFolder = () => {},
   onDeleteFolder = () => {},
+  onMoveFolder,
   onOpenFolderInNewWindow,
   onOpenFolderInIncognito,
   selectedIds,
@@ -122,6 +127,9 @@ export const MainContent: React.FC<MainContentProps> = ({
   const [sortSuccessMessage, setSortSuccessMessage] = useState<string | null>(null);
   const [copiedToast, setCopiedToast] = useState(false);
 
+  // Track expanded folder IDs to reveal internal content inline (like native tree)
+  const [expandedFolderIds, setExpandedFolderIds] = useState<Set<string>>(new Set());
+
   // Context menu state
   const [contextMenuState, setContextMenuState] = useState<ContextMenuState>({
     isOpen: false,
@@ -129,6 +137,23 @@ export const MainContent: React.FC<MainContentProps> = ({
     y: 0,
     type: 'background',
   });
+
+  const handleToggleExpandFolder = (folderId: string) => {
+    setExpandedFolderIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(folderId)) next.delete(folderId);
+      else next.add(folderId);
+      return next;
+    });
+  };
+
+  const handleToggleExpandAll = () => {
+    if (expandedFolderIds.size === subfolders.length && subfolders.length > 0) {
+      setExpandedFolderIds(new Set());
+    } else {
+      setExpandedFolderIds(new Set(subfolders.map((f) => f.id)));
+    }
+  };
 
   const handleBookmarkContextMenu = (e: React.MouseEvent, item: BookmarkNode) => {
     setContextMenuState({
@@ -194,6 +219,64 @@ export const MainContent: React.FC<MainContentProps> = ({
 
   const allSelected = items.length > 0 && items.every((i) => selectedIds.has(i.id));
   const someSelected = items.some((i) => selectedIds.has(i.id));
+  const allSubfoldersExpanded = subfolders.length > 0 && expandedFolderIds.size === subfolders.length;
+
+  // Renders the internal content of any expanded folder (both subfolders and internal bookmarks)
+  const renderFolderInternalContent = (folderNode: BookmarkNode) => {
+    const childFolders = (folderNode.children || []).filter((c) => !c.url);
+    const childBookmarks = (folderNode.children || []).filter((c) => Boolean(c.url));
+    const isEmpty = childFolders.length === 0 && childBookmarks.length === 0;
+
+    if (isEmpty) {
+      return (
+        <div className="text-xs text-slate-400 italic py-2 pl-3 bg-slate-50/50 dark:bg-slate-800/40 rounded-lg">
+          Esta pasta está vazia (nenhum favorito ou subpasta).
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-1 py-1">
+        {/* Sub-subfolders */}
+        {childFolders.map((sub) => (
+          <FolderItemRow
+            key={sub.id}
+            folder={sub}
+            itemCount={folderItemCount[sub.id] || 0}
+            subfolderCount={folderSubfolderCount[sub.id] || 0}
+            isExpanded={expandedFolderIds.has(sub.id)}
+            onToggleExpand={handleToggleExpandFolder}
+            onOpen={onNavigateToFolder}
+            onEdit={onEditFolder}
+            onDelete={onDeleteFolder}
+            onMoveFolder={onMoveFolder}
+            onOpenInNewWindow={onOpenFolderInNewWindow}
+            onDropBookmark={onMoveBookmark}
+            onContextMenu={handleFolderContextMenu}
+          >
+            {expandedFolderIds.has(sub.id) && renderFolderInternalContent(sub)}
+          </FolderItemRow>
+        ))}
+
+        {/* Bookmarks inside this folder */}
+        {childBookmarks.map((bookmark) => (
+          <BookmarkItemRow
+            key={bookmark.id}
+            item={bookmark}
+            folderPath={parentPathMap.get(bookmark.parentId || '')}
+            isSelected={selectedIds.has(bookmark.id)}
+            isInspected={selectedItem?.id === bookmark.id}
+            onToggleSelect={onToggleSelect}
+            onInspect={onInspect}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onMove={onOpenMoveModal}
+            onContextMenu={handleBookmarkContextMenu}
+          />
+        ))}
+      </div>
+    );
+  };
 
   // Render specialized maintenance screens
   if (activeSection === 'duplicates') {
@@ -415,27 +498,55 @@ export const MainContent: React.FC<MainContentProps> = ({
         onContextMenu={handleBackgroundContextMenu}
         className="flex-1 overflow-y-auto"
       >
-        {/* Subfolders Section (Visualizador de pastas estilo edge://favorites/) */}
+        {/* Subfolders Section with Expand All toggle (Visualizador de pastas estilo edge://favorites/) */}
         {subfolders.length > 0 && (
           <div className="p-4 border-b border-slate-100 dark:border-slate-800/80">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">
-              Pastas ({subfolders.length})
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                Pastas ({subfolders.length})
+              </div>
+
+              {/* Expand / Collapse All Toggle Button */}
+              {viewMode === 'list' && (
+                <button
+                  onClick={handleToggleExpandAll}
+                  className="text-[11px] text-sky-600 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300 font-medium flex items-center space-x-1 cursor-pointer transition-colors px-2 py-0.5 rounded hover:bg-sky-50 dark:hover:bg-sky-950/40"
+                  title="Expandir ou recolher todas as pastas para ver o conteúdo interno"
+                >
+                  <ChevronsUpDown className="w-3 h-3" />
+                  <span>
+                    {allSubfoldersExpanded
+                      ? 'Recolher Todas as Pastas'
+                      : 'Expandir Todas e Ver Conteúdo'}
+                  </span>
+                </button>
+              )}
             </div>
+
             {viewMode === 'list' ? (
               <div className="space-y-1">
-                {subfolders.map((folder) => (
-                  <FolderItemRow
-                    key={folder.id}
-                    folder={folder}
-                    itemCount={folderItemCount[folder.id] || 0}
-                    onOpen={onNavigateToFolder}
-                    onEdit={onEditFolder}
-                    onDelete={onDeleteFolder}
-                    onOpenInNewWindow={onOpenFolderInNewWindow}
-                    onDropBookmark={onMoveBookmark}
-                    onContextMenu={handleFolderContextMenu}
-                  />
-                ))}
+                {subfolders.map((folder) => {
+                  const isExpanded = expandedFolderIds.has(folder.id);
+                  return (
+                    <FolderItemRow
+                      key={folder.id}
+                      folder={folder}
+                      itemCount={folderItemCount[folder.id] || 0}
+                      subfolderCount={folderSubfolderCount[folder.id] || 0}
+                      isExpanded={isExpanded}
+                      onToggleExpand={handleToggleExpandFolder}
+                      onOpen={onNavigateToFolder}
+                      onEdit={onEditFolder}
+                      onDelete={onDeleteFolder}
+                      onMoveFolder={onMoveFolder}
+                      onOpenInNewWindow={onOpenFolderInNewWindow}
+                      onDropBookmark={onMoveBookmark}
+                      onContextMenu={handleFolderContextMenu}
+                    >
+                      {isExpanded && renderFolderInternalContent(folder)}
+                    </FolderItemRow>
+                  );
+                })}
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
@@ -444,9 +555,11 @@ export const MainContent: React.FC<MainContentProps> = ({
                     key={folder.id}
                     folder={folder}
                     itemCount={folderItemCount[folder.id] || 0}
+                    subfolderCount={folderSubfolderCount[folder.id] || 0}
                     onOpen={onNavigateToFolder}
                     onEdit={onEditFolder}
                     onDelete={onDeleteFolder}
+                    onMoveFolder={onMoveFolder}
                     onOpenInNewWindow={onOpenFolderInNewWindow}
                     onDropBookmark={onMoveBookmark}
                     onContextMenu={handleFolderContextMenu}
@@ -495,6 +608,7 @@ export const MainContent: React.FC<MainContentProps> = ({
                   onInspect={onInspect}
                   onEdit={onEdit}
                   onDelete={onDelete}
+                  onMove={onOpenMoveModal}
                   onContextMenu={handleBookmarkContextMenu}
                 />
               );
@@ -515,6 +629,7 @@ export const MainContent: React.FC<MainContentProps> = ({
                   onInspect={onInspect}
                   onEdit={onEdit}
                   onDelete={onDelete}
+                  onMove={onOpenMoveModal}
                   onContextMenu={handleBookmarkContextMenu}
                 />
               );

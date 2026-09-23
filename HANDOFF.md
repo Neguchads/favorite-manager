@@ -14,6 +14,21 @@ Formato de cada entrada:
 
 ---
 
+## 2026-09-23 — Antigravity — expansão inline do conteúdo interno das pastas, contagem recursiva e movimentação estilo edge://favorites/
+- Arquivos alterados: `src/hooks/useBookmarks.ts`, `src/components/layout/MainContent.tsx`, `src/components/list/BookmarkItemRow.tsx`, `src/components/list/BookmarkCard.tsx`, `src/components/list/FolderItemRow.tsx`, `src/components/list/FolderCard.tsx`, `src/components/tree/FolderTreeNode.tsx`, `src/components/modals/MoveItemsModal.tsx`, `src/App.tsx`.
+- Verificado: `npm run build` executado com sucesso e 0 erros (tsc + vite build em 3.32s, saída em `dist/`).
+- Pendente / próximo passo: Testes no Microsoft Edge via `edge://extensions` (recarregar pacote em `dist/`).
+- Avisos para o outro agente:
+  1. **Contagem real recursiva**: Resolvido o problema em que pastas mestras exibiam "0 itens" porque seus links estavam dentro de subpastas. O hook `useBookmarks` agora calcula recursivamente `recursiveCountMap`, `directCountMap` e `subfolderCountMap`. Os badges agora informam com precisão (ex.: `24 fav. • 3 sub.`).
+  2. **Expansão inline e inspeção total do conteúdo**: Em modo lista, pastas possuem botão de expandir/recolher tipo sanfona/árvore, além de um botão mestre "Expandir Todas e Ver Conteúdo / Recolher Todas as Pastas". Toda a hierarquia de subpastas aninhadas e links internos é renderizada na própria tela com ações completas (abrir, selecionar, inspecionar, mover, excluir).
+  3. **Ações rápidas de mover**:
+     - Botão "Mover para..." (`FolderInput`) presente em cada linha/card de favorito e pasta.
+     - Modal `MoveItemsModal` aprimorada com busca rápida de pasta de destino, proteção contra ciclos (impede mover uma pasta para dentro de si mesma ou de suas subpastas) e pré-seleção inteligente.
+     - Drag & Drop nativo completo: suporta arrastar favoritos e pastas tanto para dentro de outras pastas no conteúdo quanto para a árvore lateral (`FolderTreeNode`).
+  4. Mudanças ainda não foram commitadas (aguardando pedido explícito do usuário).
+
+---
+
 ## 2026-09-23 — Antigravity — paridade funcional total com edge://favorites/ (Breadcrumbs, Drag & Drop, Menu de Contexto e Atalhos)
 - Arquivos alterados: `src/components/common/ContextMenu.tsx` (novo), `src/components/layout/MainContent.tsx`, `src/components/layout/Sidebar.tsx`, `src/components/list/BookmarkCard.tsx`, `src/components/list/BookmarkItemRow.tsx`, `src/components/list/FolderCard.tsx`, `src/components/list/FolderItemRow.tsx`, `src/components/tree/FolderTreeNode.tsx`, `src/hooks/useBookmarks.ts`, `src/services/tabs/workspaceTabs.ts`, `src/App.tsx`.
 - Verificado: `npm run build` executado com sucesso e 0 erros (tsc + vite build em 6.52s, saída em `dist/`).

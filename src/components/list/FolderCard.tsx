@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { Folder, Edit2, Trash2, ExternalLink } from 'lucide-react';
+import { Folder, Edit2, Trash2, ExternalLink, FolderInput } from 'lucide-react';
 import { BookmarkNode } from '../../types/bookmarks';
 
 interface FolderCardProps {
   folder: BookmarkNode;
   itemCount: number;
+  subfolderCount?: number;
   onOpen: (id: string) => void;
   onEdit: (folder: BookmarkNode) => void;
   onDelete: (id: string) => void;
+  onMoveFolder?: (folder: BookmarkNode) => void;
   onOpenInNewWindow?: (id: string) => void;
   onDropBookmark?: (bookmarkId: string, targetFolderId: string) => void;
   onContextMenu?: (e: React.MouseEvent, folder: BookmarkNode) => void;
@@ -16,9 +18,11 @@ interface FolderCardProps {
 export const FolderCard: React.FC<FolderCardProps> = ({
   folder,
   itemCount,
+  subfolderCount = 0,
   onOpen,
   onEdit,
   onDelete,
+  onMoveFolder,
   onOpenInNewWindow,
   onDropBookmark,
   onContextMenu,
@@ -42,8 +46,10 @@ export const FolderCard: React.FC<FolderCardProps> = ({
     if (rawData && onDropBookmark) {
       try {
         const parsed = JSON.parse(rawData);
-        if (parsed.type === 'bookmark' && parsed.id) {
-          onDropBookmark(parsed.id, folder.id);
+        if ((parsed.type === 'bookmark' || parsed.type === 'folder') && parsed.id) {
+          if (parsed.id !== folder.id) {
+            onDropBookmark(parsed.id, folder.id);
+          }
         }
       } catch (err) {
         console.warn('Erro ao processar item arrastado:', err);
@@ -53,6 +59,15 @@ export const FolderCard: React.FC<FolderCardProps> = ({
 
   return (
     <div
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData(
+          'application/json',
+          JSON.stringify({ type: 'folder', id: folder.id })
+        );
+        e.dataTransfer.setData('text/plain', folder.id);
+        e.dataTransfer.effectAllowed = 'move';
+      }}
       onClick={() => onOpen(folder.id)}
       onDoubleClick={() => onOpen(folder.id)}
       onContextMenu={(e) => {
@@ -95,6 +110,18 @@ export const FolderCard: React.FC<FolderCardProps> = ({
               <ExternalLink className="w-3.5 h-3.5" />
             </button>
           )}
+          {onMoveFolder && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onMoveFolder(folder);
+              }}
+              title="Mover pasta para outro local"
+              className="p-1 text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 hover:bg-white dark:hover:bg-slate-800 rounded transition-colors"
+            >
+              <FolderInput className="w-3.5 h-3.5" />
+            </button>
+          )}
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -123,7 +150,11 @@ export const FolderCard: React.FC<FolderCardProps> = ({
           {folder.title || 'Nova Pasta'}
         </h4>
         <span className="text-[10px] text-amber-800 dark:text-amber-300 font-medium">
-          {isDragOver ? 'Solte o favorito aqui' : `${itemCount} ${itemCount === 1 ? 'item' : 'itens'}`}
+          {isDragOver
+            ? 'Solte o favorito aqui'
+            : `${itemCount > 0 ? `${itemCount} fav.` : '0 itens'}${
+                subfolderCount > 0 ? ` • ${subfolderCount} sub.` : ''
+              }`}
         </span>
       </div>
     </div>

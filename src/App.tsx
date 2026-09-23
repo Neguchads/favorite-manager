@@ -49,6 +49,7 @@ export const App: React.FC = () => {
     allFolders,
     allBookmarks,
     folderItemCount,
+    folderSubfolderCount,
     duplicates,
     cleanupReport,
     stats,
@@ -319,9 +320,11 @@ export const App: React.FC = () => {
           items={displayedItems}
           subfolders={currentSubfolders}
           folderItemCount={folderItemCount}
+          folderSubfolderCount={folderSubfolderCount}
           onNavigateToFolder={setActiveSection}
           onEditFolder={handleOpenEdit}
           onDeleteFolder={handlePromptDeleteFolder}
+          onMoveFolder={handleOpenMoveForItem}
           onOpenFolderInNewWindow={handleOpenFolderInNewWindow}
           onOpenFolderInIncognito={handleOpenFolderInIncognito}
           selectedIds={selectedIds}

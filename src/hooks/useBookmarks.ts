@@ -69,12 +69,48 @@ export function useBookmarks() {
   }, [loadTree]);
 
   // Flatten nodes map for fast lookup and folder path tracking
-  const { nodeMap, parentPathMap, allBookmarks, allFolders, folderItemCount } = useMemo(() => {
+  const {
+    nodeMap,
+    parentPathMap,
+    allBookmarks,
+    allFolders,
+    folderItemCount,
+    folderDirectCount,
+    folderSubfolderCount,
+  } = useMemo(() => {
     const nMap = new Map<string, BookmarkNode>();
     const pMap = new Map<string, string>();
     const bookmarks: BookmarkNode[] = [];
     const folders: FolderOption[] = [];
-    const countMap: Record<string, number> = {};
+    const recursiveCountMap: Record<string, number> = {};
+    const directCountMap: Record<string, number> = {};
+    const subfolderCountMap: Record<string, number> = {};
+
+    function countNodes(node: BookmarkNode): number {
+      if (node.url) {
+        return 1;
+      }
+      let bookmarksTotal = 0;
+      let directBookmarks = 0;
+      let subfolders = 0;
+
+      if (node.children) {
+        for (const child of node.children) {
+          if (child.url) {
+            directBookmarks++;
+            bookmarksTotal++;
+          } else {
+            subfolders++;
+            bookmarksTotal += countNodes(child);
+          }
+        }
+      }
+
+      recursiveCountMap[node.id] = bookmarksTotal;
+      directCountMap[node.id] = directBookmarks;
+      subfolderCountMap[node.id] = subfolders;
+      return bookmarksTotal;
+    }
 
     function traverse(node: BookmarkNode, currentPath: string, level: number) {
       nMap.set(node.id, node);
@@ -82,9 +118,6 @@ export function useBookmarks() {
 
       if (node.url) {
         bookmarks.push(node);
-        if (node.parentId) {
-          countMap[node.parentId] = (countMap[node.parentId] || 0) + 1;
-        }
       } else {
         // Folder
         const folderTitle =
@@ -116,6 +149,7 @@ export function useBookmarks() {
 
     if (tree.length > 0) {
       for (const root of tree) {
+        countNodes(root);
         traverse(root, '', 0);
       }
     }
@@ -125,7 +159,9 @@ export function useBookmarks() {
       parentPathMap: pMap,
       allBookmarks: bookmarks,
       allFolders: folders,
-      folderItemCount: countMap,
+      folderItemCount: recursiveCountMap,
+      folderDirectCount: directCountMap,
+      folderSubfolderCount: subfolderCountMap,
     };
   }, [tree]);
 
@@ -557,6 +593,8 @@ export function useBookmarks() {
     allFolders,
     allBookmarks,
     folderItemCount,
+    folderDirectCount,
+    folderSubfolderCount,
     duplicates,
     cleanupReport,
     stats,

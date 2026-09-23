@@ -54,11 +54,13 @@ export const FolderTreeNode: React.FC<FolderTreeNodeProps> = ({
     if (rawData && onDropBookmark) {
       try {
         const parsed = JSON.parse(rawData);
-        if (parsed.type === 'bookmark' && parsed.id) {
-          onDropBookmark(parsed.id, node.id);
+        if ((parsed.type === 'bookmark' || parsed.type === 'folder') && parsed.id) {
+          if (parsed.id !== node.id) {
+            onDropBookmark(parsed.id, node.id);
+          }
         }
       } catch (err) {
-        console.warn('Erro ao processar favorito arrastado para pasta da árvore:', err);
+        console.warn('Erro ao processar item arrastado para pasta da árvore:', err);
       }
     }
   };
