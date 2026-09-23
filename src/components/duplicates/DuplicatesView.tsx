@@ -34,7 +34,7 @@ export const DuplicatesView: React.FC<DuplicatesViewProps> = ({
   onInspect,
   onRefresh,
 }) => {
-  const [keepStrategy, setKeepStrategy] = useState<'oldest' | 'newest'>('oldest');
+  const [keepStrategy, setKeepStrategy] = useState<'oldest' | 'newest' | 'longest'>('oldest');
   const [customKeepMap, setCustomKeepMap] = useState<Record<string, string>>({});
   const [searchFilter, setSearchFilter] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
@@ -54,6 +54,12 @@ export const DuplicatesView: React.FC<DuplicatesViewProps> = ({
       if (!keptId) {
         if (keepStrategy === 'newest') {
           keptId = group.items[group.items.length - 1]?.id;
+        } else if (keepStrategy === 'longest') {
+          // Keep item with the longest/most descriptive title
+          const sortedByTitle = [...group.items].sort(
+            (a, b) => (b.title?.length || 0) - (a.title?.length || 0)
+          );
+          keptId = sortedByTitle[0]?.id;
         } else {
           keptId = group.items[0]?.id;
         }
@@ -254,6 +260,18 @@ export const DuplicatesView: React.FC<DuplicatesViewProps> = ({
                 title="Mantém a cópia mais recente adicionada aos favoritos"
               >
                 Manter Mais Recente
+              </button>
+              <button
+                type="button"
+                onClick={() => setKeepStrategy('longest')}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
+                  keepStrategy === 'longest'
+                    ? 'bg-rose-500 text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
+                }`}
+                title="Mantém a versão com o título mais longo e descritivo"
+              >
+                Título Mais Completo
               </button>
             </div>
 

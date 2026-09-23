@@ -1,6 +1,12 @@
 import { BookmarkNode } from '../../types/bookmarks';
 
-export type LinkHealthStatus = 'ok' | 'broken_404' | 'broken_server' | 'timeout' | 'network_error';
+export type LinkHealthStatus =
+  | 'ok'
+  | 'redirected'
+  | 'broken_404'
+  | 'broken_server'
+  | 'timeout'
+  | 'network_error';
 
 export interface LinkHealthResult {
   bookmark: BookmarkNode;
@@ -8,6 +14,8 @@ export interface LinkHealthResult {
   httpCode?: number;
   error?: string;
   waybackUrl: string;
+  redirected?: boolean;
+  finalUrl?: string;
 }
 
 export function getWaybackUrl(url: string): string {
@@ -17,8 +25,17 @@ export function getWaybackUrl(url: string): string {
 /**
  * Checks a single URL status using background service worker or direct fetch.
  * Handles 403/405 gracefully to avoid false broken link reports (Bug 7 fix).
+ * Detects 301/302 redirects with final destination URL.
  */
-export async function checkSingleUrlStatus(url: string): Promise<{ status: LinkHealthStatus; httpCode?: number; error?: string }> {
+export async function checkSingleUrlStatus(
+  url: string
+): Promise<{
+  status: LinkHealthStatus;
+  httpCode?: number;
+  error?: string;
+  redirected?: boolean;
+  finalUrl?: string;
+}> {
   // If chrome.runtime sendMessage available, use background to avoid CORS
   if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
     try {
@@ -28,6 +45,14 @@ export async function checkSingleUrlStatus(url: string): Promise<{ status: LinkH
       });
 
       if (res) {
+        if (res.redirected && res.finalUrl && res.finalUrl !== url) {
+          return {
+            status: 'redirected',
+            httpCode: res.status || 301,
+            redirected: true,
+            finalUrl: res.finalUrl,
+          };
+        }
         if (res.ok || res.status === 403 || res.status === 405) {
           return { status: 'ok', httpCode: res.status || 200 };
         }
@@ -102,6 +127,8 @@ export async function checkBookmarksHealth(
         httpCode: res.httpCode,
         error: res.error,
         waybackUrl: getWaybackUrl(bm.url!),
+        redirected: res.redirected,
+        finalUrl: res.finalUrl,
       };
       checkedCount++;
       if (onProgress) {

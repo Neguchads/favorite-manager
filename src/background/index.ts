@@ -155,9 +155,15 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           const status = res.status;
           // If status is 2xx/3xx, or 403 (server exists and responded, but forbids bot reading), consider online
           const ok = res.ok || (status >= 200 && status < 400) || status === 403;
+          const finalUrl = res.url || message.url;
+          const isRedirected = Boolean(
+            res.redirected || (res.url && res.url !== message.url && res.url.replace(/\/$/, '') !== message.url.replace(/\/$/, ''))
+          );
           sendResponse({
             status,
             ok,
+            redirected: isRedirected,
+            finalUrl: isRedirected ? finalUrl : undefined,
             error: ok ? null : (status === 404 ? 'not_found' : `http_${status}`),
           });
         } else {

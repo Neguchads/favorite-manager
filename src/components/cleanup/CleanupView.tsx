@@ -10,6 +10,7 @@ import {
   RefreshCw,
   History,
   Check,
+  ArrowRight,
 } from 'lucide-react';
 import { BookmarkNode, CleanupReport } from '../../types/bookmarks';
 import {
@@ -169,6 +170,48 @@ export const CleanupView: React.FC<CleanupViewProps> = ({
     (r) => r.status === 'broken_404' || r.status === 'broken_server' || r.status === 'network_error'
   );
 
+  const redirectedLinksList = healthResults.filter(
+    (r) => r.status === 'redirected' && r.finalUrl
+  );
+
+  const handleUpdateRedirected = async (item: LinkHealthResult) => {
+    if (!onUpdateBookmark || !item.finalUrl) return;
+    try {
+      await onUpdateBookmark(item.bookmark.id, item.bookmark.title, item.finalUrl);
+      setHealthResults((prev) =>
+        prev.map((r) =>
+          r.bookmark.id === item.bookmark.id
+            ? { ...r, status: 'ok', bookmark: { ...r.bookmark, url: item.finalUrl } }
+            : r
+        )
+      );
+      if (onRefresh) await onRefresh();
+    } catch (e) {
+      console.warn('Erro ao atualizar URL redirecionada:', e);
+    }
+  };
+
+  const handleUpdateAllRedirected = async () => {
+    if (!onUpdateBookmark || redirectedLinksList.length === 0) return;
+    try {
+      for (const item of redirectedLinksList) {
+        if (item.finalUrl) {
+          await onUpdateBookmark(item.bookmark.id, item.bookmark.title, item.finalUrl);
+        }
+      }
+      setHealthResults((prev) =>
+        prev.map((r) =>
+          r.status === 'redirected' && r.finalUrl
+            ? { ...r, status: 'ok', bookmark: { ...r.bookmark, url: r.finalUrl } }
+            : r
+        )
+      );
+      if (onRefresh) await onRefresh();
+    } catch (e) {
+      console.warn('Erro ao atualizar URLs redirecionadas em lote:', e);
+    }
+  };
+
   return (
     <div className="p-4 space-y-4 text-xs">
       {/* Sub-Tabs Navigation */}
@@ -218,7 +261,9 @@ export const CleanupView: React.FC<CleanupViewProps> = ({
           }`}
         >
           <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
-          <span>Links Quebrados & 404 ({brokenLinksList.length})</span>
+          <span>
+            Integridade & Redirecionamentos ({brokenLinksList.length + redirectedLinksList.length})
+          </span>
         </button>
       </div>
 
@@ -446,6 +491,17 @@ export const CleanupView: React.FC<CleanupViewProps> = ({
               </p>
             </div>
             <div className="flex items-center space-x-2">
+              {redirectedLinksList.length > 0 && onUpdateBookmark && (
+                <button
+                  type="button"
+                  onClick={handleUpdateAllRedirected}
+                  className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-300 rounded-lg font-medium flex items-center space-x-1.5 transition-colors cursor-pointer text-xs"
+                >
+                  <ArrowRight className="w-3.5 h-3.5" />
+                  <span>Atualizar Redirecionados ({redirectedLinksList.length})</span>
+                </button>
+              )}
+
               {brokenLinksList.length > 0 && onDeleteMultiple && (
                 <button
                   type="button"
@@ -501,68 +557,135 @@ export const CleanupView: React.FC<CleanupViewProps> = ({
                 Nenhuma verificação executada ainda.
               </p>
               <p className="text-[11px] mt-1">
-                Clique em &quot;Escanear Favoritos&quot; para checar quais links continuam no ar.
+                Clique em &quot;Escanear Favoritos&quot; para checar quais links continuam no ar ou foram redirecionados.
               </p>
             </div>
           ) : (
             <div className="divide-y divide-slate-100 dark:divide-slate-700/60 max-h-[500px] overflow-y-auto">
-              {brokenLinksList.length === 0 && !isScanningHealth ? (
+              {brokenLinksList.length === 0 && redirectedLinksList.length === 0 && !isScanningHealth ? (
                 <div className="p-8 text-center text-emerald-600 dark:text-emerald-400">
                   <CheckCircle2 className="w-8 h-8 mx-auto mb-2" />
-                  <p className="font-semibold">Nenhum link quebrado encontrado na amostra!</p>
-                  <p className="text-xs text-slate-500 mt-1">Todos os sites responderam normalmente.</p>
+                  <p className="font-semibold">Nenhum problema encontrado na amostra!</p>
+                  <p className="text-xs text-slate-500 mt-1">Todos os sites responderam normalmente sem erros ou redirecionamentos pendentes.</p>
                 </div>
               ) : (
-                brokenLinksList.map((res) => (
-                  <div
-                    key={res.bookmark.id}
-                    className="px-4 py-2.5 flex items-center justify-between hover:bg-slate-50/60 dark:hover:bg-slate-700/40"
-                  >
-                    <div className="max-w-xl truncate">
-                      <div className="flex items-center space-x-2">
-                        <span
-                          className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
-                            res.status === 'broken_404'
-                              ? 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300'
-                              : 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300'
-                          }`}
-                        >
-                          {res.status === 'broken_404'
-                            ? '404 Não Encontrado'
-                            : res.status === 'timeout'
-                            ? 'Timeout (Fora do Ar)'
-                            : `Erro ${res.httpCode || 'Rede'}`}
+                <>
+                  {/* Redirected Links Section */}
+                  {redirectedLinksList.length > 0 && (
+                    <div>
+                      <div className="px-4 py-2 bg-indigo-50/50 dark:bg-indigo-950/30 flex items-center justify-between border-b border-indigo-100 dark:border-indigo-900/50">
+                        <span className="font-semibold text-indigo-700 dark:text-indigo-300 text-[11px] uppercase tracking-wider">
+                          Links com Redirecionamento 301/302 ({redirectedLinksList.length})
                         </span>
-                        <p className="font-medium text-slate-800 dark:text-slate-200 truncate">
-                          {res.bookmark.title}
-                        </p>
+                        <span className="text-[10px] text-indigo-500">
+                          O destino mudou; atualize a URL para evitar saltos lentos
+                        </span>
                       </div>
-                      <p className="text-[11px] text-slate-400 truncate mt-0.5">
-                        {res.bookmark.url}
-                      </p>
-                    </div>
+                      <div className="divide-y divide-slate-100 dark:divide-slate-700/60">
+                        {redirectedLinksList.map((res) => (
+                          <div
+                            key={res.bookmark.id}
+                            className="px-4 py-2.5 flex items-center justify-between hover:bg-slate-50/60 dark:hover:bg-slate-700/40"
+                          >
+                            <div className="max-w-xl truncate">
+                              <div className="flex items-center space-x-2">
+                                <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300">
+                                  {res.httpCode ? `${res.httpCode} Redirecionado` : 'Redirecionado'}
+                                </span>
+                                <p className="font-medium text-slate-800 dark:text-slate-200 truncate">
+                                  {res.bookmark.title}
+                                </p>
+                              </div>
+                              <div className="flex items-center space-x-1.5 text-[11px] text-slate-400 truncate mt-0.5">
+                                <span className="line-through text-slate-400">{res.bookmark.url}</span>
+                                <ArrowRight className="w-3 h-3 text-indigo-500 flex-shrink-0" />
+                                <span className="text-indigo-600 dark:text-indigo-400 font-medium">
+                                  {res.finalUrl}
+                                </span>
+                              </div>
+                            </div>
 
-                    <div className="flex items-center space-x-2">
-                      <a
-                        href={res.waybackUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        title="Tentar abrir versão salva no Archive.org"
-                        className="flex items-center space-x-1 px-2.5 py-1 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 rounded transition-colors text-[11px]"
-                      >
-                        <History className="w-3.5 h-3.5" />
-                        <span>Wayback Machine</span>
-                      </a>
-                      <button
-                        onClick={() => onDeleteBookmark(res.bookmark.id)}
-                        className="p-1 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded"
-                        title="Excluir este favorito quebrado"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                            {onUpdateBookmark && (
+                              <button
+                                onClick={() => handleUpdateRedirected(res)}
+                                className="flex items-center space-x-1 px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-300 rounded transition-colors text-[11px] font-medium"
+                                title="Atualizar favorito com a nova URL de destino"
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                                <span>Atualizar URL</span>
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))
+                  )}
+
+                  {/* Broken Links Section */}
+                  {brokenLinksList.length > 0 && (
+                    <div>
+                      {redirectedLinksList.length > 0 && (
+                        <div className="px-4 py-2 bg-rose-50/50 dark:bg-rose-950/30 flex items-center justify-between border-b border-rose-100 dark:border-rose-900/50">
+                          <span className="font-semibold text-rose-700 dark:text-rose-300 text-[11px] uppercase tracking-wider">
+                            Links Quebrados ({brokenLinksList.length})
+                          </span>
+                        </div>
+                      )}
+                      <div className="divide-y divide-slate-100 dark:divide-slate-700/60">
+                        {brokenLinksList.map((res) => (
+                          <div
+                            key={res.bookmark.id}
+                            className="px-4 py-2.5 flex items-center justify-between hover:bg-slate-50/60 dark:hover:bg-slate-700/40"
+                          >
+                            <div className="max-w-xl truncate">
+                              <div className="flex items-center space-x-2">
+                                <span
+                                  className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
+                                    res.status === 'broken_404'
+                                      ? 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300'
+                                      : 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300'
+                                  }`}
+                                >
+                                  {res.status === 'broken_404'
+                                    ? '404 Não Encontrado'
+                                    : res.status === 'timeout'
+                                    ? 'Timeout (Fora do Ar)'
+                                    : `Erro ${res.httpCode || 'Rede'}`}
+                                </span>
+                                <p className="font-medium text-slate-800 dark:text-slate-200 truncate">
+                                  {res.bookmark.title}
+                                </p>
+                              </div>
+                              <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                                {res.bookmark.url}
+                              </p>
+                            </div>
+
+                            <div className="flex items-center space-x-2">
+                              <a
+                                href={res.waybackUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                title="Tentar abrir versão salva no Archive.org"
+                                className="flex items-center space-x-1 px-2.5 py-1 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 rounded transition-colors text-[11px]"
+                              >
+                                <History className="w-3.5 h-3.5" />
+                                <span>Wayback Machine</span>
+                              </a>
+                              <button
+                                onClick={() => onDeleteBookmark(res.bookmark.id)}
+                                className="p-1 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded"
+                                title="Excluir este favorito quebrado"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}

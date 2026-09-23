@@ -14,6 +14,25 @@ Formato de cada entrada:
 
 ---
 
+## 2026-09-23 — Antigravity — importação de ideias do MasterFavorites: busca fuzzy tolerante a erros de digitação, estratégia de duplicatas pelo título mais completo e detecção/atualização de redirecionamentos 301/302
+- Arquivos alterados: `src/utils/search.ts`, `src/components/duplicates/DuplicatesView.tsx`, `src/background/index.ts`, `src/services/health/index.ts`, `src/components/cleanup/CleanupView.tsx`.
+- Verificado: `npm run build` executado com sucesso e 0 erros (tsc + vite build em 3.63s, saída em `dist/`).
+- Pendente / próximo passo: Testes no Microsoft Edge via `edge://extensions` (recarregar extensão a partir de `dist/`).
+- Avisos para o outro agente:
+  1. **Busca Fuzzy / Tolerante a Erros de Digitação (`search.ts`)**:
+     - Implementado algoritmo de distância Levenshtein e cálculo de similaridade (`levenshteinDistance`, `stringSimilarity`, `fuzzyContains`).
+     - A busca em tempo real agora tolera erros de digitação (ex: "gitub" acha "github", "youtub" acha "youtube", "cloude" acha "claude").
+     - Suporta busca geral (título, url, domínio, pasta) e filtros com prefixo (`title:`, `folder:`, `domain:`).
+  2. **Estratégia Inteligente de Duplicatas (`DuplicatesView.tsx`)**:
+     - Adicionada a estratégia `'longest'` ("Título Mais Completo") ao lado de `'oldest'` ("Mais Antigo") e `'newest'` ("Mais Recente").
+     - Permite ao usuário manter automaticamente o favorito com o título mais descritivo e detalhado, descartando cópias com títulos genéricos ou truncados.
+  3. **Detecção de Redirecionamento HTTP 301/302 e Atualização em 1 Clique (`background/index.ts`, `health/index.ts`, `CleanupView.tsx`)**:
+     - O service worker no background verifica se a resposta sofreu redirecionamento (`res.redirected` ou alteração de URL canônica) e retorna a URL de destino (`finalUrl`).
+     - A aba "Integridade & Redirecionamentos" na tela de Limpeza agora agrupa links com redirecionamento detectado, exibindo a URL original tachada com seta indicando a nova URL final.
+     - Disponibilizado botão individual "Atualizar URL" e botão em lote "Atualizar Redirecionados (N)" para atualizar os favoritos diretamente com o endereço definitivo, eliminando saltos lentos.
+
+---
+
 ## 2026-09-23 — Antigravity — importação e exportação de favoritos em formato Netscape HTML (.html) oficial e JSON com pré-visualização e organização por IA
 - Arquivos alterados: `src/services/backup/htmlParser.ts` (novo), `src/services/backup/htmlExporter.ts` (novo), `src/services/backup/importer.ts` (novo), `src/components/modals/ImportBookmarksModal.tsx` (novo), `src/services/backup/index.ts`, `src/components/backup/BackupView.tsx`, `src/components/layout/Header.tsx`, `src/components/layout/MainContent.tsx`, `src/App.tsx`.
 - Verificado: `npm run build` executado com sucesso e 0 erros (tsc + vite build em 4.50s, saída em `dist/`).
