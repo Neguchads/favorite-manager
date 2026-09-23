@@ -120,7 +120,7 @@ export const RightInspector: React.FC<RightInspectorProps> = ({
         {/* Properties list */}
         <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
           <div>
-            <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               URL Completa
             </span>
             <p className="text-slate-700 dark:text-slate-300 font-mono text-[11px] break-all mt-0.5 bg-slate-50 dark:bg-slate-950 p-2 rounded-lg border border-slate-200 dark:border-slate-800">
@@ -129,7 +129,7 @@ export const RightInspector: React.FC<RightInspectorProps> = ({
           </div>
 
           <div>
-            <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Localização / Pasta
             </span>
             <div className="flex items-center space-x-1.5 text-slate-700 dark:text-slate-300 mt-1">
@@ -139,7 +139,7 @@ export const RightInspector: React.FC<RightInspectorProps> = ({
           </div>
 
           <div>
-            <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Data de Adição
             </span>
             <div className="flex items-center space-x-1.5 text-slate-700 dark:text-slate-300 mt-1">

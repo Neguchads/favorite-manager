@@ -103,12 +103,12 @@ export const BookmarkItemRow: React.FC<BookmarkItemRowProps> = ({
               {item.title || '(Sem título)'}
             </span>
             {domain && (
-              <span className="text-[10px] text-slate-400 dark:text-slate-500 truncate hidden md:inline">
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate hidden md:inline">
                 {domain}
               </span>
             )}
           </div>
-          <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate font-mono">
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate font-mono">
             {item.url}
           </p>
         </div>
@@ -116,14 +116,14 @@ export const BookmarkItemRow: React.FC<BookmarkItemRowProps> = ({
         {/* Folder tag */}
         {folderPath && (
           <div className="hidden lg:block shrink-0 max-w-[140px] truncate">
-            <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded-full">
+            <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/80 px-2 py-0.5 rounded-full font-medium">
               {folderPath.split(' / ').pop()}
             </span>
           </div>
         )}
 
         {/* Date */}
-        <div className="hidden sm:block text-[11px] text-slate-400 dark:text-slate-500 shrink-0 w-20 text-right">
+        <div className="hidden sm:block text-[11px] text-slate-400 dark:text-slate-400 shrink-0 w-20 text-right">
           {formatDateShort(item.dateAdded)}
         </div>
       </div>

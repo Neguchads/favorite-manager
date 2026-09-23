@@ -484,9 +484,18 @@ export function useBookmarks() {
       await createLocalSnapshot(`Exclusão em massa (${ids.length} itens)`);
       for (const id of ids) {
         try {
-          await bookmarksService.remove(id);
+          const node = nodeMap.get(id);
+          if (node && !node.url) {
+            await bookmarksService.removeTree(id);
+          } else {
+            await bookmarksService.remove(id);
+          }
         } catch (e) {
-          console.warn(`Failed to delete bookmark ${id}:`, e);
+          try {
+            await bookmarksService.removeTree(id);
+          } catch (err2) {
+            console.warn(`Failed to delete item ${id}:`, err2);
+          }
         }
       }
       clearSelection();
@@ -495,7 +504,7 @@ export function useBookmarks() {
       }
       await loadTree();
     },
-    [clearSelection, loadTree, selectedItem]
+    [clearSelection, loadTree, nodeMap, selectedItem]
   );
 
   const deleteDuplicates = useCallback(
@@ -613,5 +622,6 @@ export function useBookmarks() {
     parentPathMap,
     pruneEmptyFolders: pruneEmptyFoldersAction,
     sortAlphabetically,
+    nodeMap,
   };
 }

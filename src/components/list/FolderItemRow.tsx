@@ -15,6 +15,8 @@ interface FolderItemRowProps {
   itemCount: number;
   subfolderCount?: number;
   isExpanded?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (id: string) => void;
   onToggleExpand?: (id: string) => void;
   onOpen: (id: string) => void;
   onEdit: (folder: BookmarkNode) => void;
@@ -31,6 +33,8 @@ export const FolderItemRow: React.FC<FolderItemRowProps> = ({
   itemCount,
   subfolderCount = 0,
   isExpanded = false,
+  isSelected = false,
+  onToggleSelect,
   onToggleExpand,
   onOpen,
   onEdit,
@@ -103,7 +107,9 @@ export const FolderItemRow: React.FC<FolderItemRowProps> = ({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={`group flex items-center justify-between px-3 py-2 border rounded-xl transition-all cursor-pointer shadow-xs ${
-          isDragOver
+          isSelected
+            ? 'bg-sky-50 dark:bg-sky-950/60 border-sky-400 dark:border-sky-500 ring-2 ring-sky-500/40'
+            : isDragOver
             ? 'bg-sky-100/80 dark:bg-sky-950/60 border-sky-400 dark:border-sky-500 ring-2 ring-sky-500/40 scale-[1.01]'
             : isExpanded
             ? 'bg-amber-100/50 dark:bg-amber-950/30 border-amber-300 dark:border-amber-800 shadow-sm'
@@ -111,6 +117,18 @@ export const FolderItemRow: React.FC<FolderItemRowProps> = ({
         }`}
       >
         <div className="flex items-center space-x-2 min-w-0 flex-1">
+          {/* Selection Checkbox */}
+          {onToggleSelect && (
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onClick={(e) => e.stopPropagation()}
+              onChange={() => onToggleSelect(folder.id)}
+              className="w-3.5 h-3.5 rounded text-sky-600 focus:ring-sky-500 border-slate-300 dark:border-slate-600 dark:bg-slate-700 shrink-0 cursor-pointer mr-0.5"
+              title={isSelected ? 'Desmarcar pasta' : 'Selecionar pasta'}
+            />
+          )}
+
           {/* Expand/Collapse Chevron */}
           {onToggleExpand && (
             <button
@@ -154,13 +172,13 @@ export const FolderItemRow: React.FC<FolderItemRowProps> = ({
               </span>
 
               {/* Informative Items and Subfolders Badge */}
-              <span className="text-[10px] px-2 py-0.2 rounded-full bg-amber-200/70 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 font-medium shrink-0">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-200/70 dark:bg-amber-950/80 border border-amber-300/60 dark:border-amber-800/80 text-amber-900 dark:text-amber-200 font-semibold shrink-0">
                 {itemCount > 0 ? `${itemCount} fav.` : '0 itens'}
                 {subfolderCount > 0 && ` • ${subfolderCount} sub.`}
               </span>
             </div>
 
-            <span className="text-[10px] text-slate-400 dark:text-slate-500 truncate block">
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate block">
               {isDragOver
                 ? 'Solte para mover aqui'
                 : isExpanded

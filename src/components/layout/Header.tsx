@@ -12,14 +12,20 @@ import {
   HelpCircle,
   Zap,
   Laptop,
+  Sun,
+  Moon,
+  Monitor,
 } from 'lucide-react';
 import { ViewMode } from '../../types/bookmarks';
+import { ThemePreference } from '../../hooks/useTheme';
 
 interface HeaderProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
+  theme?: ThemePreference;
+  onThemeChange?: (theme: ThemePreference) => void;
   isNative: boolean;
   onOpenCreateBookmark: () => void;
   onOpenCreateFolder: () => void;
@@ -34,6 +40,8 @@ export const Header: React.FC<HeaderProps> = ({
   onSearchChange,
   viewMode,
   onViewModeChange,
+  theme = 'system',
+  onThemeChange,
   isNative,
   onOpenCreateBookmark,
   onOpenCreateFolder,
@@ -198,7 +206,7 @@ export const Header: React.FC<HeaderProps> = ({
               className={`p-1.5 rounded-md text-xs transition-colors ${
                 viewMode === 'list'
                   ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-sm font-semibold'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100'
               }`}
             >
               <List className="w-3.5 h-3.5" />
@@ -209,12 +217,54 @@ export const Header: React.FC<HeaderProps> = ({
               className={`p-1.5 rounded-md text-xs transition-colors ${
                 viewMode === 'cards'
                   ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-sm font-semibold'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100'
               }`}
             >
               <LayoutGrid className="w-3.5 h-3.5" />
             </button>
           </div>
+
+          {/* Theme Selector (Claro / Escuro / Sincronizar com Navegador) */}
+          {onThemeChange && (
+            <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
+              <button
+                type="button"
+                onClick={() => onThemeChange('light')}
+                title="Modo Claro"
+                className={`p-1.5 rounded-md text-xs transition-colors cursor-pointer ${
+                  theme === 'light'
+                    ? 'bg-white dark:bg-slate-700 text-amber-500 shadow-xs font-semibold'
+                    : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-100'
+                }`}
+              >
+                <Sun className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onThemeChange('dark')}
+                title="Modo Escuro"
+                className={`p-1.5 rounded-md text-xs transition-colors cursor-pointer ${
+                  theme === 'dark'
+                    ? 'bg-white dark:bg-slate-700 text-sky-400 shadow-xs font-semibold'
+                    : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-100'
+                }`}
+              >
+                <Moon className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onThemeChange('system')}
+                title="Sincronizar com o tema do navegador (Automático)"
+                className={`p-1.5 rounded-md text-xs transition-colors cursor-pointer ${
+                  theme === 'system'
+                    ? 'bg-white dark:bg-slate-700 text-indigo-500 dark:text-indigo-400 shadow-xs font-semibold'
+                    : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-100'
+                }`}
+              >
+                <Monitor className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
 
           {/* Auto-Organize on Bookmark Creation Toggle */}
           <button
@@ -227,10 +277,10 @@ export const Header: React.FC<HeaderProps> = ({
             className={`hidden xl:flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
               autoOrganize
                 ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 hover:text-slate-600'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:text-slate-700 dark:hover:text-white'
             }`}
           >
-            <Zap className={`w-3.5 h-3.5 ${autoOrganize ? 'text-amber-500 fill-amber-500' : 'text-slate-400'}`} />
+            <Zap className={`w-3.5 h-3.5 ${autoOrganize ? 'text-amber-500 fill-amber-500' : 'text-slate-400 dark:text-slate-400'}`} />
             <span>Auto-Organizar: {autoOrganize ? 'ON' : 'OFF'}</span>
           </button>
 

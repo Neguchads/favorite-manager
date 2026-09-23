@@ -9,6 +9,9 @@ export default {
   theme: {
     extend: {
       colors: {
+        slate: {
+          850: '#172033',
+        },
         edge: {
           50: '#f0f7ff',
           100: '#e0effe',

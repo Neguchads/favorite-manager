@@ -14,6 +14,50 @@ Formato de cada entrada:
 
 ---
 
+## 2026-09-23 — Antigravity — revisão completa de contraste, legibilidade e tokens do Modo Escuro (Dark Mode)
+- Arquivos alterados: `tailwind.config.js`, `src/components/layout/MainContent.tsx`, `src/components/list/BookmarkItemRow.tsx`, `src/components/list/BookmarkCard.tsx`, `src/components/list/FolderItemRow.tsx`, `src/components/layout/Header.tsx`, `src/components/layout/Sidebar.tsx`, `src/components/layout/RightInspector.tsx`, `src/components/tree/FolderTreeNode.tsx`, `src/components/modals/WorkspaceTabsModal.tsx`, `src/components/modals/BatchEditModal.tsx`, `src/components/modals/MoveItemsModal.tsx`, `src/components/duplicates/DuplicatesView.tsx`.
+- Verificado: `npm run build` executado com sucesso e 0 erros (tsc + vite build em 3.14s, saída em `dist/`).
+- Pendente / próximo passo: Testes no Microsoft Edge via `edge://extensions` (recarregar pacote em `dist/`).
+- Avisos para o outro agente:
+  1. **Configuração Tailwind `slate-850`**: Adicionado o tom `#172033` em `theme.extend.colors.slate[850]` no `tailwind.config.js`. Classes como `dark:bg-slate-850` agora geram CSS válido e um tom intermediário elegante entre `slate-800` (#1e293b) e `slate-900` (#0f172a).
+  2. **Toolbar e Breadcrumbs do `MainContent`**:
+     - Contador de itens e subpastas transformado em badge tipo pill de alto contraste: `bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 text-slate-600 dark:text-slate-300 font-medium`.
+     - Rótulo `"Ordenar:"` e botões de ordenação ("Nome", "Domínio", "Data") ajustados para `dark:text-slate-300` com hover `dark:text-white` e fundo ativo com contraste claro.
+     - Breadcrumbs com texto `dark:text-slate-300` e separadores `>` visíveis.
+     - Botões de "Organizar Tudo A-Z" e "Guias do Workspace" com bordas e cores de destaque nítidas no escuro.
+  3. **Legibilidade das Listas e Cards**:
+     - `BookmarkItemRow` e `BookmarkCard`: URLs secundárias, domínios e datas clareados para `dark:text-slate-400` / `dark:text-slate-300` (eliminado o sumiço causado por `dark:text-slate-500` / `dark:text-slate-600` em fundos escuros).
+     - `FolderItemRow`: Badge de contagem (`fav.` e `sub.`) com fundo e texto âmbar nítidos (`dark:bg-amber-950/80 dark:text-amber-200 dark:border-amber-800/80`) e subtítulo informativo legível (`dark:text-slate-400`).
+  4. **Barra Lateral e Detalhes**:
+     - `Sidebar` e `FolderTreeNode`: Cabeçalhos de seção e nomes de pasta com `dark:text-slate-400` / `dark:text-slate-300`, badges de contagem nítidos.
+     - `RightInspector`: Rótulos de campos ("URL Completa", "Localização", "Data") em `dark:text-slate-400 font-semibold`.
+     - Modais (`WorkspaceTabsModal`, `BatchEditModal`, `MoveItemsModal`, `DuplicatesView`): URLs, listas de abas e estados vazios com alto contraste e legibilidade imediata.
+  5. Mudanças ainda não foram commitadas (aguardando pedido explícito do usuário).
+
+---
+
+## 2026-09-23 — Antigravity — seleção múltipla de pastas para mover/editar, suporte a guias de Edge Workspaces e modo Dark sincronizado com o navegador
+- Arquivos alterados: `src/hooks/useTheme.ts` (novo), `src/components/modals/BatchEditModal.tsx` (novo), `src/services/tabs/workspaceTabs.ts`, `src/hooks/useBookmarks.ts`, `src/components/actionbar/BatchActionBar.tsx`, `src/components/layout/Header.tsx`, `src/components/layout/MainContent.tsx`, `src/components/list/FolderCard.tsx`, `src/components/list/FolderItemRow.tsx`, `src/components/modals/WorkspaceTabsModal.tsx`, `src/App.tsx`.
+- Verificado: `npm run build` executado com sucesso e 0 erros (tsc + vite build em 3.21s, saída em `dist/`).
+- Pendente / próximo passo: Testes no Microsoft Edge via `edge://extensions` (recarregar pacote em `dist/`).
+- Avisos para o outro agente:
+  1. **Captura e exibição de guias de Edge Workspaces**:
+     - `getOpenWindowsAndTabs()` em `workspaceTabs.ts` agora consulta `chrome.windows.getAll` sem filtro restritivo de `windowTypes` e combina com `chrome.tabs.query({})` para capturar todas as guias de todas as janelas/workspaces do Edge.
+     - No `MainContent`, ao visualizar pastas de workspace ou pastas vazias, há um botão dedicado "Capturar Guias do Workspace" e na toolbar "Guias do Workspace", abrindo o modal com o destino pré-configurado na pasta atual.
+     - `saveTabsAsBookmarks` e `WorkspaceTabsModal` agora possuem a opção "Salvar direto na pasta de destino (sem criar subpasta)", permitindo salvar as abas diretamente dentro de pastas como "Espaços de trabalho / Produtividade".
+  2. **Seleção múltipla de pastas para mover e editar**:
+     - `FolderItemRow` e `FolderCard` agora possuem checkbox de seleção (`isSelected`, `onToggleSelect`), destacando pastas selecionadas.
+     - O botão "Selecionar Todos" na toolbar agora seleciona simultaneamente todas as pastas e todos os favoritos.
+     - `BatchActionBar` ganhou o botão "Editar": se 1 item/pasta estiver selecionado, abre o editor; se vários estiverem selecionados, abre o novo `BatchEditModal` (adicionar prefixo, sufixo ou localizar e substituir em lote com pré-visualização ao vivo).
+     - `deleteMultiple` em `useBookmarks.ts` foi corrigido para usar `removeTree` em pastas com conteúdo (evitando erro da API do Chrome).
+  3. **Modo Dark e sincronização com tema do navegador**:
+     - Implementado hook `useTheme.ts` com suporte aos modos: Claro (`light`), Escuro (`dark`) e Sincronizar com Navegador (`system`).
+     - Seletor de tema rápido e estilizado no cabeçalho (`Header.tsx`) com ícones Sol ☀️, Lua 🌙 e Monitor 💻.
+     - Escuta eventos de alteração de `prefers-color-scheme` em tempo real e persiste a preferência em `localStorage`.
+  4. Mudanças ainda não foram commitadas (aguardando pedido explícito do usuário).
+
+---
+
 ## 2026-09-23 — Antigravity — expansão inline do conteúdo interno das pastas, contagem recursiva e movimentação estilo edge://favorites/
 - Arquivos alterados: `src/hooks/useBookmarks.ts`, `src/components/layout/MainContent.tsx`, `src/components/list/BookmarkItemRow.tsx`, `src/components/list/BookmarkCard.tsx`, `src/components/list/FolderItemRow.tsx`, `src/components/list/FolderCard.tsx`, `src/components/tree/FolderTreeNode.tsx`, `src/components/modals/MoveItemsModal.tsx`, `src/App.tsx`.
 - Verificado: `npm run build` executado com sucesso e 0 erros (tsc + vite build em 3.32s, saída em `dist/`).

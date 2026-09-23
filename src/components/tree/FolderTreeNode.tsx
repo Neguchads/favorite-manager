@@ -73,7 +73,7 @@ export const FolderTreeNode: React.FC<FolderTreeNodeProps> = ({
             ? 'bg-sky-100 dark:bg-sky-950/80 text-sky-700 dark:text-sky-300 ring-2 ring-sky-500/60 font-semibold'
             : isSelected
             ? 'bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 font-medium'
-            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-200'
+            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/70 hover:text-slate-900 dark:hover:text-white'
         }`}
         style={{ paddingLeft: `${Math.max(level * 12 + 8, 8)}px` }}
         onClick={() => onSelectSection(node.id)}
@@ -116,7 +116,7 @@ export const FolderTreeNode: React.FC<FolderTreeNodeProps> = ({
                 ? 'bg-sky-500 text-white font-bold'
                 : isSelected
                 ? 'bg-sky-200/70 text-sky-800 dark:bg-sky-900 dark:text-sky-200'
-                : 'bg-slate-200/60 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                : 'bg-slate-200/60 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
             }`}
           >
             {count}

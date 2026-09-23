@@ -45,7 +45,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
         {/* Main Navigation Section */}
         <div>
-          <div className="text-[10px] font-bold tracking-wider uppercase text-slate-400 dark:text-slate-500 px-2 mb-1.5">
+          <div className="text-[10px] font-bold tracking-wider uppercase text-slate-500 dark:text-slate-400 px-2 mb-1.5">
             Navegação
           </div>
           <div className="space-y-0.5">
@@ -118,7 +118,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Maintenance & Tools Section */}
         <div>
-          <div className="text-[10px] font-bold tracking-wider uppercase text-slate-400 dark:text-slate-500 px-2 mb-1.5">
+          <div className="text-[10px] font-bold tracking-wider uppercase text-slate-500 dark:text-slate-400 px-2 mb-1.5">
             Manutenção & Inteligência
           </div>
           <div className="space-y-0.5">
@@ -205,7 +205,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Folders Hierarchy Section */}
         <div>
           <div className="flex items-center justify-between px-2 mb-1.5">
-            <span className="text-[10px] font-bold tracking-wider uppercase text-slate-400 dark:text-slate-500">
+            <span className="text-[10px] font-bold tracking-wider uppercase text-slate-500 dark:text-slate-400">
               Árvore de Pastas
             </span>
             <button

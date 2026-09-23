@@ -23,10 +23,14 @@ export interface OpenWindowGroup {
 export function isRealWebUrl(url?: string): boolean {
   if (!url) return false;
   const lower = url.toLowerCase();
+  if (lower.startsWith('chrome-extension://') || lower.startsWith('edge-extension://')) {
+    return false;
+  }
   return (
     lower.startsWith('http://') ||
-    lower.startsWith('https://')
-  ) && !lower.includes('chrome-extension://');
+    lower.startsWith('https://') ||
+    lower.startsWith('file://')
+  );
 }
 
 /**
@@ -35,31 +39,94 @@ export function isRealWebUrl(url?: string): boolean {
 export async function getOpenWindowsAndTabs(): Promise<OpenWindowGroup[]> {
   if (typeof chrome !== 'undefined' && chrome.windows?.getAll) {
     return new Promise((resolve) => {
-      chrome.windows.getAll({ populate: true, windowTypes: ['normal'] }, (windows) => {
+      // Query all windows without restrictive windowTypes so Edge Workspaces are fully captured
+      chrome.windows.getAll({ populate: true }, async (windows) => {
+        // Also query chrome.tabs to ensure no tabs from any workspace or detached window are missed
+        let allTabs: chrome.tabs.Tab[] = [];
+        try {
+          allTabs = await new Promise<chrome.tabs.Tab[]>((res) => {
+            if (chrome.tabs?.query) {
+              chrome.tabs.query({}, (tabs) => res(tabs || []));
+            } else {
+              res([]);
+            }
+          });
+        } catch {
+          allTabs = [];
+        }
+
+        const windowMap = new Map<number, chrome.windows.Window>();
+        for (const win of windows || []) {
+          if (win.id !== undefined) windowMap.set(win.id, win);
+        }
+
+        // Group tabs by windowId
+        const tabsByWindow = new Map<number, OpenTab[]>();
+
+        // First add tabs from windows.getAll
+        for (const win of windows || []) {
+          const rawTabs = win.tabs || [];
+          for (const t of rawTabs) {
+            if (isRealWebUrl(t.url)) {
+              const winId = win.id || 0;
+              if (!tabsByWindow.has(winId)) tabsByWindow.set(winId, []);
+              tabsByWindow.get(winId)!.push({
+                id: t.id || Math.random(),
+                title: t.title || t.url || 'Nova Guia',
+                url: t.url || '',
+                favIconUrl: t.favIconUrl,
+                windowId: winId,
+                active: t.active,
+              });
+            }
+          }
+        }
+
+        // Check if any tabs from chrome.tabs.query belong to windows not in windows.getAll
+        for (const t of allTabs) {
+          if (isRealWebUrl(t.url) && t.windowId) {
+            const list = tabsByWindow.get(t.windowId);
+            if (!list) {
+              tabsByWindow.set(t.windowId, [{
+                id: t.id || Math.random(),
+                title: t.title || t.url || 'Nova Guia',
+                url: t.url || '',
+                favIconUrl: t.favIconUrl,
+                windowId: t.windowId,
+                active: t.active,
+              }]);
+            } else if (!list.some((existing) => existing.id === t.id)) {
+              list.push({
+                id: t.id || Math.random(),
+                title: t.title || t.url || 'Nova Guia',
+                url: t.url || '',
+                favIconUrl: t.favIconUrl,
+                windowId: t.windowId,
+                active: t.active,
+              });
+            }
+          }
+        }
+
         const result: OpenWindowGroup[] = [];
         let windowIndex = 1;
 
-        for (const win of windows) {
-          const rawTabs = win.tabs || [];
-          const validTabs: OpenTab[] = rawTabs
-            .filter((t) => isRealWebUrl(t.url))
-            .map((t) => ({
-              id: t.id || Math.random(),
-              title: t.title || t.url || 'Nova Guia',
-              url: t.url || '',
-              favIconUrl: t.favIconUrl,
-              windowId: win.id || 0,
-              active: t.active,
-            }));
+        for (const [winId, validTabs] of tabsByWindow.entries()) {
+          if (validTabs.length === 0) continue;
 
-          const windowTitle = win.focused
+          const win = windowMap.get(winId);
+          const isCurrent = win?.focused || false;
+          const activeTab = validTabs.find((t) => t.active) || validTabs[0];
+          const activeTitleSnippet = activeTab ? ` — ${activeTab.title.slice(0, 30)}` : '';
+
+          const windowTitle = isCurrent
             ? `Janela Atual / Workspace (${validTabs.length} guias)`
-            : `Janela / Workspace #${windowIndex} (${validTabs.length} guias)`;
+            : `Workspace / Janela #${windowIndex}${activeTitleSnippet} (${validTabs.length} guias)`;
 
           result.push({
-            id: win.id || windowIndex,
+            id: winId,
             title: windowTitle,
-            isCurrent: win.focused || false,
+            isCurrent,
             tabs: validTabs,
           });
 
@@ -111,12 +178,13 @@ export async function getOpenWindowsAndTabs(): Promise<OpenWindowGroup[]> {
 }
 
 /**
- * Saves a list of tabs into a newly created folder under parentId ('1' = Bookmarks Bar)
+ * Saves a list of tabs into a newly created folder or directly under parentId
  */
 export async function saveTabsAsBookmarks(
   tabs: { title: string; url: string }[],
   folderTitle: string,
-  parentId: string = '1'
+  parentId: string = '1',
+  saveDirectlyIntoParent: boolean = false
 ): Promise<{ folderId: string; createdCount: number }> {
   if (tabs.length === 0) {
     throw new Error('Nenhuma guia selecionada para salvar.');
@@ -124,11 +192,14 @@ export async function saveTabsAsBookmarks(
 
   await createLocalSnapshot(`Salvamento de Workspace: ${folderTitle}`);
 
-  // Create workspace destination folder
-  const folder = await bookmarksService.create({
-    parentId,
-    title: folderTitle,
-  });
+  let destinationFolderId = parentId;
+  if (!saveDirectlyIntoParent) {
+    const folder = await bookmarksService.create({
+      parentId,
+      title: folderTitle,
+    });
+    destinationFolderId = folder.id;
+  }
 
   let createdCount = 0;
   const CHUNK_SIZE = 15;
@@ -139,7 +210,7 @@ export async function saveTabsAsBookmarks(
       chunk.map(async (tab) => {
         try {
           await bookmarksService.create({
-            parentId: folder.id,
+            parentId: destinationFolderId,
             title: tab.title,
             url: tab.url,
           });
@@ -151,7 +222,7 @@ export async function saveTabsAsBookmarks(
     );
   }
 
-  return { folderId: folder.id, createdCount };
+  return { folderId: destinationFolderId, createdCount };
 }
 
 /**

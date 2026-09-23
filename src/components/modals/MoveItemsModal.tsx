@@ -131,7 +131,7 @@ export const MoveItemsModal: React.FC<MoveItemsModalProps> = ({
 
           <div className="max-h-60 overflow-y-auto border border-slate-200 dark:border-slate-700 rounded-lg divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-800/60">
             {filteredFolders.length === 0 ? (
-              <div className="p-4 text-center text-slate-400 dark:text-slate-500">
+              <div className="p-4 text-center text-slate-500 dark:text-slate-400">
                 Nenhuma pasta encontrada.
               </div>
             ) : (

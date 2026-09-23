@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useBookmarks } from './hooks/useBookmarks';
+import { useTheme } from './hooks/useTheme';
 import { Header } from './components/layout/Header';
 import { Sidebar } from './components/layout/Sidebar';
 import { MainContent } from './components/layout/MainContent';
@@ -8,6 +9,7 @@ import { BatchActionBar } from './components/actionbar/BatchActionBar';
 import { CreateBookmarkModal } from './components/modals/CreateBookmarkModal';
 import { CreateFolderModal } from './components/modals/CreateFolderModal';
 import { EditItemModal } from './components/modals/EditItemModal';
+import { BatchEditModal } from './components/modals/BatchEditModal';
 import { MoveItemsModal } from './components/modals/MoveItemsModal';
 import { AiOrganizeModal } from './components/modals/AiOrganizeModal';
 import { WorkspaceTabsModal } from './components/modals/WorkspaceTabsModal';
@@ -68,13 +70,18 @@ export const App: React.FC = () => {
     parentPathMap,
     refreshTree,
     sortAlphabetically,
+    nodeMap,
   } = useBookmarks();
+
+  // Dark mode & browser theme synchronization
+  const { theme, setTheme } = useTheme();
 
   // Modals state
   const [isCreateBookmarkOpen, setIsCreateBookmarkOpen] = useState(false);
   const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<BookmarkNode | null>(null);
+  const [isBatchEditOpen, setIsBatchEditOpen] = useState(false);
   const [isMoveOpen, setIsMoveOpen] = useState(false);
   const [isAiOrganizeOpen, setIsAiOrganizeOpen] = useState(false);
   const [isWorkspaceTabsOpen, setIsWorkspaceTabsOpen] = useState(false);
@@ -142,7 +149,12 @@ export const App: React.FC = () => {
     if (confirmDelete.isFolder && confirmDelete.ids.length > 0) {
       await deleteFolder(confirmDelete.ids[0]);
     } else if (confirmDelete.ids.length === 1) {
-      await deleteBookmark(confirmDelete.ids[0]);
+      const node = nodeMap.get(confirmDelete.ids[0]);
+      if (node && !node.url) {
+        await deleteFolder(confirmDelete.ids[0]);
+      } else {
+        await deleteBookmark(confirmDelete.ids[0]);
+      }
     } else if (confirmDelete.ids.length > 1) {
       await deleteMultiple(confirmDelete.ids);
     }
@@ -280,6 +292,8 @@ export const App: React.FC = () => {
         onSearchChange={setSearchQuery}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
+        theme={theme}
+        onThemeChange={setTheme}
         isNative={isNative}
         onOpenCreateBookmark={() => setIsCreateBookmarkOpen(true)}
         onOpenCreateFolder={() => setIsCreateFolderOpen(true)}
@@ -327,6 +341,7 @@ export const App: React.FC = () => {
           onMoveFolder={handleOpenMoveForItem}
           onOpenFolderInNewWindow={handleOpenFolderInNewWindow}
           onOpenFolderInIncognito={handleOpenFolderInIncognito}
+          onOpenWorkspaceTabs={() => setIsWorkspaceTabsOpen(true)}
           selectedIds={selectedIds}
           selectedItem={selectedItem}
           viewMode={viewMode}
@@ -372,8 +387,17 @@ export const App: React.FC = () => {
       <BatchActionBar
         selectedCount={selectedIds.size}
         onClearSelection={clearSelection}
-        onInvertSelection={() => invertSelection(displayedItems)}
+        onInvertSelection={() => invertSelection([...currentSubfolders, ...displayedItems])}
         onOpenMoveModal={() => setIsMoveOpen(true)}
+        onEditSelected={() => {
+          if (selectedIds.size === 1) {
+            const singleId = Array.from(selectedIds)[0];
+            const item = nodeMap.get(singleId);
+            if (item) handleOpenEdit(item);
+          } else if (selectedIds.size > 1) {
+            setIsBatchEditOpen(true);
+          }
+        }}
         onDeleteSelected={handlePromptDeleteMultiple}
         onExportSelected={handleExportSelected}
         onAiAnalyzeSelected={() => {
@@ -407,6 +431,20 @@ export const App: React.FC = () => {
         }}
         item={editingItem}
         onSave={updateBookmark}
+      />
+
+      <BatchEditModal
+        isOpen={isBatchEditOpen}
+        onClose={() => setIsBatchEditOpen(false)}
+        selectedItems={Array.from(selectedIds)
+          .map((id) => nodeMap.get(id))
+          .filter(Boolean) as BookmarkNode[]}
+        onSaveBatch={async (updates) => {
+          for (const u of updates) {
+            await updateBookmark(u.id, u.title);
+          }
+          clearSelection();
+        }}
       />
 
       <MoveItemsModal

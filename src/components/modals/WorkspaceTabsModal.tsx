@@ -44,6 +44,7 @@ export const WorkspaceTabsModal: React.FC<WorkspaceTabsModalProps> = ({
   const [selectedTabIds, setSelectedTabIds] = useState<Set<number>>(new Set());
   const [folderTitle, setFolderTitle] = useState('');
   const [targetParentId, setTargetParentId] = useState(defaultParentId || '1');
+  const [saveDirectly, setSaveDirectly] = useState(false);
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -171,7 +172,7 @@ export const WorkspaceTabsModal: React.FC<WorkspaceTabsModalProps> = ({
       setErrorMsg('Selecione pelo menos uma guia para salvar.');
       return;
     }
-    if (!folderTitle.trim()) {
+    if (!saveDirectly && !folderTitle.trim()) {
       setErrorMsg('Digite um nome para a pasta de favoritos.');
       return;
     }
@@ -182,10 +183,13 @@ export const WorkspaceTabsModal: React.FC<WorkspaceTabsModalProps> = ({
       const res = await saveTabsAsBookmarks(
         selected.map((t) => ({ title: t.title, url: t.url })),
         folderTitle.trim(),
-        targetParentId
+        targetParentId,
+        saveDirectly
       );
       await onSaved(res.folderId);
-      setSuccessMsg(`${res.createdCount} guias salvas com sucesso em: ${folderTitle}`);
+      const targetFolder = folders.find((f) => f.id === targetParentId);
+      const destName = saveDirectly ? (targetFolder?.title || 'pasta selecionada') : folderTitle;
+      setSuccessMsg(`${res.createdCount} guias salvas com sucesso em: ${destName}`);
       setTimeout(() => {
         onClose();
       }, 1500);
@@ -341,24 +345,24 @@ export const WorkspaceTabsModal: React.FC<WorkspaceTabsModalProps> = ({
             </span>
           </button>
 
-          <span className="text-[11px] text-slate-500 font-medium">
+          <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
             {selectedTabsCount} selecionadas
           </span>
         </div>
 
         {/* Tabs List */}
-        <div className="max-h-60 overflow-y-auto border border-slate-200 dark:border-slate-800 rounded-xl divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-850">
+        <div className="max-h-60 overflow-y-auto border border-slate-200 dark:border-slate-800 rounded-xl divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
           {loading ? (
-            <div className="p-8 text-center text-slate-400 flex flex-col items-center justify-center space-y-2">
+            <div className="p-8 text-center text-slate-400 dark:text-slate-400 flex flex-col items-center justify-center space-y-2">
               <RefreshCw className="w-5 h-5 animate-spin text-sky-500" />
               <span>Lendo guias abertas do Edge...</span>
             </div>
           ) : selectedWindowIds.size === 0 ? (
-            <div className="p-8 text-center text-slate-400 text-xs">
+            <div className="p-8 text-center text-slate-400 dark:text-slate-400 text-xs">
               Nenhuma janela marcada. Marque uma ou mais janelas acima para visualizar suas guias.
             </div>
           ) : displayedTabs.length === 0 ? (
-            <div className="p-8 text-center text-slate-400 text-xs">
+            <div className="p-8 text-center text-slate-400 dark:text-slate-400 text-xs">
               Nenhuma guia web encontrada nas janelas selecionadas.
             </div>
           ) : (
@@ -413,7 +417,7 @@ export const WorkspaceTabsModal: React.FC<WorkspaceTabsModalProps> = ({
                         </span>
                       )}
                     </div>
-                    <span className="text-[10px] text-slate-400 font-mono truncate block">
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono truncate block">
                       {domain || tab.url}
                     </span>
                   </div>
@@ -431,16 +435,32 @@ export const WorkspaceTabsModal: React.FC<WorkspaceTabsModalProps> = ({
             </label>
             <input
               type="text"
+              disabled={saveDirectly}
               value={folderTitle}
               onChange={(e) => setFolderTitle(e.target.value)}
               placeholder="Ex: Workspace - Faculdade"
-              className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 focus:outline-hidden focus:border-sky-500"
+              className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 focus:outline-hidden focus:border-sky-500 disabled:opacity-50"
             />
+            <div className="mt-1.5 flex items-center space-x-1.5">
+              <input
+                type="checkbox"
+                id="saveDirectlyCheck"
+                checked={saveDirectly}
+                onChange={(e) => setSaveDirectly(e.target.checked)}
+                className="w-3.5 h-3.5 rounded text-sky-600 focus:ring-sky-500 border-slate-300 dark:border-slate-600 dark:bg-slate-700 cursor-pointer"
+              />
+              <label
+                htmlFor="saveDirectlyCheck"
+                className="text-[11px] text-slate-600 dark:text-slate-300 cursor-pointer select-none"
+              >
+                Salvar direto na pasta de destino (sem criar subpasta)
+              </label>
+            </div>
           </div>
 
           <div>
             <label className="block font-medium text-slate-700 dark:text-slate-200 mb-1">
-              Salvar dentro de
+              {saveDirectly ? 'Salvar diretamente em' : 'Salvar dentro de'}
             </label>
             <select
               value={targetParentId}

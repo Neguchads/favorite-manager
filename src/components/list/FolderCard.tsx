@@ -6,6 +6,8 @@ interface FolderCardProps {
   folder: BookmarkNode;
   itemCount: number;
   subfolderCount?: number;
+  isSelected?: boolean;
+  onToggleSelect?: (id: string) => void;
   onOpen: (id: string) => void;
   onEdit: (folder: BookmarkNode) => void;
   onDelete: (id: string) => void;
@@ -19,6 +21,8 @@ export const FolderCard: React.FC<FolderCardProps> = ({
   folder,
   itemCount,
   subfolderCount = 0,
+  isSelected = false,
+  onToggleSelect,
   onOpen,
   onEdit,
   onDelete,
@@ -81,20 +85,34 @@ export const FolderCard: React.FC<FolderCardProps> = ({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       className={`group p-3 border rounded-xl transition-all cursor-pointer shadow-xs flex flex-col justify-between ${
-        isDragOver
+        isSelected
+          ? 'bg-sky-50 dark:bg-sky-950/60 border-sky-400 dark:border-sky-500 ring-2 ring-sky-500/40'
+          : isDragOver
           ? 'bg-sky-100/80 dark:bg-sky-950/60 border-sky-400 dark:border-sky-500 ring-2 ring-sky-500/40 scale-[1.02]'
           : 'bg-amber-50/30 dark:bg-amber-950/10 hover:bg-amber-100/50 dark:hover:bg-amber-950/30 border-amber-200/60 dark:border-amber-900/40'
       }`}
     >
       <div className="flex items-start justify-between">
-        <div
-          className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 shadow-xs mb-2 transition-colors ${
-            isDragOver
-              ? 'bg-sky-200 dark:bg-sky-800 text-sky-700 dark:text-sky-300'
-              : 'bg-amber-100 dark:bg-amber-900/60 text-amber-600 dark:text-amber-400'
-          }`}
-        >
-          <Folder className="w-5 h-5 fill-current/20" />
+        <div className="flex items-center space-x-2">
+          {onToggleSelect && (
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onClick={(e) => e.stopPropagation()}
+              onChange={() => onToggleSelect(folder.id)}
+              className="w-3.5 h-3.5 rounded text-sky-600 focus:ring-sky-500 border-slate-300 dark:border-slate-600 dark:bg-slate-700 shrink-0 cursor-pointer"
+              title={isSelected ? 'Desmarcar pasta' : 'Selecionar pasta'}
+            />
+          )}
+          <div
+            className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-xs mb-1 transition-colors ${
+              isDragOver
+                ? 'bg-sky-200 dark:bg-sky-800 text-sky-700 dark:text-sky-300'
+                : 'bg-amber-100 dark:bg-amber-900/60 text-amber-600 dark:text-amber-400'
+            }`}
+          >
+            <Folder className="w-4 h-4 fill-current/20" />
+          </div>
         </div>
 
         <div className="flex items-center space-x-0.5 opacity-0 group-hover:opacity-100 transition-opacity">

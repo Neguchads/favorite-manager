@@ -6,6 +6,7 @@ import {
   Sparkles,
   Download,
   RotateCcw,
+  Edit2,
 } from 'lucide-react';
 
 interface BatchActionBarProps {
@@ -13,6 +14,7 @@ interface BatchActionBarProps {
   onClearSelection: () => void;
   onInvertSelection: () => void;
   onOpenMoveModal: () => void;
+  onEditSelected?: () => void;
   onDeleteSelected: () => void;
   onExportSelected: () => void;
   onAiAnalyzeSelected: () => void;
@@ -23,6 +25,7 @@ export const BatchActionBar: React.FC<BatchActionBarProps> = ({
   onClearSelection,
   onInvertSelection,
   onOpenMoveModal,
+  onEditSelected,
   onDeleteSelected,
   onExportSelected,
   onAiAnalyzeSelected,
@@ -46,11 +49,23 @@ export const BatchActionBar: React.FC<BatchActionBarProps> = ({
         <button
           onClick={onOpenMoveModal}
           className="flex items-center space-x-1 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-200 hover:text-white transition-colors"
-          title="Mover para outra pasta"
+          title="Mover itens ou pastas selecionadas"
         >
           <FolderInput className="w-3.5 h-3.5 text-sky-400" />
           <span>Mover</span>
         </button>
+
+        {/* Edit Button */}
+        {onEditSelected && (
+          <button
+            onClick={onEditSelected}
+            className="flex items-center space-x-1 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-200 hover:text-white transition-colors"
+            title={selectedCount === 1 ? 'Editar item selecionado' : 'Editar itens selecionados em lote'}
+          >
+            <Edit2 className="w-3.5 h-3.5 text-amber-400" />
+            <span>Editar</span>
+          </button>
+        )}
 
         {/* Delete Button */}
         <button

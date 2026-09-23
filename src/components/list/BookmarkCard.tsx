@@ -60,7 +60,7 @@ export const BookmarkCard: React.FC<BookmarkCardProps> = ({
           ? 'border-sky-500 bg-sky-50/40 dark:bg-sky-950/30 shadow-sm ring-1 ring-sky-500'
           : isSelected
           ? 'border-slate-300 dark:border-slate-600 bg-slate-100/50 dark:bg-slate-800/60'
-          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-sm'
+          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-sm'
       }`}
     >
       <div>
@@ -79,7 +79,7 @@ export const BookmarkCard: React.FC<BookmarkCardProps> = ({
                 <Globe className="w-4 h-4 text-slate-400" />
               )}
             </div>
-            <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 truncate">
+            <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
               {domain || 'link'}
             </span>
           </div>
@@ -105,12 +105,12 @@ export const BookmarkCard: React.FC<BookmarkCardProps> = ({
           {item.title || '(Sem título)'}
         </h4>
 
-        <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate font-mono mb-2">
+        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate font-mono mb-2">
           {item.url}
         </p>
       </div>
 
-      <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[10px] text-slate-400">
+      <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
         <span className="truncate max-w-[120px]">
           {folderPath ? folderPath.split(' / ').pop() : formatDateShort(item.dateAdded)}
         </span>
