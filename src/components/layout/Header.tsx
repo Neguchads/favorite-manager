@@ -17,10 +17,12 @@ import {
   Monitor,
   UploadCloud,
   Globe,
+  Radio,
 } from 'lucide-react';
 import { ViewMode } from '../../types/bookmarks';
 import { ThemePreference } from '../../hooks/useTheme';
 import { useTranslation } from '../../i18n';
+import { useSync } from '../../hooks/useSync';
 
 interface HeaderProps {
   searchQuery: string;
@@ -36,6 +38,7 @@ interface HeaderProps {
   onOpenWorkspaceTabs?: () => void;
   onOpenCommandPalette?: () => void;
   onOpenImport?: () => void;
+  onOpenSync?: () => void;
   isSidePanel?: boolean;
 }
 
@@ -53,9 +56,11 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenWorkspaceTabs,
   onOpenCommandPalette,
   onOpenImport,
+  onOpenSync,
   isSidePanel = false,
 }) => {
   const { t, language, setLanguage } = useTranslation();
+  const { status: syncStatus, peers: syncPeers } = useSync();
   const [showSearchHelp, setShowSearchHelp] = useState(false);
   const [autoOrganize, setAutoOrganize] = useState(false);
 
@@ -300,6 +305,41 @@ export const Header: React.FC<HeaderProps> = ({
             <Zap className={`w-3.5 h-3.5 ${autoOrganize ? 'text-amber-500 fill-amber-500' : 'text-slate-400 dark:text-slate-400'}`} />
             <span>{autoOrganize ? t('header.autoOrganizeOn') : t('header.autoOrganizeOff')}</span>
           </button>
+
+          {/* Cross-Browser Sync Button (Edge ⇄ Chrome) */}
+          {onOpenSync && (
+            <button
+              type="button"
+              onClick={onOpenSync}
+              title={
+                syncStatus === 'connected' && syncPeers.length > 0
+                  ? `🟢 Sincronizado ao vivo com ${syncPeers.map((p) => p.browser).join(', ')}`
+                  : syncStatus === 'connected'
+                  ? '🟡 Sincronização ativa (Aguardando outro navegador abrir)'
+                  : 'Sincronizar favoritos em tempo real (Edge ⇄ Chrome)'
+              }
+              className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
+                syncStatus === 'connected' && syncPeers.length > 0
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700 shadow-sm'
+                  : syncStatus === 'connected'
+                  ? 'bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border-sky-300 dark:border-sky-700'
+                  : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
+              }`}
+            >
+              <Radio
+                className={`w-3.5 h-3.5 ${
+                  syncStatus === 'connected' && syncPeers.length > 0
+                    ? 'text-emerald-500 animate-pulse'
+                    : 'text-sky-600 dark:text-sky-400'
+                }`}
+              />
+              <span className="hidden md:inline">
+                {syncStatus === 'connected' && syncPeers.length > 0
+                  ? `Edge ⇄ ${syncPeers[0].browser}`
+                  : 'Sincronizar'}
+              </span>
+            </button>
+          )}
 
           {/* New Bookmark */}
           <button

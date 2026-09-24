@@ -14,6 +14,7 @@ export interface ImportOptions {
   destinationParentId?: string;
   createDedicatedFolder?: boolean;
   dedicatedFolderName?: string;
+  skipExistingUrls?: boolean;
   onProgress?: (current: number, total: number, currentItemName: string) => void;
   abortSignal?: AbortSignal;
 }
@@ -21,14 +22,23 @@ export interface ImportOptions {
 export interface ImportResult {
   success: boolean;
   totalBookmarksImported: number;
+  totalBookmarksSkipped: number;
   totalFoldersCreated: number;
   snapshotId: string;
   error?: string;
 }
 
+function normalizeUrlKey(url: string): string {
+  try {
+    return url.trim().toLowerCase().replace(/\/+$/, '');
+  } catch {
+    return url.toLowerCase();
+  }
+}
+
 /**
  * Service to import bookmarks from HTML (Netscape) or JSON backups
- * into Microsoft Edge's bookmark store with real-time progress and safety snapshot.
+ * into Microsoft Edge's bookmark store with real-time progress, deduplication, and safety snapshot.
  */
 export async function importBookmarks(options: ImportOptions): Promise<ImportResult> {
   const {
@@ -38,6 +48,7 @@ export async function importBookmarks(options: ImportOptions): Promise<ImportRes
     destinationParentId = '1',
     createDedicatedFolder = true,
     dedicatedFolderName,
+    skipExistingUrls = true,
     onProgress,
     abortSignal,
   } = options;
@@ -46,6 +57,7 @@ export async function importBookmarks(options: ImportOptions): Promise<ImportRes
   const snapshotId = await createLocalSnapshot('Snapshot prévio à Importação de Favoritos');
 
   let totalBookmarksImported = 0;
+  let totalBookmarksSkipped = 0;
   let totalFoldersCreated = 0;
 
   try {
@@ -93,21 +105,43 @@ export async function importBookmarks(options: ImportOptions): Promise<ImportRes
 
     const totalToProcess = flatBookmarks.length;
 
+    // Load current tree for folder mapping and URL deduplication
+    const currentTree = await bookmarksService.getTree();
+    const existingFolderMap = buildExistingFolderMap(currentTree);
+    const existingUrlsSet = new Set<string>();
+
+    function extractExistingUrls(nodes: BookmarkNode[]) {
+      for (const n of nodes) {
+        if (n.url) {
+          existingUrlsSet.add(normalizeUrlKey(n.url));
+        }
+        if (n.children) {
+          extractExistingUrls(n.children);
+        }
+      }
+    }
+    extractExistingUrls(currentTree);
+
     // 3. Execution Strategy: AI Organize vs Preserve Original Structure
     if (strategy === 'ai_organize') {
-      // Load current tree to build existing folder map
-      const currentTree = await bookmarksService.getTree();
-      const existingFolderMap = buildExistingFolderMap(currentTree);
-
       for (let i = 0; i < flatBookmarks.length; i++) {
         if (abortSignal?.aborted) break;
 
         const bm = flatBookmarks[i];
         if (!bm.url) continue;
 
-        // Semantic AI classification
+        // Deduplication check
+        if (skipExistingUrls && existingUrlsSet.has(normalizeUrlKey(bm.url))) {
+          totalBookmarksSkipped++;
+          if (onProgress) {
+            onProgress(i + 1, totalToProcess, `Ignorado (já existe): ${bm.title}`);
+          }
+          continue;
+        }
+
+        // Semantic AI classification with clean taxonomy
         const category = classifyBookmarkIntelligently(bm.title, bm.url);
-        const targetCategory = category || 'Outros & Geral';
+        const targetCategory = category || 'Outros';
 
         // Ensure hierarchical destination folder exists
         const folderId = await ensureHierarchicalFolder(
@@ -124,6 +158,7 @@ export async function importBookmarks(options: ImportOptions): Promise<ImportRes
           url: bm.url,
         });
 
+        existingUrlsSet.add(normalizeUrlKey(bm.url));
         totalBookmarksImported++;
 
         if (onProgress) {
@@ -151,12 +186,24 @@ export async function importBookmarks(options: ImportOptions): Promise<ImportRes
           if (abortSignal?.aborted) break;
 
           if (item.url) {
+            // Deduplication check
+            if (skipExistingUrls && existingUrlsSet.has(normalizeUrlKey(item.url))) {
+              totalBookmarksSkipped++;
+              processedCount++;
+              if (onProgress) {
+                onProgress(processedCount, totalToProcess, `Ignorado (já existe): ${item.title}`);
+              }
+              continue;
+            }
+
             // Bookmark link
             await bookmarksService.create({
               parentId: targetParent,
               title: item.title,
               url: item.url,
             });
+
+            existingUrlsSet.add(normalizeUrlKey(item.url));
             totalBookmarksImported++;
             processedCount++;
             if (onProgress) {
@@ -164,7 +211,6 @@ export async function importBookmarks(options: ImportOptions): Promise<ImportRes
             }
           } else {
             // Folder
-            // Skip redundant root names like "Barra de favoritos" if we are already inside a dedicated folder
             const created = await bookmarksService.create({
               parentId: targetParent,
               title: item.title,
@@ -184,6 +230,7 @@ export async function importBookmarks(options: ImportOptions): Promise<ImportRes
     return {
       success: true,
       totalBookmarksImported,
+      totalBookmarksSkipped,
       totalFoldersCreated,
       snapshotId,
     };
@@ -192,6 +239,7 @@ export async function importBookmarks(options: ImportOptions): Promise<ImportRes
     return {
       success: false,
       totalBookmarksImported,
+      totalBookmarksSkipped,
       totalFoldersCreated,
       snapshotId,
       error: err?.message || 'Falha ao processar arquivo de importação',

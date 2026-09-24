@@ -7,6 +7,7 @@ import { findDuplicates } from '../services/duplicates';
 import { analyzeCleanup } from '../services/cleanup';
 import { createLocalSnapshot } from '../services/backup';
 import { isDescendantOf } from '../utils/dragDrop';
+import { crossBrowserSyncService } from '../services/sync';
 
 export interface FolderOption {
   id: string;
@@ -419,10 +420,12 @@ export function useBookmarks() {
         title,
         url,
       });
+      const folderPath = targetParent ? parentPathMap.get(targetParent) || 'Barra de favoritos' : 'Barra de favoritos';
+      crossBrowserSyncService.onLocalBookmarkCreated(created, folderPath);
       await loadTree();
       return created;
     },
-    [loadTree, resolveSafeParentId]
+    [loadTree, resolveSafeParentId, parentPathMap]
   );
 
   const createFolder = useCallback(
@@ -452,8 +455,12 @@ export function useBookmarks() {
 
   const deleteBookmark = useCallback(
     async (id: string) => {
+      const targetNode = nodeMap.get(id);
       await createLocalSnapshot('Exclusão de Favorito');
       await bookmarksService.remove(id);
+      if (targetNode?.url) {
+        crossBrowserSyncService.onLocalBookmarkRemoved(targetNode.url);
+      }
       setSelectedIds((prev) => {
         const next = new Set(prev);
         next.delete(id);
@@ -464,7 +471,7 @@ export function useBookmarks() {
       }
       await loadTree();
     },
-    [loadTree, selectedItem]
+    [loadTree, selectedItem, nodeMap]
   );
 
   const deleteFolder = useCallback(

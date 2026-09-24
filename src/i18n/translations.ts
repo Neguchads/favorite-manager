@@ -41,6 +41,7 @@ export const translations = {
     'nav.cleanup': 'Central de Limpeza',
     'nav.stats': 'Estatísticas',
     'nav.backups': 'Backups & Snapshots',
+    'nav.crossBrowserSync': 'Sincronizar (Edge ⇄ Chrome ⇄ Brave)',
     'nav.folderTree': 'Árvore de Pastas',
     'nav.newSubfolder': 'Criar nova subpasta',
 
@@ -262,6 +263,7 @@ export const translations = {
     'nav.cleanup': 'Cleanup Center',
     'nav.stats': 'Statistics',
     'nav.backups': 'Backups & Snapshots',
+    'nav.crossBrowserSync': 'Sync (Edge ⇄ Chrome ⇄ Brave)',
     'nav.folderTree': 'Folders Tree',
     'nav.newSubfolder': 'Create new subfolder',
 

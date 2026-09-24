@@ -9,11 +9,14 @@ import {
   ShieldCheck,
   Loader2,
   X,
+  Filter,
 } from 'lucide-react';
 import { Modal } from '../common/Modal';
 import { FolderOption } from '../../hooks/useBookmarks';
 import { parseNetscapeHtml, ParseHtmlResult } from '../../services/backup/htmlParser';
 import { importBookmarks, ImportStrategy } from '../../services/backup/importer';
+import { bookmarksService } from '../../services/bookmarks';
+import { BookmarkNode } from '../../types/bookmarks';
 
 interface ImportBookmarksModalProps {
   isOpen: boolean;
@@ -32,7 +35,9 @@ export const ImportBookmarksModal: React.FC<ImportBookmarksModalProps> = ({
   const [fileContent, setFileContent] = useState<string>('');
   const [fileType, setFileType] = useState<'html' | 'json'>('html');
   const [parsedData, setParsedData] = useState<ParseHtmlResult | null>(null);
-  const [strategy, setStrategy] = useState<ImportStrategy>('ai_organize');
+  const [strategy, setStrategy] = useState<ImportStrategy>('preserve');
+  const [skipExistingUrls, setSkipExistingUrls] = useState<boolean>(true);
+  const [duplicateStats, setDuplicateStats] = useState<{ newCount: number; existingCount: number } | null>(null);
 
   // Options
   const [destinationFolderId, setDestinationFolderId] = useState<string>('1');
@@ -44,7 +49,7 @@ export const ImportBookmarksModal: React.FC<ImportBookmarksModalProps> = ({
   // Execution state
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [progress, setProgress] = useState<{ current: number; total: number; currentItem: string } | null>(null);
-  const [result, setResult] = useState<{ imported: number; folders: number; snapshotId: string } | null>(null);
+  const [result, setResult] = useState<{ imported: number; skipped: number; folders: number; snapshotId: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -53,6 +58,7 @@ export const ImportBookmarksModal: React.FC<ImportBookmarksModalProps> = ({
     setFile(null);
     setFileContent('');
     setParsedData(null);
+    setDuplicateStats(null);
     setIsProcessing(false);
     setProgress(null);
     setResult(null);
@@ -65,25 +71,60 @@ export const ImportBookmarksModal: React.FC<ImportBookmarksModalProps> = ({
     onClose();
   };
 
-  const processLoadedFile = (content: string, filename: string) => {
+  const analyzeUrlDuplicates = async (flatItems: Array<{ url: string }>) => {
+    try {
+      const tree = await bookmarksService.getTree();
+      const existingUrls = new Set<string>();
+      function extract(nodes: BookmarkNode[]) {
+        for (const n of nodes) {
+          if (n.url) existingUrls.add(n.url.trim().toLowerCase().replace(/\/+$/, ''));
+          if (n.children) extract(n.children);
+        }
+      }
+      extract(tree);
+
+      let existingCount = 0;
+      let newCount = 0;
+      for (const item of flatItems) {
+        if (!item.url) continue;
+        const norm = item.url.trim().toLowerCase().replace(/\/+$/, '');
+        if (existingUrls.has(norm)) {
+          existingCount++;
+        } else {
+          newCount++;
+        }
+      }
+      setDuplicateStats({ newCount, existingCount });
+    } catch {
+      setDuplicateStats(null);
+    }
+  };
+
+  const processLoadedFile = async (content: string, filename: string) => {
     try {
       const isJson = filename.endsWith('.json');
       setFileType(isJson ? 'json' : 'html');
       setFileContent(content);
 
+      // Default strategy: preserve structure for JSON backup files
+      if (isJson) {
+        setStrategy('preserve');
+      }
+
+      let flatItems: any[] = [];
+      let totalBookmarks = 0;
+      let totalFolders = 0;
+
       if (isJson) {
         const jsonData = JSON.parse(content);
         const rawTree = Array.isArray(jsonData.tree) ? jsonData.tree : Array.isArray(jsonData) ? jsonData : [];
-        let totalBookmarks = 0;
-        let totalFolders = 0;
-        const flatBookmarks: any[] = [];
 
         function count(nodes: any[], currentPath: string) {
           for (const n of nodes) {
             const nextPath = currentPath ? `${currentPath} / ${n.title}` : n.title;
             if (n.url) {
               totalBookmarks++;
-              flatBookmarks.push({ title: n.title, url: n.url, path: currentPath });
+              flatItems.push({ title: n.title, url: n.url, path: currentPath });
             } else {
               totalFolders++;
               if (n.children) count(n.children, nextPath);
@@ -96,14 +137,17 @@ export const ImportBookmarksModal: React.FC<ImportBookmarksModalProps> = ({
           totalBookmarks,
           totalFolders,
           rootNodes: [],
-          flatBookmarks,
+          flatBookmarks: flatItems,
         });
       } else {
-        // Parse HTML
+        // Parse HTML Netscape format
         const parsed = parseNetscapeHtml(content);
         setParsedData(parsed);
+        flatItems = parsed.flatBookmarks;
       }
+
       setError(null);
+      await analyzeUrlDuplicates(flatItems);
     } catch (e: any) {
       setError(`Falha ao ler arquivo: ${e?.message || 'Formato inválido'}`);
     }
@@ -151,6 +195,7 @@ export const ImportBookmarksModal: React.FC<ImportBookmarksModalProps> = ({
         destinationParentId: destinationFolderId,
         createDedicatedFolder,
         dedicatedFolderName,
+        skipExistingUrls,
         onProgress: (current, total, currentItem) => {
           setProgress({ current, total, currentItem });
         },
@@ -159,6 +204,7 @@ export const ImportBookmarksModal: React.FC<ImportBookmarksModalProps> = ({
       if (res.success) {
         setResult({
           imported: res.totalBookmarksImported,
+          skipped: res.totalBookmarksSkipped,
           folders: res.totalFoldersCreated,
           snapshotId: res.snapshotId,
         });
@@ -247,24 +293,65 @@ export const ImportBookmarksModal: React.FC<ImportBookmarksModalProps> = ({
 
             {/* Analysis Summary */}
             {parsedData && (
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-center">
-                  <span className="text-xl font-extrabold text-sky-600 dark:text-sky-400 block">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <div className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-center">
+                  <span className="text-lg font-extrabold text-sky-600 dark:text-sky-400 block">
                     {parsedData.totalBookmarks.toLocaleString('pt-BR')}
                   </span>
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Favoritos Detectados
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                    Total no Arquivo
                   </span>
                 </div>
 
-                <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-center">
-                  <span className="text-xl font-extrabold text-amber-600 dark:text-amber-400 block">
+                <div className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-center">
+                  <span className="text-lg font-extrabold text-amber-600 dark:text-amber-400 block">
                     {parsedData.totalFolders.toLocaleString('pt-BR')}
                   </span>
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Pastas no Arquivo
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                    Pastas Detectadas
                   </span>
                 </div>
+
+                <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 rounded-lg border border-emerald-200 dark:border-emerald-800 text-center">
+                  <span className="text-lg font-extrabold text-emerald-600 dark:text-emerald-400 block">
+                    {duplicateStats ? duplicateStats.newCount.toLocaleString('pt-BR') : '—'}
+                  </span>
+                  <span className="text-[10px] text-emerald-700 dark:text-emerald-300">
+                    URLs Inéditas
+                  </span>
+                </div>
+
+                <div className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-center">
+                  <span className="text-lg font-extrabold text-slate-600 dark:text-slate-400 block">
+                    {duplicateStats ? duplicateStats.existingCount.toLocaleString('pt-BR') : '—'}
+                  </span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                    Já Existentes
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Deduplication Checkbox */}
+            {!isProcessing && (
+              <div className="p-2.5 bg-slate-50 dark:bg-slate-850 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Filter className="w-4 h-4 text-sky-500 shrink-0" />
+                  <div>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">
+                      Ignorar URLs que já existem nos meus favoritos
+                    </span>
+                    <p className="text-[10px] text-slate-500">
+                      Previne criar links duplicados que você já favoritou anteriormente.
+                    </p>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={skipExistingUrls}
+                  onChange={(e) => setSkipExistingUrls(e.target.checked)}
+                  className="rounded text-sky-600 focus:ring-sky-500 w-4 h-4 cursor-pointer"
+                />
               </div>
             )}
 
@@ -276,30 +363,7 @@ export const ImportBookmarksModal: React.FC<ImportBookmarksModalProps> = ({
                 </label>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Option 1: AI Organize */}
-                  <div
-                    onClick={() => setStrategy('ai_organize')}
-                    className={`p-3 rounded-xl border-2 cursor-pointer transition-all flex flex-col justify-between ${
-                      strategy === 'ai_organize'
-                        ? 'border-sky-500 bg-sky-50/70 dark:bg-sky-950/60 shadow-xs'
-                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
-                    }`}
-                  >
-                    <div>
-                      <div className="flex items-center space-x-1.5 text-sky-600 dark:text-sky-400 font-bold mb-1">
-                        <Sparkles className="w-4 h-4" />
-                        <span>Organizar com IA & Heurística</span>
-                      </div>
-                      <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
-                        Limpa títulos poluídos e categoriza tudo semanticamente nas pastas ideais (Desenvolvimento, Estudos, Jogos, Finanças, etc.).
-                      </p>
-                    </div>
-                    <span className="text-[10px] mt-2 font-semibold text-sky-700 dark:text-sky-300">
-                      Recomendado para arquivos volumosos
-                    </span>
-                  </div>
-
-                  {/* Option 2: Preserve original */}
+                  {/* Option 1: Preserve original (Default for JSON backups) */}
                   <div
                     onClick={() => setStrategy('preserve')}
                     className={`p-3 rounded-xl border-2 cursor-pointer transition-all flex flex-col justify-between ${
@@ -314,11 +378,34 @@ export const ImportBookmarksModal: React.FC<ImportBookmarksModalProps> = ({
                         <span>Manter Estrutura Original</span>
                       </div>
                       <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
-                        Recria exatamente as mesmas pastas e subpastas existentes no arquivo importado, preservando sua organização atual.
+                        Recria exatamente as mesmas pastas e subpastas existentes no arquivo importado, preservando sua organização original intacta.
                       </p>
                     </div>
                     <span className="text-[10px] mt-2 font-semibold text-amber-700 dark:text-amber-300">
-                      Importação direta sem alterações
+                      {fileType === 'json' ? 'Padrão recomendado para backups JSON' : 'Importação direta sem alterações'}
+                    </span>
+                  </div>
+
+                  {/* Option 2: Automatic thematic rules */}
+                  <div
+                    onClick={() => setStrategy('ai_organize')}
+                    className={`p-3 rounded-xl border-2 cursor-pointer transition-all flex flex-col justify-between ${
+                      strategy === 'ai_organize'
+                        ? 'border-sky-500 bg-sky-50/70 dark:bg-sky-950/60 shadow-xs'
+                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center space-x-1.5 text-sky-600 dark:text-sky-400 font-bold mb-1">
+                        <Sparkles className="w-4 h-4" />
+                        <span>Reorganizar por Regras Automáticas</span>
+                      </div>
+                      <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                        Categoriza tudo semanticamente nas pastas temáticas limpas (Dev & IA, Estudos, Jogos, Finanças, etc.) sem redundâncias.
+                      </p>
+                    </div>
+                    <span className="text-[10px] mt-2 font-semibold text-sky-700 dark:text-sky-300">
+                      Ideal para organizar favoritos desordenados
                     </span>
                   </div>
                 </div>
@@ -377,7 +464,7 @@ export const ImportBookmarksModal: React.FC<ImportBookmarksModalProps> = ({
             <div className="flex items-center space-x-2 text-[11px] text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 p-2.5 rounded-lg border border-emerald-200 dark:border-emerald-800">
               <ShieldCheck className="w-4 h-4 shrink-0 text-emerald-600" />
               <span>
-                Um snapshot de segurança será gerado antes de iniciar. Você poderá desfazer a qualquer momento.
+                Um snapshot de segurança será gravado antes de iniciar. Você poderá desfazer a qualquer momento.
               </span>
             </div>
 
@@ -421,7 +508,12 @@ export const ImportBookmarksModal: React.FC<ImportBookmarksModalProps> = ({
             </h3>
 
             <p className="text-slate-600 dark:text-slate-300 max-w-md mx-auto text-xs leading-relaxed">
-              Foram importados <strong>{result.imported} favoritos</strong> e organizados em <strong>{result.folders} pastas</strong> no Microsoft Edge.
+              Foram importados <strong>{result.imported} favoritos</strong> em <strong>{result.folders} pastas</strong>.
+              {result.skipped > 0 && (
+                <span className="block mt-1 text-slate-500">
+                  {result.skipped} favoritos já existentes foram ignorados para evitar duplicatas.
+                </span>
+              )}
             </p>
 
             <div className="p-2.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-[10px] text-slate-500 dark:text-slate-400 inline-block">
@@ -445,7 +537,7 @@ export const ImportBookmarksModal: React.FC<ImportBookmarksModalProps> = ({
                 type="button"
                 onClick={handleClose}
                 disabled={isProcessing}
-                className="px-3.5 py-1.5 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50"
+                className="px-3.5 py-1.5 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
               >
                 Cancelar
               </button>
@@ -455,7 +547,7 @@ export const ImportBookmarksModal: React.FC<ImportBookmarksModalProps> = ({
                   type="button"
                   onClick={handleStartImport}
                   disabled={isProcessing}
-                  className="px-4 py-1.5 bg-sky-600 hover:bg-sky-500 text-white font-medium rounded-lg transition-colors flex items-center space-x-1.5 disabled:opacity-50 shadow-xs"
+                  className="px-4 py-1.5 bg-sky-600 hover:bg-sky-500 text-white font-medium rounded-lg transition-colors flex items-center space-x-1.5 disabled:opacity-50 shadow-xs cursor-pointer"
                 >
                   {isProcessing ? (
                     <>
@@ -475,7 +567,7 @@ export const ImportBookmarksModal: React.FC<ImportBookmarksModalProps> = ({
             <button
               type="button"
               onClick={handleClose}
-              className="px-4 py-1.5 bg-sky-600 hover:bg-sky-500 text-white font-medium rounded-lg transition-colors shadow-xs"
+              className="px-4 py-1.5 bg-sky-600 hover:bg-sky-500 text-white font-medium rounded-lg transition-colors shadow-xs cursor-pointer"
             >
               Concluir & Ver Favoritos
             </button>

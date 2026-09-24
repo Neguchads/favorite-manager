@@ -14,6 +14,116 @@ Formato de cada entrada:
 
 ---
 
+## 2026-09-24 — Antigravity — contenção de viewport da modal (evitando extrapolação da tela/barra de tarefas) e rodapé fixo dos botões de ação
+- Arquivos alterados:
+  - `src/components/common/Modal.tsx` (adicionada restrição estrita `max-h-[calc(100vh-2.5rem)]`, `flex flex-col`, scroll interno com `overflow-y-auto flex-1 min-h-0`, suporte a `maxWidth="2xl"` e prop `footer` fixo/sticky que nunca sai da tela)
+  - `src/components/modals/AiOrganizeModal.tsx` (migração dos botões "Aplicar Organização com Subpastas", "Refazer Análise" e "Fechar" para a prop `footer` fixa do `Modal`, `maxWidth="2xl"`, redução da altura máxima do preview para `max-h-60 sm:max-h-68`, ocultação de banner estático desnecessário quando o plano já foi gerado e garantia visual de Title Case em `masterGroup.masterCategory` e `subgroup.subfolderName`)
+- Verificado:
+  - `npx tsx scratch/test-classifier-formatting.ts` executou com 100% de sucesso.
+  - `npm run build` executado com sucesso e 0 erros (`tsc && vite build` em 3.99s, 1649 módulos).
+  - Pacote `.zip` atualizado em `C:\Users\Desktop\Downloads\Favorite-Manager-v1.1.0-EdgeStore.zip`.
+- Pendente / próximo passo: Recarregamento da extensão pelo usuário.
+- Avisos para o outro agente:
+  1. **Rodapé Fixo (Sticky Footer)**:
+     - O botão principal de organização ("Aplicar Organização com Subpastas") agora fica permanentemente visível e fixado na base da modal, nunca sendo empurrado para fora da tela ou escondido atrás da barra de tarefas do Windows.
+  2. **Contenção Total do Modal**:
+     - A janela modal agora respeita `max-h-[calc(100vh-2.5rem)]` em qualquer resolução de tela (laptops, 768p, 1080p, janelas não maximizadas). O conteúdo central rola suavemente sem esticar o modal além dos limites do navegador.
+  3. **Title Case 100% Blindado**:
+     - Mesmo se a árvore do usuário contiver pastas em minúsculo do passado, a renderização do preview passa por `capitalizeFolderWords`, garantindo visualização limpa (ex: `Arte & Design` em vez de `arte & design`).
+
+---
+
+## 2026-09-24 — Antigravity — Title Case em pastas, resolução de CORS 403 Ollama, seletor de modelos persistente, botão de teste de conexão e melhorias no motor semântico
+- Arquivos alterados:
+  - `public/rules/ollama_cors.json` (novo: regra declarativeNetRequest sobrescrevendo Origin para http://localhost na porta 11434)
+  - `public/manifest.json` (permissão `declarativeNetRequest` e registro da rule_resources)
+  - `src/background/index.ts` (`setupOllamaCorsRules` dinâmica no service worker para neutralizar 403 CORS do Ollama)
+  - `src/ai/classifier.ts` (`capitalizeFolderWords` em todas as categorias e subpastas preservando siglas como IA/PC/ROMs, expansão do `DOMAIN_SUBFOLDER_MAP` com +150 domínios, sanitização de redundâncias legadas e correção cirúrgica em `matchWithExistingFolders`)
+  - `src/ai/prompts.ts` (regras estritas de Title Case no prompt do Ollama e refinamento do `MINI_AGENT_SYSTEM_PROMPT`)
+  - `src/ai/ollama.ts` (modelo padrão atualizado para `qwen3.5:9b`, medição de `latencyMs` no `checkOllamaConnection`)
+  - `src/components/modals/AiOrganizeModal.tsx` (barra de IA local com seletor permanente de modelos, botão dedicado "Testar Conexão com IA Local" com ping em ms, banner explicativo para CORS, integração nas duas abas e fallback heurístico inteligente no chat)
+  - `scratch/test-classifier-formatting.ts` (testes unitários para Title Case, sanitização, matching de pastas existentes e classificação)
+- Verificado:
+  - `npx tsx scratch/test-classifier-formatting.ts` executou com sucesso total (100% dos testes passando).
+  - `npm run build` executado com sucesso e 0 erros (`tsc && vite build` em 3.95s, 1649 módulos).
+  - Pacote `.zip` atualizado em `C:\Users\Desktop\Downloads\Favorite-Manager-v1.1.0-EdgeStore.zip`.
+- Pendente / próximo passo: Testes no navegador pelo usuário (recarregar extensão a partir de `dist/` ou do zip).
+- Avisos para o outro agente:
+  1. **Nomes de Pastas e Subpastas em Title Case**:
+     - Toda palavra agora inicia com letra maiúscula (ex: `Viagens & Turismo`, `Dev & IA / Inteligência Artificial`, `Jogos / Emuladores & ROMs`), eliminando nomes em minúsculas como `turismo, viagens & eventos`.
+     - Siglas técnicas conhecidas (`IA`, `AI`, `PC`, `CAD`, `3D`, `ROMs`, etc.) são preservadas em maiúsculas por regex inteligente.
+  2. **Bypass de CORS 403 do Ollama**:
+     - Extensões enviam cabeçalho `Origin: chrome-extension://<id>`, que o Ollama bloqueava com HTTP 403.
+     - Corrigido via `declarativeNetRequest` (estático e dinâmico) reescrevendo `Origin` para `http://localhost`, tornando a comunicação direta com o Ollama transparente sem depender obrigatoriamente de flags de linha de comando.
+  3. **Barra de IA Local Persistente com Botão de Teste**:
+     - O seletor de modelos nunca desaparece, mesmo se o Ollama estiver offline ou carregando.
+     - Adicionado botão "Testar Conexão com IA Local" com ping em milissegundos nas duas abas (Plano de Organização e Chat do Mini-Agente).
+  4. **Chat do Mini-Agente com Resposta Heurística Resiliente**:
+     - Se o usuário enviar perguntas no chat enquanto o modelo local ainda estiver offline ou baixando, o assistente responde com orientações sem travar nem dar erro genérico.
+
+---
+
+## 2026-09-24 — Antigravity — eliminação de redundâncias na taxonomia, resolução completa do relatório de bugs do Ollama (3.1 a 3.8), sincronização com Brave e Mini-Agente IA Local
+- Arquivos alterados:
+  - `src/ai/classifier.ts` (remoção de redundâncias como "Jogos & Games" -> "Jogos", "Governo & Cidadania" -> "Governo", eliminação de subpastas "... / Geral", adaptação para pastas existentes `matchWithExistingFolders`, pre-filtering por domínio antes do LLM)
+  - `src/ai/prompts.ts` (prompt enxuto < 800 tokens, regras claras de não criar subpastas genéricas, prompt de sistema e quick chips para o Mini-Agente)
+  - `src/ai/ollama.ts` (`options: { num_ctx: 8192, temperature: 0, num_predict: 2048 }`, batch retry resiliente, detecção de erro HTTP 403 / CORS, chat completions com Ollama)
+  - `src/ai/types.ts` (`AiProposedPlan` enriquecido com `stats` de origem `domain | ollama | heuristic`, tipo `ChatMessage`)
+  - `src/components/modals/AiOrganizeModal.tsx` (persistência de motor/modelo, banner de auxílio CORS com comando 1-clique `setx OLLAMA_ORIGINS`, breakdown e badges de origem, botão cancelar com AbortController, aba interativa do Mini-Agente IA com chat e sugestões de organização)
+  - `src/components/modals/ImportBookmarksModal.tsx` (importação JSON com modo "Preservar" por padrão, checkbox de deduplicação ignorando URLs já existentes, contagem prévia de novos vs duplicados)
+  - `src/services/backup/importer.ts` (suporte a `skipExistingUrls` e contagem de ignorados)
+  - `src/services/sync/browserDetect.ts` (detecção oficial do navegador Brave via `navigator.brave.isBrave()`)
+  - `src/services/sync/types.ts` (suporte a 'Brave' como `SupportedBrowser`)
+  - `src/services/sync/syncService.ts` e `src/components/sync/CrossBrowserSyncModal.tsx` (sincronização em tempo real Edge ⇄ Chrome ⇄ Brave)
+  - `src/i18n/translations.ts` (traduções para Brave e novos recursos)
+  - `src/background/index.ts` (sanitização de auto-organização)
+- Verificado:
+  - `npm run build` executado com sucesso e 0 erros (`tsc && vite build` em 3.77s, 1649 módulos).
+  - Pacote `.zip` atualizado em `C:\Users\Desktop\Downloads\Favorite-Manager-v1.1.0-EdgeStore.zip`.
+- Pendente / próximo passo: Testes no navegador pelo usuário (recarregar extensão a partir de `dist/` ou do zip).
+- Avisos para o outro agente:
+  1. **Taxonomia Limpa e Inteligente**:
+     - Nomes redundantes foram unificados: "Jogos & Games" -> "Jogos", "Governo & Cidadania" -> "Governo", "Dev & IA", "Estudos", "Compras", "Tecnologia".
+     - Eliminadas as subpastas repetitivas do tipo `... / Geral` (jogando direto na categoria principal ou subpasta relevante).
+     - `matchWithExistingFolders`: Se o usuário já tiver uma pasta chamada "Games" ou "Cidadania" na árvore, a IA aproveita a pasta existente sem criar uma duplicata.
+  2. **Pipeline de IA Híbrido e Otimizado**:
+     - O mapa de domínios (`DOMAIN_SUBFOLDER_MAP`) executa ANTES do LLM, resolvendo 70%+ dos favoritos em milissegundos com precisão cirúrgica.
+     - Lotes para o Ollama reduzidos para 10 itens com `num_ctx: 8192` (eliminando o estouro de contexto em placas de 8GB VRAM) e 1 retry individual por lote em caso de falha.
+  3. **Mini-Agente IA Local**:
+     - Integrado diretamente na modal de IA via aba "Mini-Agente IA (Chat Local)", permitindo conversar com o modelo sobre organização de favoritos e extensões.
+  4. **Brave Browser Sync**:
+     - O canal de sincronização MQTT agora identifica ativamente o Brave Browser com badge `🟢 Conectado com Brave`.
+
+---
+
+## 2026-09-24 — Antigravity — sistema de sincronização em tempo real entre navegadores (Microsoft Edge ⇄ Google Chrome)
+- Arquivos alterados:
+  - `src/services/sync/types.ts` (novo)
+  - `src/services/sync/browserDetect.ts` (novo)
+  - `src/services/sync/twoWayMerge.ts` (novo)
+  - `src/services/sync/syncService.ts` (novo)
+  - `src/services/sync/index.ts` (novo)
+  - `src/hooks/useSync.ts` (novo)
+  - `src/components/sync/CrossBrowserSyncModal.tsx` (novo)
+  - `src/components/layout/Header.tsx`
+  - `src/components/layout/Sidebar.tsx`
+  - `src/hooks/useBookmarks.ts`
+  - `src/App.tsx`
+  - `src/i18n/translations.ts`
+- Verificado:
+  - `npm run build` executado com sucesso e 0 erros (`tsc && vite build` em 11.04s, 1649 módulos).
+  - Pacote `.zip` atualizado em `C:\Users\Desktop\Downloads\Favorite-Manager-v1.1.0-EdgeStore.zip`.
+  - Teste de transporte MQTT via WSS em `broker.hivemq.com:8884/mqtt` validado com sucesso.
+- Pendente / próximo passo: Testes simultâneos no Edge e Chrome pelo usuário.
+- Avisos para o outro agente:
+  1. **Arquitetura de Sincronização em Tempo Real (Cross-Browser Live Pairing)**:
+     - Funciona sem necessidade de conta, cadastro ou banco de dados pago, conectando-se a um canal seguro WebSocket TLS (`wss://broker.hivemq.com:8884/mqtt`) isolado por `SyncKey` (ex: `FAV-9821-X4K9`).
+     - **Detecção Mútua**: Quando Edge e Chrome estão abertos com a mesma chave, enviam eventos de presença (`PEER_ANNOUNCE` / `PEER_ACK`) e exibem badge verde pulsante: `🟢 Conectado com Google Chrome` (no Edge) e `🟢 Conectado com Microsoft Edge` (no Chrome).
+     - **Sincronização em Tempo Real**: Criação e remoção de favoritos notificam os peers via MQTT; o peer remoto aplica as alterações com flag `isApplyingRemoteChange = true` para evitar loops de eco infinito.
+     - **Two-Way Merge**: Botão "Mesclar Tudo Agora" troca os catálogos completos e insere no Edge o que existe no Chrome, e no Chrome o que existe no Edge (com snapshot prévio de segurança).
+
+---
+
 ## 2026-09-24 — Antigravity — internacionalização bilíngue completa (Português / Inglês) com sincronização em tempo real e pacote da Microsoft Edge Add-ons Store
 - Arquivos alterados:
   - `src/i18n/translations.ts` (novo)

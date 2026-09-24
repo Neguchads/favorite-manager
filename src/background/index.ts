@@ -11,8 +11,94 @@ function escapeXml(str: string): string {
     .replace(/'/g, '&apos;');
 }
 
+function setupOllamaCorsRules() {
+  if (typeof chrome !== 'undefined' && chrome.declarativeNetRequest?.updateDynamicRules) {
+    chrome.declarativeNetRequest.updateDynamicRules({
+      removeRuleIds: [1001, 1002],
+      addRules: [
+        {
+          id: 1001,
+          priority: 1,
+          action: {
+            type: chrome.declarativeNetRequest.RuleActionType.MODIFY_HEADERS,
+            requestHeaders: [
+              {
+                header: 'origin',
+                operation: chrome.declarativeNetRequest.HeaderOperation.SET,
+                value: 'http://localhost',
+              },
+            ],
+            responseHeaders: [
+              {
+                header: 'Access-Control-Allow-Origin',
+                operation: chrome.declarativeNetRequest.HeaderOperation.SET,
+                value: '*',
+              },
+              {
+                header: 'Access-Control-Allow-Methods',
+                operation: chrome.declarativeNetRequest.HeaderOperation.SET,
+                value: 'GET, POST, PUT, DELETE, OPTIONS',
+              },
+              {
+                header: 'Access-Control-Allow-Headers',
+                operation: chrome.declarativeNetRequest.HeaderOperation.SET,
+                value: '*',
+              },
+            ],
+          },
+          condition: {
+            urlFilter: '||127.0.0.1:11434/',
+            resourceTypes: [chrome.declarativeNetRequest.ResourceType.XMLHTTPREQUEST],
+          },
+        },
+        {
+          id: 1002,
+          priority: 1,
+          action: {
+            type: chrome.declarativeNetRequest.RuleActionType.MODIFY_HEADERS,
+            requestHeaders: [
+              {
+                header: 'origin',
+                operation: chrome.declarativeNetRequest.HeaderOperation.SET,
+                value: 'http://localhost',
+              },
+            ],
+            responseHeaders: [
+              {
+                header: 'Access-Control-Allow-Origin',
+                operation: chrome.declarativeNetRequest.HeaderOperation.SET,
+                value: '*',
+              },
+              {
+                header: 'Access-Control-Allow-Methods',
+                operation: chrome.declarativeNetRequest.HeaderOperation.SET,
+                value: 'GET, POST, PUT, DELETE, OPTIONS',
+              },
+              {
+                header: 'Access-Control-Allow-Headers',
+                operation: chrome.declarativeNetRequest.HeaderOperation.SET,
+                value: '*',
+              },
+            ],
+          },
+          condition: {
+            urlFilter: '||localhost:11434/',
+            resourceTypes: [chrome.declarativeNetRequest.ResourceType.XMLHTTPREQUEST],
+          },
+        },
+      ],
+    }).catch((err) => {
+      console.warn('Ollama dynamic rules registration skipped:', err);
+    });
+  }
+}
+
+// Run rules setup immediately
+setupOllamaCorsRules();
+
 chrome.runtime.onInstalled.addListener(() => {
   console.log('Edge Favorite Manager installed successfully');
+  setupOllamaCorsRules();
 
   // Configure side panel behavior if API is present
   if (chrome.sidePanel && 'setPanelBehavior' in chrome.sidePanel) {
@@ -75,7 +161,7 @@ chrome.bookmarks.onCreated.addListener(async (id, bookmark) => {
     }
 
     const targetCategory = classifyBookmarkIntelligently(bookmark.title || '', bookmark.url);
-    if (!targetCategory || targetCategory === 'Outros & Geral') return;
+    if (!targetCategory || targetCategory === 'Outros' || targetCategory === 'Outros & Geral') return;
 
     const tree = await chrome.bookmarks.getTree();
     const existingFolderMap = buildExistingFolderMap(tree as any);

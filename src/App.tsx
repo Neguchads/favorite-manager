@@ -14,6 +14,7 @@ import { MoveItemsModal } from './components/modals/MoveItemsModal';
 import { AiOrganizeModal } from './components/modals/AiOrganizeModal';
 import { WorkspaceTabsModal } from './components/modals/WorkspaceTabsModal';
 import { ImportBookmarksModal } from './components/modals/ImportBookmarksModal';
+import { CrossBrowserSyncModal } from './components/sync/CrossBrowserSyncModal';
 import { CommandPaletteModal } from './components/common/CommandPaletteModal';
 import { ConfirmDialog } from './components/common/ConfirmDialog';
 import { BookmarkNode } from './types/bookmarks';
@@ -89,6 +90,7 @@ export const App: React.FC = () => {
   const [isWorkspaceTabsOpen, setIsWorkspaceTabsOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
 
   // Custom items for AI organization (e.g. from open tabs/workspaces)
   const [customAiItems, setCustomAiItems] = useState<BookmarkNode[] | null>(null);
@@ -307,6 +309,7 @@ export const App: React.FC = () => {
         onOpenWorkspaceTabs={() => setIsWorkspaceTabsOpen(true)}
         onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
         onOpenImport={() => setIsImportOpen(true)}
+        onOpenSync={() => setIsSyncModalOpen(true)}
       />
 
       {error && (
@@ -327,6 +330,7 @@ export const App: React.FC = () => {
           duplicateCount={stats.duplicateCount}
           cleanupCount={stats.emptyFoldersCount + stats.missingTitlesCount}
           onOpenCreateFolder={() => setIsCreateFolderOpen(true)}
+          onOpenSync={() => setIsSyncModalOpen(true)}
           onDropBookmark={moveBookmark}
           onMoveToTarget={moveItemsToTarget}
         />
@@ -509,6 +513,11 @@ export const App: React.FC = () => {
         onClose={() => setIsImportOpen(false)}
         folders={allFolders}
         onRefreshTree={refreshTree}
+      />
+
+      <CrossBrowserSyncModal
+        isOpen={isSyncModalOpen}
+        onClose={() => setIsSyncModalOpen(false)}
       />
 
       <ConfirmDialog

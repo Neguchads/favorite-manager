@@ -9,10 +9,12 @@ import {
   BarChart3,
   HardDriveDownload,
   FolderPlus,
+  Radio,
 } from 'lucide-react';
 import { BookmarkNode } from '../../types/bookmarks';
 import { FolderTreeNode } from '../tree/FolderTreeNode';
 import { useTranslation } from '../../i18n';
+import { useSync } from '../../hooks/useSync';
 
 interface SidebarProps {
   tree: BookmarkNode[];
@@ -23,6 +25,7 @@ interface SidebarProps {
   duplicateCount: number;
   cleanupCount: number;
   onOpenCreateFolder: () => void;
+  onOpenSync?: () => void;
   onDropBookmark?: (bookmarkId: string, targetFolderId: string) => void;
   onMoveToTarget?: (
     sourceIds: string[],
@@ -40,10 +43,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
   duplicateCount,
   cleanupCount,
   onOpenCreateFolder,
+  onOpenSync,
   onDropBookmark,
   onMoveToTarget,
 }) => {
   const { t } = useTranslation();
+  const { status: syncStatus, peers: syncPeers } = useSync();
   // Extract top-level root folders (usually Barra de favoritos, Outros favoritos, etc.)
   const rootNode = tree[0];
   const rootFolders = (rootNode?.children || []).filter((child) => !child.url);
@@ -207,6 +212,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <span>{t('nav.backups')}</span>
               </div>
             </button>
+
+            {onOpenSync && (
+              <button
+                type="button"
+                onClick={onOpenSync}
+                className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors text-slate-700 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800/60 cursor-pointer"
+                title="Sincronizar favoritos em tempo real com outro navegador (Edge ⇄ Chrome)"
+              >
+                <div className="flex items-center space-x-2">
+                  <Radio
+                    className={`w-3.5 h-3.5 ${
+                      syncStatus === 'connected' && syncPeers.length > 0
+                        ? 'text-emerald-500'
+                        : 'text-sky-500'
+                    }`}
+                  />
+                  <span>{t('nav.crossBrowserSync')}</span>
+                </div>
+                {syncStatus === 'connected' && syncPeers.length > 0 && (
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                )}
+              </button>
+            )}
           </div>
         </div>
 

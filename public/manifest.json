@@ -9,11 +9,21 @@
     "unlimitedStorage",
     "sidePanel",
     "notifications",
-    "tabs"
+    "tabs",
+    "declarativeNetRequest"
   ],
   "host_permissions": [
     "<all_urls>"
   ],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "ollama_cors",
+        "enabled": true,
+        "path": "rules/ollama_cors.json"
+      }
+    ]
+  },
   "omnibox": {
     "keyword": "fav"
   },
