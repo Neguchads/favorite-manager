@@ -16,9 +16,11 @@ import {
   Moon,
   Monitor,
   UploadCloud,
+  Globe,
 } from 'lucide-react';
 import { ViewMode } from '../../types/bookmarks';
 import { ThemePreference } from '../../hooks/useTheme';
+import { useTranslation } from '../../i18n';
 
 interface HeaderProps {
   searchQuery: string;
@@ -53,6 +55,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenImport,
   isSidePanel = false,
 }) => {
+  const { t, language, setLanguage } = useTranslation();
   const [showSearchHelp, setShowSearchHelp] = useState(false);
   const [autoOrganize, setAutoOrganize] = useState(false);
 
@@ -110,7 +113,7 @@ export const Header: React.FC<HeaderProps> = ({
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:block">
-                Organização avançada, limpeza e IA
+                {t('header.subtitle')}
               </p>
             </div>
           </div>
@@ -134,7 +137,7 @@ export const Header: React.FC<HeaderProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Pesquisar favoritos... (ex: domain:github.com, folder:IA)"
+              placeholder={t('header.searchPlaceholder')}
               className="w-full pl-9 pr-14 py-1.5 text-xs bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder-slate-400 rounded-lg border border-transparent focus:border-sky-500 focus:bg-white dark:focus:bg-slate-900 focus:outline-none transition-all shadow-inner"
             />
             {searchQuery && (
@@ -148,7 +151,7 @@ export const Header: React.FC<HeaderProps> = ({
             {onOpenCommandPalette && (
               <button
                 onClick={onOpenCommandPalette}
-                title="Abrir busca rápida e comandos (Ctrl+K / Ctrl+Shift+F)"
+                title={t('header.commandPaletteTooltip')}
                 className="absolute right-8 hidden sm:flex items-center px-1.5 py-0.5 text-[10px] font-mono bg-slate-200/80 dark:bg-slate-700/80 text-slate-600 dark:text-slate-300 rounded hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
               >
                 ⌘K
@@ -156,7 +159,7 @@ export const Header: React.FC<HeaderProps> = ({
             )}
             <button
               onClick={() => setShowSearchHelp(!showSearchHelp)}
-              title="Ajuda de filtros de pesquisa"
+              title={t('header.searchTooltip')}
               className="absolute right-2 p-1 text-slate-400 hover:text-sky-500"
             >
               <HelpCircle className="w-3.5 h-3.5" />
@@ -167,7 +170,7 @@ export const Header: React.FC<HeaderProps> = ({
           {showSearchHelp && (
             <div className="absolute left-0 right-0 top-full mt-1 p-3 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 z-40 text-xs space-y-2">
               <div className="flex justify-between items-center font-semibold text-slate-700 dark:text-slate-200">
-                <span>Filtros avançados de pesquisa:</span>
+                <span>{t('header.filterTitle')}</span>
                 <button
                   onClick={() => setShowSearchHelp(false)}
                   className="text-slate-400 hover:text-slate-600"
@@ -180,19 +183,19 @@ export const Header: React.FC<HeaderProps> = ({
                   <code className="bg-slate-100 dark:bg-slate-700 px-1 py-0.5 rounded text-sky-600 dark:text-sky-400 font-mono">
                     domain:github.com
                   </code>{' '}
-                  — filtra por domínio do site
+                  — {t('header.filterDomainDesc')}
                 </li>
                 <li>
                   <code className="bg-slate-100 dark:bg-slate-700 px-1 py-0.5 rounded text-sky-600 dark:text-sky-400 font-mono">
                     folder:IA
                   </code>{' '}
-                  — filtra por nome da pasta
+                  — {t('header.filterFolderDesc')}
                 </li>
                 <li>
                   <code className="bg-slate-100 dark:bg-slate-700 px-1 py-0.5 rounded text-sky-600 dark:text-sky-400 font-mono">
                     title:Claude
                   </code>{' '}
-                  — filtra por palavras no título
+                  — {t('header.filterWordsDesc')}
                 </li>
               </ul>
             </div>
@@ -205,8 +208,8 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
             <button
               onClick={() => onViewModeChange('list')}
-              title="Visualização em Lista"
-              className={`p-1.5 rounded-md text-xs transition-colors ${
+              title={t('header.viewList')}
+              className={`p-1.5 rounded-md text-xs transition-colors cursor-pointer ${
                 viewMode === 'list'
                   ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-sm font-semibold'
                   : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100'
@@ -216,8 +219,8 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
             <button
               onClick={() => onViewModeChange('cards')}
-              title="Visualização em Cartões"
-              className={`p-1.5 rounded-md text-xs transition-colors ${
+              title={t('header.viewCards')}
+              className={`p-1.5 rounded-md text-xs transition-colors cursor-pointer ${
                 viewMode === 'cards'
                   ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-sm font-semibold'
                   : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100'
@@ -233,7 +236,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 type="button"
                 onClick={() => onThemeChange('light')}
-                title="Modo Claro"
+                title={t('header.themeLight')}
                 className={`p-1.5 rounded-md text-xs transition-colors cursor-pointer ${
                   theme === 'light'
                     ? 'bg-white dark:bg-slate-700 text-amber-500 shadow-xs font-semibold'
@@ -245,7 +248,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 type="button"
                 onClick={() => onThemeChange('dark')}
-                title="Modo Escuro"
+                title={t('header.themeDark')}
                 className={`p-1.5 rounded-md text-xs transition-colors cursor-pointer ${
                   theme === 'dark'
                     ? 'bg-white dark:bg-slate-700 text-sky-400 shadow-xs font-semibold'
@@ -257,7 +260,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 type="button"
                 onClick={() => onThemeChange('system')}
-                title="Sincronizar com o tema do navegador (Automático)"
+                title={t('header.themeSystem')}
                 className={`p-1.5 rounded-md text-xs transition-colors cursor-pointer ${
                   theme === 'system'
                     ? 'bg-white dark:bg-slate-700 text-indigo-500 dark:text-indigo-400 shadow-xs font-semibold'
@@ -269,13 +272,24 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           )}
 
+          {/* Language Toggle (PT-BR / EN) */}
+          <button
+            type="button"
+            onClick={() => setLanguage(language === 'pt' ? 'en' : 'pt')}
+            title={language === 'pt' ? 'Switch to English' : 'Mudar para Português'}
+            className="flex items-center space-x-1.5 px-2 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
+          >
+            <Globe className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+            <span>{language === 'pt' ? '🇧🇷 PT' : '🇺🇸 EN'}</span>
+          </button>
+
           {/* Auto-Organize on Bookmark Creation Toggle */}
           <button
             onClick={toggleAutoOrganize}
             title={
               autoOrganize
-                ? 'Auto-Organização ativa: links novos salvos no Edge (Ctrl+D) são organizados automaticamente em subpastas inteligentes'
-                : 'Auto-Organização desativada: clique para ativar'
+                ? t('header.autoOrganizeTooltipOn')
+                : t('header.autoOrganizeTooltipOff')
             }
             className={`hidden xl:flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
               autoOrganize
@@ -284,27 +298,27 @@ export const Header: React.FC<HeaderProps> = ({
             }`}
           >
             <Zap className={`w-3.5 h-3.5 ${autoOrganize ? 'text-amber-500 fill-amber-500' : 'text-slate-400 dark:text-slate-400'}`} />
-            <span>Auto-Organizar: {autoOrganize ? 'ON' : 'OFF'}</span>
+            <span>{autoOrganize ? t('header.autoOrganizeOn') : t('header.autoOrganizeOff')}</span>
           </button>
 
           {/* New Bookmark */}
           <button
             onClick={onOpenCreateBookmark}
-            title="Novo favorito"
-            className="flex items-center space-x-1 px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 transition-colors"
+            title={t('action.newBookmark')}
+            className="flex items-center space-x-1 px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
-            <span className="hidden sm:inline">Favorito</span>
+            <span className="hidden sm:inline">{t('header.bookmark')}</span>
           </button>
 
           {/* New Folder */}
           <button
             onClick={onOpenCreateFolder}
-            title="Nova pasta"
-            className="flex items-center space-x-1 px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 transition-colors"
+            title={t('action.newFolder')}
+            className="flex items-center space-x-1 px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
           >
             <FolderPlus className="w-3.5 h-3.5 text-amber-500" />
-            <span className="hidden sm:inline">Pasta</span>
+            <span className="hidden sm:inline">{t('header.folder')}</span>
           </button>
 
           {/* Workspaces / Open Tabs Button */}
@@ -312,10 +326,10 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={onOpenWorkspaceTabs}
               title="Salvar guias abertas de Workspaces em favoritos"
-              className="flex items-center space-x-1 px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 transition-colors"
+              className="flex items-center space-x-1 px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
             >
               <Laptop className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
-              <span className="hidden lg:inline">Workspaces</span>
+              <span className="hidden lg:inline">{t('header.workspaceTabs')}</span>
             </button>
           )}
 
@@ -324,10 +338,10 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={onOpenImport}
               title="Importar arquivo de favoritos (HTML do Edge/Chrome ou backup JSON)"
-              className="flex items-center space-x-1 px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 transition-colors"
+              className="flex items-center space-x-1 px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
             >
               <UploadCloud className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
-              <span className="hidden sm:inline">Importar</span>
+              <span className="hidden sm:inline">{t('header.import')}</span>
             </button>
           )}
 
@@ -335,10 +349,10 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onOpenAiOrganize}
             title="Organizar favoritos com IA local (Ollama)"
-            className="flex items-center space-x-1 px-2.5 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-xs font-medium rounded-lg shadow-sm shadow-indigo-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            className="flex items-center space-x-1 px-2.5 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-xs font-medium rounded-lg shadow-sm shadow-indigo-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
           >
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Organizar com IA</span>
+            <span>{t('header.aiOrganize')}</span>
           </button>
 
           {/* Full Tab Button */}

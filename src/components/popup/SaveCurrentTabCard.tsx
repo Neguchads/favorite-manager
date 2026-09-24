@@ -3,6 +3,7 @@ import { Star, Check, Folder, Trash2, ExternalLink } from 'lucide-react';
 import { BookmarkNode } from '../../types/bookmarks';
 import { FolderOption } from '../../hooks/useBookmarks';
 import { extractDomain, getFaviconUrl } from '../../utils/url';
+import { useTranslation } from '../../i18n';
 
 interface SaveCurrentTabCardProps {
   allBookmarks: BookmarkNode[];
@@ -30,6 +31,7 @@ export const SaveCurrentTabCard: React.FC<SaveCurrentTabCardProps> = ({
   onMoveBookmark,
   onOpenFolderTree,
 }) => {
+  const { t } = useTranslation();
   const [tabInfo, setTabInfo] = useState<TabInfo | null>(null);
   const [loadingTab, setLoadingTab] = useState(true);
   const [customTitle, setCustomTitle] = useState('');
@@ -157,16 +159,16 @@ export const SaveCurrentTabCard: React.FC<SaveCurrentTabCardProps> = ({
             <div className="min-w-0 flex-1">
               <div className="flex items-center space-x-1.5">
                 <span className="text-[11px] font-semibold text-slate-800 dark:text-slate-100 truncate">
-                  Página já favoritada
+                  {t('popup.alreadySaved')}
                 </span>
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300 font-medium">
-                  Salva
+                  {t('popup.savedBadge')}
                 </span>
               </div>
               <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5 flex items-center space-x-1">
                 <Folder className="w-3 h-3 text-amber-500 shrink-0 inline" />
                 <span className="font-medium text-slate-700 dark:text-slate-300">
-                  {existingFolder?.title || 'Barra de favoritos'}
+                  {existingFolder?.title || t('nav.bookmarksBar')}
                 </span>
                 {existingFolder?.path && (
                   <span className="text-[9px] text-slate-400 truncate">
@@ -180,14 +182,14 @@ export const SaveCurrentTabCard: React.FC<SaveCurrentTabCardProps> = ({
           <div className="flex items-center space-x-1 shrink-0">
             <button
               onClick={() => setIsChangingFolder(!isChangingFolder)}
-              className="px-2 py-1 bg-white dark:bg-slate-750 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-650 rounded text-[10px] font-medium transition-colors"
+              className="px-2 py-1 bg-white dark:bg-slate-750 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-650 rounded text-[10px] font-medium transition-colors cursor-pointer"
               title="Trocar pasta deste favorito"
             >
-              Mover
+              {t('popup.move')}
             </button>
             <button
               onClick={handleDelete}
-              className="p-1 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition-colors"
+              className="p-1 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition-colors cursor-pointer"
               title="Remover dos favoritos"
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -197,11 +199,11 @@ export const SaveCurrentTabCard: React.FC<SaveCurrentTabCardProps> = ({
 
         {isChangingFolder && (
           <div className="mt-2 pt-2 border-t border-sky-100 dark:border-slate-700 flex items-center space-x-2">
-            <span className="text-[10px] text-slate-500 shrink-0">Mover para:</span>
+            <span className="text-[10px] text-slate-500 shrink-0">{t('popup.moveTo')}</span>
             <select
               value={existingBookmark.parentId || '1'}
               onChange={(e) => handleMoveExisting(e.target.value)}
-              className="flex-1 text-[11px] px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 focus:outline-none focus:border-sky-500"
+              className="flex-1 text-[11px] px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 focus:outline-none focus:border-sky-500 cursor-pointer"
             >
               {allFolders.map((f) => (
                 <option key={f.id} value={f.id}>
@@ -221,12 +223,12 @@ export const SaveCurrentTabCard: React.FC<SaveCurrentTabCardProps> = ({
       <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center space-x-1.5 text-[11px] font-semibold text-slate-800 dark:text-slate-200">
           <Star className="w-3.5 h-3.5 text-sky-500" />
-          <span>Salvar guia atual nos favoritos</span>
+          <span>{t('popup.saveActivePage')}</span>
         </div>
         {justSaved ? (
           <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center space-x-1">
             <Check className="w-3 h-3" />
-            <span>Salvo!</span>
+            <span>{t('popup.saved')}</span>
           </span>
         ) : (
           <span className="text-[10px] text-slate-400 font-mono truncate max-w-[150px]">
@@ -255,7 +257,7 @@ export const SaveCurrentTabCard: React.FC<SaveCurrentTabCardProps> = ({
             type="text"
             value={customTitle}
             onChange={(e) => setCustomTitle(e.target.value)}
-            placeholder="Nome do favorito..."
+            placeholder={t('popup.bookmarkTitle')}
             className="flex-1 px-2 py-1 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md text-slate-800 dark:text-slate-100 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
           />
         </div>
@@ -265,8 +267,8 @@ export const SaveCurrentTabCard: React.FC<SaveCurrentTabCardProps> = ({
             <select
               value={selectedFolderId}
               onChange={(e) => setSelectedFolderId(e.target.value)}
-              className="w-full pl-2 pr-6 py-1 text-[11px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md text-slate-800 dark:text-slate-200 focus:outline-none focus:border-sky-500 truncate"
-              title="Pasta de destino"
+              className="w-full pl-2 pr-6 py-1 text-[11px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md text-slate-800 dark:text-slate-200 focus:outline-none focus:border-sky-500 truncate cursor-pointer"
+              title={t('modal.parentFolder')}
             >
               {allFolders.map((f) => (
                 <option key={f.id} value={f.id}>
@@ -280,21 +282,21 @@ export const SaveCurrentTabCard: React.FC<SaveCurrentTabCardProps> = ({
             <button
               type="button"
               onClick={onOpenFolderTree}
-              className="px-2 py-1 bg-slate-200 dark:bg-slate-750 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded text-[11px] font-medium transition-colors shrink-0 flex items-center space-x-1"
+              className="px-2 py-1 bg-slate-200 dark:bg-slate-750 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded text-[11px] font-medium transition-colors shrink-0 flex items-center space-x-1 cursor-pointer"
               title="Navegar e escolher na árvore de pastas"
             >
               <Folder className="w-3 h-3 text-amber-500" />
-              <span>Árvore</span>
+              <span>{t('popup.tabTree')}</span>
             </button>
           )}
 
           <button
             type="submit"
             disabled={isSaving}
-            className="px-3 py-1 bg-sky-600 hover:bg-sky-500 text-white font-medium rounded text-[11px] transition-colors shrink-0 flex items-center space-x-1 shadow-xs disabled:opacity-50"
+            className="px-3 py-1 bg-sky-600 hover:bg-sky-500 text-white font-medium rounded text-[11px] transition-colors shrink-0 flex items-center space-x-1 shadow-xs disabled:opacity-50 cursor-pointer"
           >
             <Star className="w-3 h-3 fill-white" />
-            <span>{isSaving ? 'Salvando...' : 'Salvar'}</span>
+            <span>{isSaving ? t('popup.saving') : t('popup.save')}</span>
           </button>
         </div>
       </form>

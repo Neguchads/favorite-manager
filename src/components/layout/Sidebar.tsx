@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { BookmarkNode } from '../../types/bookmarks';
 import { FolderTreeNode } from '../tree/FolderTreeNode';
+import { useTranslation } from '../../i18n';
 
 interface SidebarProps {
   tree: BookmarkNode[];
@@ -42,6 +43,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onDropBookmark,
   onMoveToTarget,
 }) => {
+  const { t } = useTranslation();
   // Extract top-level root folders (usually Barra de favoritos, Outros favoritos, etc.)
   const rootNode = tree[0];
   const rootFolders = (rootNode?.children || []).filter((child) => !child.url);
@@ -52,7 +54,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Main Navigation Section */}
         <div>
           <div className="text-[10px] font-bold tracking-wider uppercase text-slate-500 dark:text-slate-400 px-2 mb-1.5">
-            Navegação
+            {t('nav.navigation')}
           </div>
           <div className="space-y-0.5">
             <button
@@ -65,7 +67,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               <div className="flex items-center space-x-2">
                 <Bookmark className="w-3.5 h-3.5" />
-                <span>Todos os favoritos</span>
+                <span>{t('nav.all')}</span>
               </div>
               <span
                 className={`text-[10px] px-1.5 py-0.2 rounded-full ${
@@ -88,7 +90,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               <div className="flex items-center space-x-2">
                 <Star className="w-3.5 h-3.5 text-amber-500" />
-                <span>Barra de favoritos</span>
+                <span>{t('nav.bookmarksBar')}</span>
               </div>
             </button>
 
@@ -102,7 +104,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               <div className="flex items-center space-x-2">
                 <FolderOpen className="w-3.5 h-3.5 text-sky-500" />
-                <span>Outros favoritos</span>
+                <span>{t('nav.other')}</span>
               </div>
             </button>
 
@@ -116,7 +118,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               <div className="flex items-center space-x-2">
                 <Clock className="w-3.5 h-3.5 text-indigo-500" />
-                <span>Recentes</span>
+                <span>{t('nav.recent')}</span>
               </div>
             </button>
           </div>
@@ -125,7 +127,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Maintenance & Tools Section */}
         <div>
           <div className="text-[10px] font-bold tracking-wider uppercase text-slate-500 dark:text-slate-400 px-2 mb-1.5">
-            Manutenção & Inteligência
+            {t('nav.maintenance')}
           </div>
           <div className="space-y-0.5">
             <button
@@ -138,7 +140,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               <div className="flex items-center space-x-2">
                 <Copy className="w-3.5 h-3.5 text-amber-500" />
-                <span>Duplicados</span>
+                <span>{t('nav.duplicates')}</span>
               </div>
               {duplicateCount > 0 && (
                 <span
@@ -163,7 +165,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               <div className="flex items-center space-x-2">
                 <Sparkles className="w-3.5 h-3.5 text-rose-500" />
-                <span>Central de Limpeza</span>
+                <span>{t('nav.cleanup')}</span>
               </div>
               {cleanupCount > 0 && (
                 <span
@@ -188,7 +190,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               <div className="flex items-center space-x-2">
                 <BarChart3 className="w-3.5 h-3.5 text-teal-500" />
-                <span>Estatísticas</span>
+                <span>{t('nav.stats')}</span>
               </div>
             </button>
 
@@ -202,7 +204,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               <div className="flex items-center space-x-2">
                 <HardDriveDownload className="w-3.5 h-3.5 text-blue-500" />
-                <span>Backups & Snapshots</span>
+                <span>{t('nav.backups')}</span>
               </div>
             </button>
           </div>
@@ -212,11 +214,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div>
           <div className="flex items-center justify-between px-2 mb-1.5">
             <span className="text-[10px] font-bold tracking-wider uppercase text-slate-500 dark:text-slate-400">
-              Árvore de Pastas
+              {t('nav.folderTree')}
             </span>
             <button
               onClick={onOpenCreateFolder}
-              title="Criar nova subpasta"
+              title={t('nav.newSubfolder')}
               className="p-1 text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 rounded"
             >
               <FolderPlus className="w-3 h-3" />

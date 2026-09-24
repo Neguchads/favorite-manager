@@ -14,8 +14,10 @@ import { CreateBookmarkModal } from '../modals/CreateBookmarkModal';
 import { AiOrganizeModal } from '../modals/AiOrganizeModal';
 import { AiProposedPlan } from '../../ai/types';
 import { executeAiPlanWithHierarchy } from '../../services/bookmarks';
+import { useTranslation } from '../../i18n';
 
 export const SidePanelContent: React.FC = () => {
+  const { t, language, setLanguage } = useTranslation();
   const {
     tree,
     loading,
@@ -64,7 +66,7 @@ export const SidePanelContent: React.FC = () => {
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-900 text-slate-500 text-xs">
         <div className="w-6 h-6 border-2 border-sky-500 border-t-transparent rounded-full animate-spin mb-2" />
-        <span>Carregando favoritos...</span>
+        <span>{t('sidepanel.loading')}</span>
       </div>
     );
   }
@@ -77,28 +79,39 @@ export const SidePanelContent: React.FC = () => {
           <div className="w-6 h-6 rounded-md bg-gradient-to-tr from-sky-600 to-blue-500 flex items-center justify-center text-white shadow-xs">
             <Layers className="w-3.5 h-3.5" />
           </div>
-          <span className="font-bold text-xs tracking-tight">Favoritos Edge</span>
+          <span className="font-bold text-xs tracking-tight">{t('sidepanel.title')}</span>
         </div>
 
         <div className="flex items-center space-x-1">
+          {/* Language Toggle in SidePanel */}
+          <button
+            type="button"
+            onClick={() => setLanguage(language === 'pt' ? 'en' : 'pt')}
+            title={language === 'pt' ? 'Switch to English' : 'Mudar para Português'}
+            className="flex items-center space-x-1 px-1.5 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-md transition-colors text-[10px] font-semibold cursor-pointer mr-0.5"
+          >
+            <Globe className="w-3 h-3 text-sky-500" />
+            <span>{language === 'pt' ? 'PT' : 'EN'}</span>
+          </button>
+
           <button
             onClick={() => setIsCreateOpen(true)}
-            title="Adicionar favorito"
-            className="p-1.5 text-slate-500 hover:text-sky-600 dark:hover:text-sky-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            title={t('sidepanel.addBookmark')}
+            className="p-1.5 text-slate-500 hover:text-sky-600 dark:hover:text-sky-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <Plus className="w-4 h-4" />
           </button>
           <button
             onClick={() => setIsAiOpen(true)}
-            title="Organizar com IA"
-            className="p-1.5 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/40 rounded-lg transition-colors"
+            title={t('sidepanel.organizeAi')}
+            className="p-1.5 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/40 rounded-lg transition-colors cursor-pointer"
           >
             <Sparkles className="w-4 h-4" />
           </button>
           <button
             onClick={handleOpenFullTab}
-            title="Abrir em aba cheia"
-            className="p-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            title={t('sidepanel.openFullTab')}
+            className="p-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <ExternalLink className="w-4 h-4" />
           </button>
@@ -113,7 +126,7 @@ export const SidePanelContent: React.FC = () => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Pesquisar favoritos..."
+            placeholder={t('sidepanel.searchPlaceholder')}
             className="w-full pl-8 pr-3 py-1 text-xs bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg border border-transparent focus:border-sky-500 focus:outline-none"
           />
         </div>
@@ -123,43 +136,43 @@ export const SidePanelContent: React.FC = () => {
       <div className="px-2 py-1.5 bg-slate-100/70 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center space-x-1 overflow-x-auto shrink-0 scrollbar-none">
         <button
           onClick={() => setActiveSection('all')}
-          className={`px-2 py-0.5 rounded-full text-[11px] shrink-0 font-medium ${
+          className={`px-2 py-0.5 rounded-full text-[11px] shrink-0 font-medium cursor-pointer ${
             activeSection === 'all'
               ? 'bg-sky-500 text-white'
               : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300'
           }`}
         >
-          Todos
+          {t('popup.all')}
         </button>
         <button
           onClick={() => setActiveSection('bookmarks_bar')}
-          className={`px-2 py-0.5 rounded-full text-[11px] shrink-0 font-medium ${
+          className={`px-2 py-0.5 rounded-full text-[11px] shrink-0 font-medium cursor-pointer ${
             activeSection === 'bookmarks_bar'
               ? 'bg-sky-500 text-white'
               : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300'
           }`}
         >
-          Barra
+          {t('popup.bookmarksBar')}
         </button>
         <button
           onClick={() => setActiveSection('other')}
-          className={`px-2 py-0.5 rounded-full text-[11px] shrink-0 font-medium ${
+          className={`px-2 py-0.5 rounded-full text-[11px] shrink-0 font-medium cursor-pointer ${
             activeSection === 'other'
               ? 'bg-sky-500 text-white'
               : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300'
           }`}
         >
-          Outros
+          {t('popup.other')}
         </button>
         <button
           onClick={() => setActiveSection('recent')}
-          className={`px-2 py-0.5 rounded-full text-[11px] shrink-0 font-medium ${
+          className={`px-2 py-0.5 rounded-full text-[11px] shrink-0 font-medium cursor-pointer ${
             activeSection === 'recent'
               ? 'bg-sky-500 text-white'
               : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300'
           }`}
         >
-          Recentes
+          {t('nav.recent')}
         </button>
       </div>
 
@@ -167,7 +180,7 @@ export const SidePanelContent: React.FC = () => {
       <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
         {displayedItems.length === 0 ? (
           <div className="p-6 text-center text-slate-400">
-            Nenhum favorito encontrado nesta pasta.
+            {t('main.noResults')}
           </div>
         ) : (
           displayedItems.map((item) => {

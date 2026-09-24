@@ -1,6 +1,7 @@
 import React from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { Modal } from './Modal';
+import { useTranslation } from '../../i18n';
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -19,10 +20,14 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   onConfirm,
   title,
   message,
-  confirmLabel = 'Confirmar',
-  cancelLabel = 'Cancelar',
+  confirmLabel,
+  cancelLabel,
   isDestructive = false,
 }) => {
+  const { t } = useTranslation();
+  const effectiveConfirmLabel = confirmLabel || t('action.confirm');
+  const effectiveCancelLabel = cancelLabel || t('action.cancel');
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} maxWidth="sm">
       <div className="flex items-start space-x-3 mb-5">
@@ -46,7 +51,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           onClick={onClose}
           className="px-3.5 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition-colors"
         >
-          {cancelLabel}
+          {effectiveCancelLabel}
         </button>
         <button
           type="button"
@@ -60,7 +65,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
               : 'bg-sky-600 hover:bg-sky-700'
           }`}
         >
-          {confirmLabel}
+          {effectiveConfirmLabel}
         </button>
       </div>
     </Modal>

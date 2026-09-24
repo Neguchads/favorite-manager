@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal } from '../common/Modal';
 import { BookmarkNode } from '../../types/bookmarks';
+import { useTranslation } from '../../i18n';
 
 interface EditItemModalProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
   item,
   onSave,
 }) => {
+  const { t } = useTranslation();
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
@@ -35,7 +37,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
     if (!item) return;
 
     if (!isFolder && !url.trim()) {
-      setError('A URL é obrigatória.');
+      setError(t('modal.urlRequired'));
       return;
     }
 
@@ -45,7 +47,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
       await onSave(item.id, title.trim(), isFolder ? undefined : url.trim());
       onClose();
     } catch (err: any) {
-      setError(err?.message || 'Falha ao salvar alterações');
+      setError(err?.message || t('modal.saveError'));
     } finally {
       setLoading(false);
     }
@@ -55,7 +57,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isFolder ? 'Renomear Pasta' : 'Editar Favorito'}
+      title={isFolder ? t('modal.renameFolderTitle') : t('modal.editBookmarkTitle')}
     >
       <form onSubmit={handleSubmit} className="space-y-4 text-xs">
         {error && (
@@ -66,7 +68,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
 
         <div>
           <label className="block font-medium text-slate-700 dark:text-slate-200 mb-1">
-            Título
+            {t('modal.title')}
           </label>
           <input
             type="text"
@@ -81,7 +83,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
         {!isFolder && (
           <div>
             <label className="block font-medium text-slate-700 dark:text-slate-200 mb-1">
-              URL
+              {t('modal.url')}
             </label>
             <input
               type="text"
@@ -99,14 +101,14 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
             onClick={onClose}
             className="px-3.5 py-1.5 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 rounded-lg transition-colors"
           >
-            Cancelar
+            {t('modal.cancel')}
           </button>
           <button
             type="submit"
             disabled={loading}
             className="px-4 py-1.5 bg-sky-600 hover:bg-sky-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
           >
-            {loading ? 'Salvando...' : 'Salvar Alterações'}
+            {loading ? t('modal.savingChanges') : t('modal.saveChanges')}
           </button>
         </div>
       </form>

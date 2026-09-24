@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ChevronRight, ChevronDown, Folder, FolderOpen, GripVertical } from 'lucide-react';
 import { BookmarkNode } from '../../types/bookmarks';
 import { parseDragPayload, getDropPosition, DropPosition } from '../../utils/dragDrop';
+import { useTranslation } from '../../i18n';
 
 interface FolderTreeNodeProps {
   node: BookmarkNode;
@@ -35,6 +36,7 @@ export const FolderTreeNode: React.FC<FolderTreeNodeProps> = ({
   const isDraggable = !isSystemFolder;
 
   // Subfolders only
+  const { t, language } = useTranslation();
   const subFolders = (node.children || []).filter((child) => !child.url);
   const hasSubFolders = subFolders.length > 0;
   const count = folderItemCount[node.id] || 0;
@@ -42,11 +44,11 @@ export const FolderTreeNode: React.FC<FolderTreeNodeProps> = ({
 
   const displayTitle =
     node.id === '1'
-      ? 'Barra de favoritos'
+      ? t('nav.bookmarksBar')
       : node.id === '2'
-      ? 'Outros favoritos'
+      ? t('nav.other')
       : node.id === '3'
-      ? 'Favoritos móveis'
+      ? (language === 'pt' ? 'Favoritos móveis' : 'Mobile bookmarks')
       : node.title;
 
   const handleDragStart = (e: React.DragEvent) => {

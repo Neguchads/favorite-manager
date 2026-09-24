@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal } from '../common/Modal';
 import { FolderOption } from '../../hooks/useBookmarks';
+import { useTranslation } from '../../i18n';
 
 interface CreateBookmarkModalProps {
   isOpen: boolean;
@@ -17,6 +18,7 @@ export const CreateBookmarkModal: React.FC<CreateBookmarkModalProps> = ({
   defaultParentId,
   onCreate,
 }) => {
+  const { t } = useTranslation();
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
   const [parentId, setParentId] = useState(defaultParentId || '1');
@@ -33,7 +35,7 @@ export const CreateBookmarkModal: React.FC<CreateBookmarkModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!url.trim()) {
-      setError('A URL é obrigatória.');
+      setError(t('modal.urlRequired'));
       return;
     }
 
@@ -57,7 +59,7 @@ export const CreateBookmarkModal: React.FC<CreateBookmarkModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Novo Favorito">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('modal.createBookmarkTitle')}>
       <form onSubmit={handleSubmit} className="space-y-4 text-xs">
         {error && (
           <div className="p-2 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 rounded-lg text-rose-600 dark:text-rose-400">
@@ -67,20 +69,20 @@ export const CreateBookmarkModal: React.FC<CreateBookmarkModalProps> = ({
 
         <div>
           <label className="block font-medium text-slate-700 dark:text-slate-200 mb-1">
-            Título
+            {t('modal.title')}
           </label>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Ex: Documentação do Edge"
+            placeholder={t('modal.titlePlaceholder')}
             className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 focus:outline-none focus:border-sky-500"
           />
         </div>
 
         <div>
           <label className="block font-medium text-slate-700 dark:text-slate-200 mb-1">
-            URL <span className="text-rose-500">*</span>
+            {t('modal.url')} <span className="text-rose-500">*</span>
           </label>
           <input
             type="text"
@@ -94,7 +96,7 @@ export const CreateBookmarkModal: React.FC<CreateBookmarkModalProps> = ({
 
         <div>
           <label className="block font-medium text-slate-700 dark:text-slate-200 mb-1">
-            Salvar na pasta
+            {t('modal.saveInFolder')}
           </label>
           <select
             value={parentId}
@@ -113,16 +115,16 @@ export const CreateBookmarkModal: React.FC<CreateBookmarkModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-3.5 py-1.5 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 rounded-lg transition-colors"
+            className="px-3.5 py-1.5 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
           >
-            Cancelar
+            {t('modal.cancel')}
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="px-4 py-1.5 bg-sky-600 hover:bg-sky-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
+            className="px-4 py-1.5 bg-sky-600 hover:bg-sky-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
           >
-            {loading ? 'Salvando...' : 'Adicionar Favorito'}
+            {loading ? t('popup.saving') : t('modal.save')}
           </button>
         </div>
       </form>

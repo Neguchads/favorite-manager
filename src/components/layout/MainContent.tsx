@@ -31,6 +31,7 @@ import { BackupView } from '../backup/BackupView';
 import { ContextMenu, ContextMenuState } from '../common/ContextMenu';
 import { BreadcrumbNode, FolderOption } from '../../hooks/useBookmarks';
 import { openUrlInNewTab, openUrlInNewWindow } from '../../services/tabs/workspaceTabs';
+import { useTranslation } from '../../i18n';
 
 interface MainContentProps {
   activeSection: string;
@@ -134,6 +135,7 @@ export const MainContent: React.FC<MainContentProps> = ({
   folders = [],
   onSortAlphabetically,
 }) => {
+  const { t, language } = useTranslation();
   const [isSortingAZ, setIsSortingAZ] = useState(false);
   const [sortSuccessMessage, setSortSuccessMessage] = useState<string | null>(null);
   const [copiedToast, setCopiedToast] = useState(false);
@@ -216,7 +218,9 @@ export const MainContent: React.FC<MainContentProps> = ({
 
       const res = await onSortAlphabetically(targetId, true);
       setSortSuccessMessage(
-        `${res.sortedBookmarksCount} favoritos e ${res.sortedFoldersCount} pastas organizados de A-Z com sucesso!`
+        language === 'pt'
+          ? `${res.sortedBookmarksCount} favoritos e ${res.sortedFoldersCount} pastas organizados de A-Z com sucesso!`
+          : `${res.sortedBookmarksCount} bookmarks and ${res.sortedFoldersCount} folders organized A-Z successfully!`
       );
       setTimeout(() => {
         setSortSuccessMessage(null);
@@ -247,7 +251,7 @@ export const MainContent: React.FC<MainContentProps> = ({
     if (isEmpty) {
       return (
         <div className="text-xs text-slate-500 dark:text-slate-400 italic py-2 pl-3 bg-slate-50/50 dark:bg-slate-800/40 rounded-lg">
-          Esta pasta está vazia (nenhum favorito ou subpasta).
+          {t('main.emptyFolderInline')}
         </div>
       );
     }
@@ -367,7 +371,7 @@ export const MainContent: React.FC<MainContentProps> = ({
               else onSelectAll(allCurrentSelectable);
             }}
             className="p-0.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 shrink-0"
-            title={allSelected ? 'Desmarcar todos' : 'Selecionar todos'}
+            title={allSelected ? t('main.unselectAll') : t('main.selectAll')}
           >
             {allSelected ? (
               <CheckSquare className="w-4 h-4 text-sky-600 dark:text-sky-400" />
@@ -384,7 +388,7 @@ export const MainContent: React.FC<MainContentProps> = ({
           <div className="flex items-center space-x-1.5 min-w-0 flex-1">
             {searchQuery ? (
               <h2 className="font-semibold text-slate-800 dark:text-slate-100 truncate">
-                Resultados da busca: "{searchQuery}"
+                {t('main.searchResults')} "{searchQuery}"
               </h2>
             ) : breadcrumbs && breadcrumbs.length > 0 ? (
               <div className="flex items-center space-x-1 overflow-x-auto py-0.5 max-w-full">
@@ -420,15 +424,15 @@ export const MainContent: React.FC<MainContentProps> = ({
             )}
 
             <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 text-slate-600 dark:text-slate-300 font-medium shrink-0">
-              {items.length} {items.length === 1 ? 'favorito' : 'favoritos'}
-              {subfolders.length > 0 && ` • ${subfolders.length} ${subfolders.length === 1 ? 'pasta' : 'pastas'}`}
+              {items.length} {items.length === 1 ? t('main.bookmarkSingle') : t('main.bookmarkPlural')}
+              {subfolders.length > 0 && ` • ${subfolders.length} ${subfolders.length === 1 ? t('main.folderSingle') : t('main.folderPlural')}`}
             </span>
           </div>
         </div>
 
         {/* Sorting controls */}
         <div className="flex items-center space-x-1 shrink-0">
-          <span className="text-slate-500 dark:text-slate-400 font-medium text-[11px] mr-1 hidden sm:inline">Ordenar:</span>
+          <span className="text-slate-500 dark:text-slate-400 font-medium text-[11px] mr-1 hidden sm:inline">{t('main.sort')}</span>
           <button
             onClick={() => onToggleSort('title')}
             className={`px-2 py-1 rounded text-xs transition-colors flex items-center space-x-1 ${
@@ -437,7 +441,7 @@ export const MainContent: React.FC<MainContentProps> = ({
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80'
             }`}
           >
-            <span>Nome</span>
+            <span>{t('main.sortName')}</span>
             {sortField === 'title' && (
               <span className="text-[10px]">{sortDirection === 'asc' ? '↑' : '↓'}</span>
             )}
@@ -451,7 +455,7 @@ export const MainContent: React.FC<MainContentProps> = ({
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80'
             }`}
           >
-            <span>Domínio</span>
+            <span>{t('main.sortDomain')}</span>
             {sortField === 'domain' && (
               <span className="text-[10px]">{sortDirection === 'asc' ? '↑' : '↓'}</span>
             )}
@@ -465,7 +469,7 @@ export const MainContent: React.FC<MainContentProps> = ({
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80'
             }`}
           >
-            <span>Data</span>
+            <span>{t('main.sortDate')}</span>
             {sortField === 'dateAdded' && (
               <span className="text-[10px]">{sortDirection === 'asc' ? '↑' : '↓'}</span>
             )}
@@ -477,7 +481,7 @@ export const MainContent: React.FC<MainContentProps> = ({
               <button
                 onClick={handleSortAlphabetically}
                 disabled={isSortingAZ}
-                title="Classificar definitivamente todas as pastas, subpastas e favoritos em ordem alfabética (A-Z)"
+                title={t('main.sortAZTooltip')}
                 className="px-2.5 py-1 rounded text-xs font-medium transition-all flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer disabled:opacity-50"
               >
                 {isSortingAZ ? (
@@ -485,7 +489,7 @@ export const MainContent: React.FC<MainContentProps> = ({
                 ) : (
                   <ArrowDownAZ className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
                 )}
-                <span>{isSortingAZ ? 'Ordenando...' : 'Organizar Tudo A-Z'}</span>
+                <span>{isSortingAZ ? t('main.sortingAZ') : t('main.organizeAZ')}</span>
               </button>
             </>
           )}
@@ -493,11 +497,11 @@ export const MainContent: React.FC<MainContentProps> = ({
           {onOpenWorkspaceTabs && (
             <button
               onClick={onOpenWorkspaceTabs}
-              title="Salvar guias abertas de janelas ou workspaces nesta pasta"
+              title={t('main.workspaceTabsTooltip')}
               className="px-2.5 py-1 rounded text-xs font-medium transition-all flex items-center space-x-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/70 dark:hover:bg-indigo-900/80 text-indigo-700 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-700 cursor-pointer"
             >
               <Laptop className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-              <span className="hidden sm:inline">Guias do Workspace</span>
+              <span className="hidden sm:inline">{t('main.workspaceTabs')}</span>
             </button>
           )}
         </div>
@@ -523,7 +527,7 @@ export const MainContent: React.FC<MainContentProps> = ({
       {copiedToast && (
         <div className="fixed bottom-6 right-6 z-50 bg-slate-900/90 text-white px-3.5 py-2 rounded-xl shadow-lg flex items-center space-x-2 text-xs backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2 duration-150">
           <Copy className="w-3.5 h-3.5 text-sky-400" />
-          <span>Link copiado para a área de transferência!</span>
+          <span>{t('main.copiedToast')}</span>
         </div>
       )}
 
@@ -537,7 +541,7 @@ export const MainContent: React.FC<MainContentProps> = ({
           <div className="p-4 border-b border-slate-100 dark:border-slate-800/80">
             <div className="flex items-center justify-between mb-2">
               <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                Pastas ({subfolders.length})
+                {t('main.foldersSection')} ({subfolders.length})
               </div>
 
               {/* Expand / Collapse All Toggle Button */}
@@ -545,13 +549,13 @@ export const MainContent: React.FC<MainContentProps> = ({
                 <button
                   onClick={handleToggleExpandAll}
                   className="text-[11px] text-sky-600 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300 font-medium flex items-center space-x-1 cursor-pointer transition-colors px-2 py-0.5 rounded hover:bg-sky-50 dark:hover:bg-sky-950/40"
-                  title="Expandir ou recolher todas as pastas para ver o conteúdo interno"
+                  title={t('main.expandAllTooltip')}
                 >
                   <ChevronsUpDown className="w-3 h-3" />
                   <span>
                     {allSubfoldersExpanded
-                      ? 'Recolher Todas as Pastas'
-                      : 'Expandir Todas e Ver Conteúdo'}
+                      ? t('main.collapseAll')
+                      : t('main.expandAll')}
                   </span>
                 </button>
               )}
@@ -618,12 +622,12 @@ export const MainContent: React.FC<MainContentProps> = ({
               <Folder className="w-6 h-6" />
             </div>
             <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-              {searchQuery ? 'Nenhum favorito encontrado' : 'Esta pasta está vazia'}
+              {searchQuery ? t('main.noResults') : t('main.emptyFolder')}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mt-1 mb-4">
               {searchQuery
-                ? 'Tente ajustar os termos ou filtros de pesquisa (ex: domain:, folder:)'
-                : 'Arraste favoritos para cá ou use o botão abaixo para adicionar.'}
+                ? t('main.noResultsSub')
+                : t('main.emptyFolderSub')}
             </p>
             {!searchQuery && (
               <div className="flex flex-wrap items-center justify-center gap-2">
@@ -632,16 +636,16 @@ export const MainContent: React.FC<MainContentProps> = ({
                   className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer shadow-xs"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>Adicionar Favorito Aqui</span>
+                  <span>{t('main.addBookmarkHere')}</span>
                 </button>
                 {onOpenWorkspaceTabs && (
                   <button
                     onClick={onOpenWorkspaceTabs}
                     className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer shadow-sm shadow-indigo-500/20"
-                    title="Capturar todas as guias abertas na janela atual ou em workspaces e salvar nesta pasta"
+                    title={t('main.captureWorkspaceTooltip')}
                   >
                     <Laptop className="w-3.5 h-3.5" />
-                    <span>Capturar Guias do Workspace</span>
+                    <span>{t('main.captureWorkspaceTabs')}</span>
                   </button>
                 )}
               </div>

@@ -14,6 +14,43 @@ Formato de cada entrada:
 
 ---
 
+## 2026-09-24 — Antigravity — internacionalização bilíngue completa (Português / Inglês) com sincronização em tempo real e pacote da Microsoft Edge Add-ons Store
+- Arquivos alterados:
+  - `src/i18n/translations.ts` (novo)
+  - `src/i18n/LanguageContext.tsx` (novo)
+  - `src/i18n/index.ts` (novo)
+  - `src/main.tsx`
+  - `src/popup.tsx`
+  - `src/sidepanel.tsx`
+  - `src/components/layout/Header.tsx`
+  - `src/components/layout/Sidebar.tsx`
+  - `src/components/tree/FolderTreeNode.tsx`
+  - `src/components/layout/MainContent.tsx`
+  - `src/components/actionbar/BatchActionBar.tsx`
+  - `src/components/popup/PopupContent.tsx`
+  - `src/components/popup/SaveCurrentTabCard.tsx`
+  - `src/components/sidepanel/SidePanelContent.tsx`
+  - `src/components/modals/CreateBookmarkModal.tsx`
+  - `src/components/modals/CreateFolderModal.tsx`
+  - `src/components/modals/EditItemModal.tsx`
+  - `src/components/common/ConfirmDialog.tsx`
+  - `public/manifest.json`
+- Verificado:
+  - `npm run build` executado com sucesso e 0 erros (`tsc && vite build` em 3.75s, 1640 módulos).
+  - Pacote `.zip` para envio à Microsoft Edge Store gerado em `C:\Users\Desktop\Downloads\Favorite-Manager-v1.1.0-EdgeStore.zip` (155 KB).
+- Pendente / próximo passo: Submissão do pacote `.zip` no Microsoft Edge Partner Center ou testes locais no Edge.
+- Avisos para o outro agente:
+  1. **Infraestrutura i18n (`src/i18n`)**:
+     - `translations.ts` com dicionário completo cobrindo todas as áreas: cabeçalho, navegação, ordenação, drag and drop, popups, side panel, duplicatas, central de limpeza, snapshots, modais de criação/edição e mensagens de feedback.
+     - `LanguageContext.tsx`: detecção automática pelo navegador (`navigator.language`), persistência via `localStorage` e `chrome.storage.local`.
+     - **Sincronização em tempo real entre superfícies**: listener de `chrome.storage.onChanged` garante que alternar o idioma na aba cheia, no popup ou no painel lateral sincroniza instantaneamente todas as demais telas sem recarregar.
+  2. **Alternadores de Idioma na UI**:
+     - Botão seletor dinâmico `🇧🇷 PT` / `🇺🇸 EN` integrado no Header principal, no Popup e no Side Panel.
+  3. **Localização de Pastas do Sistema**:
+     - Nós raiz ('1' Barra de favoritos, '2' Outros favoritos, '3' Favoritos móveis) em `FolderTreeNode.tsx` adaptam seu título conforme o idioma ativo (ex: "Barra de favoritos" vs "Favorites bar").
+
+---
+
 ## 2026-09-24 — Antigravity — sistema completo de arrastar e soltar (Drag and Drop) com reordenação para cima/baixo e movimentação entre pastas
 - Arquivos alterados:
   - `src/utils/dragDrop.ts` (novo)

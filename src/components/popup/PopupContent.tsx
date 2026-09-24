@@ -22,10 +22,12 @@ import { CreateBookmarkModal } from '../modals/CreateBookmarkModal';
 import { CreateFolderModal } from '../modals/CreateFolderModal';
 import { SaveCurrentTabCard } from './SaveCurrentTabCard';
 import { PopupFolderTree } from './PopupFolderTree';
+import { useTranslation } from '../../i18n';
 
 export const PopupContent: React.FC = () => {
   // Sync dark/light theme
   useTheme();
+  const { t, language, setLanguage } = useTranslation();
 
   const {
     tree,
@@ -129,29 +131,40 @@ export const PopupContent: React.FC = () => {
               Edge Favorite Manager
             </h1>
             <p className="text-[10px] text-slate-400 mt-0.5">
-              {stats.totalBookmarks} favoritos em {stats.totalFolders} pastas
+              {stats.totalBookmarks} {t('popup.favoritesCount')} {stats.totalFolders} {t('popup.foldersCount')}
             </p>
           </div>
         </div>
 
         {/* Quick Launch Buttons */}
         <div className="flex items-center space-x-1.5">
+          {/* Language Toggle in Popup */}
+          <button
+            type="button"
+            onClick={() => setLanguage(language === 'pt' ? 'en' : 'pt')}
+            title={language === 'pt' ? 'Switch to English' : 'Mudar para Português'}
+            className="flex items-center space-x-1 px-1.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-md transition-colors text-[10px] font-semibold cursor-pointer"
+          >
+            <Globe className="w-3 h-3 text-sky-400" />
+            <span>{language === 'pt' ? 'PT' : 'EN'}</span>
+          </button>
+
           <button
             onClick={handleOpenSidePanel}
-            title="Abrir no Painel Lateral do Edge"
-            className="flex items-center space-x-1 px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-md transition-colors text-[11px]"
+            title={t('popup.sidebarTooltip')}
+            className="flex items-center space-x-1 px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-md transition-colors text-[11px] cursor-pointer"
           >
             <SidebarIcon className="w-3 h-3 text-sky-400" />
-            <span>Sidebar</span>
+            <span>{t('popup.sidebar')}</span>
           </button>
 
           <button
             onClick={handleOpenFullTab}
-            title="Abrir Gerenciador Completo em Nova Aba"
-            className="flex items-center space-x-1 px-2.5 py-1 bg-sky-600 hover:bg-sky-500 text-white font-medium rounded-md transition-colors text-[11px] shadow-xs"
+            title={t('popup.fullTabTooltip')}
+            className="flex items-center space-x-1 px-2.5 py-1 bg-sky-600 hover:bg-sky-500 text-white font-medium rounded-md transition-colors text-[11px] shadow-xs cursor-pointer"
           >
             <Maximize2 className="w-3 h-3" />
-            <span>Tela Cheia</span>
+            <span>{t('popup.fullTab')}</span>
           </button>
         </div>
       </header>
@@ -172,26 +185,26 @@ export const PopupContent: React.FC = () => {
         <div className="flex items-center space-x-1">
           <button
             onClick={() => setActiveTab('bookmarks')}
-            className={`flex items-center space-x-1.5 px-3 py-1 rounded-md text-[11px] font-semibold transition-all ${
+            className={`flex items-center space-x-1.5 px-3 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
               activeTab === 'bookmarks'
                 ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-xs'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
             <List className="w-3.5 h-3.5" />
-            <span>Favoritos</span>
+            <span>{t('popup.tabBookmarks')}</span>
           </button>
 
           <button
             onClick={() => setActiveTab('tree')}
-            className={`flex items-center space-x-1.5 px-3 py-1 rounded-md text-[11px] font-semibold transition-all ${
+            className={`flex items-center space-x-1.5 px-3 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
               activeTab === 'tree'
                 ? 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-xs'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
             <FolderTree className="w-3.5 h-3.5 text-amber-500" />
-            <span>Árvore de Pastas</span>
+            <span>{t('popup.tabTree')}</span>
             <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-normal">
               {allFolders.length}
             </span>
@@ -201,11 +214,11 @@ export const PopupContent: React.FC = () => {
         {/* Quick button to add folder */}
         <button
           onClick={() => handleOpenCreateFolderModal(isSpecificFolderActive ? activeSection : '1')}
-          className="flex items-center space-x-1 px-2 py-0.5 text-[11px] text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded transition-colors"
-          title="Nova Pasta de Favoritos"
+          className="flex items-center space-x-1 px-2 py-0.5 text-[11px] text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded transition-colors cursor-pointer"
+          title={t('popup.newFolderTooltip')}
         >
           <FolderPlus className="w-3 h-3" />
-          <span>+ Pasta</span>
+          <span>{t('popup.newFolder')}</span>
         </button>
       </div>
 
@@ -226,7 +239,7 @@ export const PopupContent: React.FC = () => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Pesquisar favoritos... (ex: github, docs)"
+                placeholder={t('popup.searchPlaceholder')}
                 className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg border border-transparent focus:border-sky-500 focus:bg-white dark:focus:bg-slate-900 focus:outline-none transition-all shadow-inner"
               />
               {searchQuery && (
@@ -246,43 +259,43 @@ export const PopupContent: React.FC = () => {
             <div className="flex items-center space-x-1 overflow-x-auto scrollbar-none flex-1 min-w-0">
               <button
                 onClick={() => setActiveSection('all')}
-                className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors shrink-0 ${
+                className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors shrink-0 cursor-pointer ${
                   activeSection === 'all'
                     ? 'bg-sky-500 text-white shadow-xs'
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'
                 }`}
               >
-                Todos ({stats.totalBookmarks})
+                {t('popup.all')} ({stats.totalBookmarks})
               </button>
               <button
                 onClick={() => setActiveSection('bookmarks_bar')}
-                className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors shrink-0 ${
+                className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors shrink-0 cursor-pointer ${
                   activeSection === 'bookmarks_bar' || activeSection === '1'
                     ? 'bg-sky-500 text-white shadow-xs'
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'
                 }`}
               >
-                Barra
+                {t('popup.bookmarksBar')}
               </button>
               <button
                 onClick={() => setActiveSection('recent')}
-                className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors shrink-0 ${
+                className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors shrink-0 cursor-pointer ${
                   activeSection === 'recent'
                     ? 'bg-sky-500 text-white shadow-xs'
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'
                 }`}
               >
-                Recentes
+                {t('nav.recent')}
               </button>
               <button
                 onClick={() => setActiveSection('duplicates')}
-                className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors shrink-0 ${
+                className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors shrink-0 cursor-pointer ${
                   activeSection === 'duplicates'
                     ? 'bg-amber-500 text-white shadow-xs'
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'
                 }`}
               >
-                Duplicados {stats.duplicateCount > 0 && `(${stats.duplicateCount})`}
+                {t('nav.duplicates')} {stats.duplicateCount > 0 && `(${stats.duplicateCount})`}
               </button>
             </div>
 
@@ -297,10 +310,10 @@ export const PopupContent: React.FC = () => {
                     setActiveSection('all');
                   }
                 }}
-                className="text-[11px] px-2 py-0.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-slate-700 dark:text-slate-200 max-w-[130px] truncate focus:outline-none focus:border-sky-500"
-                title="Filtrar favoritos por pasta"
+                className="text-[11px] px-2 py-0.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-slate-700 dark:text-slate-200 max-w-[130px] truncate focus:outline-none focus:border-sky-500 cursor-pointer"
+                title={t('popup.filterFolder')}
               >
-                <option value="">📁 Filtrar Pasta...</option>
+                <option value="">📁 {t('popup.filterFolder')}</option>
                 {allFolders.map((f) => (
                   <option key={f.id} value={f.id}>
                     {f.path || f.title}
