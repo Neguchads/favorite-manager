@@ -3,6 +3,7 @@ export default {
   content: [
     "./index.html",
     "./sidepanel.html",
+    "./popup.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   darkMode: 'class',

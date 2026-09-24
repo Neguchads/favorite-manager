@@ -47,12 +47,12 @@ Os dois agentes usam a MESMA pasta e a MESMA branch. Cada um vê as mudanças do
 - Pronto = `npm run build` passando sem erros.
 - Nunca coloque segredos no código. Use `.env` (já está no `.gitignore`).
 
-## Bugs conhecidos (prioridade)
+## Bugs conhecidos (Status: 100% resolvidos)
 
-1. `hierarchy.ts`: `buildExistingFolderMap` grava chaves com o nome da raiz ("barra de favoritos / ..."), mas `ensureHierarchicalFolder` busca sem ele. Resultado: subpastas duplicadas a cada organização.
-2. `background/index.ts`: auto-organização no `onCreated` vem ligada por padrão, dispara em sync e importação, ignora a pasta escolhida pelo usuário e tem condição de corrida.
-3. Snapshots são salvos mas não existe restauração, e a UI promete "recuperação instantânea".
-4. `App.tsx`: `defaultParentId` passa IDs inválidos (`'all'`, `'recent'`), então "Novo Favorito" falha por padrão.
-5. Limpeza pós-IA apaga todas as pastas vazias da árvore, não só as esvaziadas pela operação.
-6. `useBookmarks.ts`: `loadTree()` sem debounce a cada evento; operações em massa disparam milhares de recargas.
-7. Verificação de links: HEAD com 403/405 vira falso "quebrado".
+1. [RESOLVIDO] `hierarchy.ts`: `buildExistingFolderMap` indexa por `parentId:folderTitle.toLowerCase()` e `ensureHierarchicalFolder` busca com essa mesma chave. Subpastas duplicadas eliminadas.
+2. [RESOLVIDO] `background/index.ts`: auto-organização no `onCreated` é estritamente opt-in (`autoOrganizeOnCreate === true`) e respeita subpastas manuais do usuário.
+3. [RESOLVIDO] `restoreSnapshot`: restauração segura implementada em `backup/index.ts` e conectada ao botão de restauração na UI com snapshot de segurança prévio.
+4. [RESOLVIDO] `App.tsx`: `resolveSafeParentId` sanitiza seleções virtuais (`'all'`, `'recent'`) para IDs de pasta válidos ('1' ou pasta selecionada).
+5. [RESOLVIDO] `hierarchy.ts`: `pruneEmptyFolders` opera seletivamente sobre `candidateFolderIds` (pastas esvaziadas pela operação).
+6. [RESOLVIDO] `useBookmarks.ts`: `loadTree()` com debounce de 300ms contra sobrecarga de eventos.
+7. [RESOLVIDO] Verificação de links: HEAD com 403/405/400 faz fallback suave via GET com cabeçalho de faixa de bytes para evitar falsos "links quebrados".

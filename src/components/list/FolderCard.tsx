@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Folder, Edit2, Trash2, ExternalLink, FolderInput } from 'lucide-react';
 import { BookmarkNode } from '../../types/bookmarks';
+import { parseDragPayload, getDropPosition, DropPosition } from '../../utils/dragDrop';
 
 interface FolderCardProps {
   folder: BookmarkNode;
   itemCount: number;
   subfolderCount?: number;
   isSelected?: boolean;
+  selectedIds?: Set<string>;
   onToggleSelect?: (id: string) => void;
   onOpen: (id: string) => void;
   onEdit: (folder: BookmarkNode) => void;
@@ -14,6 +16,11 @@ interface FolderCardProps {
   onMoveFolder?: (folder: BookmarkNode) => void;
   onOpenInNewWindow?: (id: string) => void;
   onDropBookmark?: (bookmarkId: string, targetFolderId: string) => void;
+  onMoveToTarget?: (
+    sourceIds: string[],
+    targetId: string,
+    position: 'before' | 'after' | 'inside'
+  ) => void;
   onContextMenu?: (e: React.MouseEvent, folder: BookmarkNode) => void;
 }
 
@@ -22,6 +29,7 @@ export const FolderCard: React.FC<FolderCardProps> = ({
   itemCount,
   subfolderCount = 0,
   isSelected = false,
+  selectedIds,
   onToggleSelect,
   onOpen,
   onEdit,
@@ -29,49 +37,66 @@ export const FolderCard: React.FC<FolderCardProps> = ({
   onMoveFolder,
   onOpenInNewWindow,
   onDropBookmark,
+  onMoveToTarget,
   onContextMenu,
 }) => {
-  const [isDragOver, setIsDragOver] = useState(false);
+  const [dropPosition, setDropPosition] = useState<DropPosition | null>(null);
+
+  const handleDragStart = (e: React.DragEvent) => {
+    if (isSelected && selectedIds && selectedIds.size > 1) {
+      e.dataTransfer.setData(
+        'application/json',
+        JSON.stringify({ type: 'multiple', ids: Array.from(selectedIds) })
+      );
+      e.dataTransfer.setData('text/plain', `${selectedIds.size} itens selecionados`);
+    } else {
+      e.dataTransfer.setData(
+        'application/json',
+        JSON.stringify({ type: 'folder', id: folder.id })
+      );
+      e.dataTransfer.setData('text/plain', folder.title);
+    }
+    e.dataTransfer.effectAllowed = 'move';
+  };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     e.dataTransfer.dropEffect = 'move';
-    if (!isDragOver) setIsDragOver(true);
+
+    const pos = getDropPosition(e, true);
+    if (dropPosition !== pos) {
+      setDropPosition(pos);
+    }
   };
 
-  const handleDragLeave = () => {
-    setIsDragOver(false);
+  const handleDragLeave = (e: React.DragEvent) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setDropPosition(null);
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    setIsDragOver(false);
-    const rawData = e.dataTransfer.getData('application/json') || e.dataTransfer.getData('text/plain');
-    if (rawData && onDropBookmark) {
-      try {
-        const parsed = JSON.parse(rawData);
-        if ((parsed.type === 'bookmark' || parsed.type === 'folder') && parsed.id) {
-          if (parsed.id !== folder.id) {
-            onDropBookmark(parsed.id, folder.id);
-          }
-        }
-      } catch (err) {
-        console.warn('Erro ao processar item arrastado:', err);
-      }
+    e.stopPropagation();
+    const finalPos = dropPosition || 'inside';
+    setDropPosition(null);
+
+    const payload = parseDragPayload(e);
+    if (!payload || payload.ids.length === 0) return;
+    if (payload.ids.includes(folder.id) && finalPos === 'inside') return;
+
+    if (onMoveToTarget) {
+      onMoveToTarget(payload.ids, folder.id, finalPos);
+    } else if (onDropBookmark) {
+      onDropBookmark(payload.ids[0], folder.id);
     }
   };
 
   return (
     <div
       draggable
-      onDragStart={(e) => {
-        e.dataTransfer.setData(
-          'application/json',
-          JSON.stringify({ type: 'folder', id: folder.id })
-        );
-        e.dataTransfer.setData('text/plain', folder.id);
-        e.dataTransfer.effectAllowed = 'move';
-      }}
+      onDragStart={handleDragStart}
       onClick={() => onOpen(folder.id)}
       onDoubleClick={() => onOpen(folder.id)}
       onContextMenu={(e) => {
@@ -84,14 +109,21 @@ export const FolderCard: React.FC<FolderCardProps> = ({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`group p-3 border rounded-xl transition-all cursor-pointer shadow-xs flex flex-col justify-between ${
+      className={`group relative p-3 border rounded-xl transition-all cursor-pointer shadow-xs flex flex-col justify-between ${
         isSelected
           ? 'bg-sky-50 dark:bg-sky-950/60 border-sky-400 dark:border-sky-500 ring-2 ring-sky-500/40'
-          : isDragOver
+          : dropPosition === 'inside'
           ? 'bg-sky-100/80 dark:bg-sky-950/60 border-sky-400 dark:border-sky-500 ring-2 ring-sky-500/40 scale-[1.02]'
           : 'bg-amber-50/30 dark:bg-amber-950/10 hover:bg-amber-100/50 dark:hover:bg-amber-950/30 border-amber-200/60 dark:border-amber-900/40'
       }`}
     >
+      {/* Reordering indicator lines */}
+      {dropPosition === 'before' && (
+        <div className="absolute top-0 left-0 right-0 h-1 bg-sky-500 rounded-t-xl z-10 shadow-xs shadow-sky-500/50" />
+      )}
+      {dropPosition === 'after' && (
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-sky-500 rounded-b-xl z-10 shadow-xs shadow-sky-500/50" />
+      )}
       <div className="flex items-start justify-between">
         <div className="flex items-center space-x-2">
           {onToggleSelect && (
@@ -106,7 +138,7 @@ export const FolderCard: React.FC<FolderCardProps> = ({
           )}
           <div
             className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-xs mb-1 transition-colors ${
-              isDragOver
+              dropPosition === 'inside'
                 ? 'bg-sky-200 dark:bg-sky-800 text-sky-700 dark:text-sky-300'
                 : 'bg-amber-100 dark:bg-amber-900/60 text-amber-600 dark:text-amber-400'
             }`}
@@ -168,7 +200,7 @@ export const FolderCard: React.FC<FolderCardProps> = ({
           {folder.title || 'Nova Pasta'}
         </h4>
         <span className="text-[10px] text-amber-800 dark:text-amber-300 font-medium">
-          {isDragOver
+          {dropPosition === 'inside'
             ? 'Solte o favorito aqui'
             : `${itemCount > 0 ? `${itemCount} fav.` : '0 itens'}${
                 subfolderCount > 0 ? ` • ${subfolderCount} sub.` : ''

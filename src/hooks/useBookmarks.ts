@@ -6,6 +6,7 @@ import { extractDomain } from '../utils/url';
 import { findDuplicates } from '../services/duplicates';
 import { analyzeCleanup } from '../services/cleanup';
 import { createLocalSnapshot } from '../services/backup';
+import { isDescendantOf } from '../utils/dragDrop';
 
 export interface FolderOption {
   id: string;
@@ -554,6 +555,112 @@ export function useBookmarks() {
     [clearSelection, loadTree]
   );
 
+  const moveItemsToTarget = useCallback(
+    async (
+      sourceIds: string[],
+      targetNodeId: string,
+      position: 'before' | 'after' | 'inside'
+    ) => {
+      if (sourceIds.length === 0) return;
+      const targetNode = nodeMap.get(targetNodeId);
+      if (!targetNode) return;
+
+      // 1. Safety verification: prevent dropping any folder into itself or its own descendants
+      for (const sourceId of sourceIds) {
+        if (sourceId === targetNodeId && position === 'inside') {
+          return;
+        }
+        const sourceNode = nodeMap.get(sourceId);
+        if (sourceNode && !sourceNode.url) {
+          if (isDescendantOf(targetNodeId, sourceId, nodeMap)) {
+            console.warn(`Cannot move folder ${sourceId} into its own descendant ${targetNodeId}`);
+            return;
+          }
+        }
+      }
+
+      // 2. Take a snapshot if moving multiple items
+      if (sourceIds.length > 1) {
+        await createLocalSnapshot(`Mover ${sourceIds.length} itens para ${targetNode.title || 'pasta'}`);
+      }
+
+      // 3. Handle 'inside' vs 'before' / 'after'
+      if (position === 'inside') {
+        const targetFolderId = targetNode.url ? (targetNode.parentId || '1') : targetNode.id;
+        for (const id of sourceIds) {
+          if (id === targetFolderId) continue;
+          try {
+            await bookmarksService.move(id, { parentId: targetFolderId });
+          } catch (err) {
+            console.warn(`Erro ao mover item ${id} para pasta ${targetFolderId}:`, err);
+          }
+        }
+      } else {
+        // Reordering: 'before' or 'after'
+        const targetParentId = targetNode.parentId || '1';
+        const parentNode = nodeMap.get(targetParentId);
+        if (!parentNode || !parentNode.children) {
+          for (const id of sourceIds) {
+            await bookmarksService.move(id, { parentId: targetParentId });
+          }
+          await loadTree();
+          return;
+        }
+
+        const targetIndex = parentNode.children.findIndex((c) => c.id === targetNodeId);
+        if (targetIndex === -1) {
+          for (const id of sourceIds) {
+            await bookmarksService.move(id, { parentId: targetParentId });
+          }
+          await loadTree();
+          return;
+        }
+
+        if (sourceIds.length === 1) {
+          const sourceId = sourceIds[0];
+          if (sourceId === targetNodeId) return;
+
+          const sourceIndex = parentNode.children.findIndex((c) => c.id === sourceId);
+          let insertIndex: number;
+
+          if (sourceIndex !== -1 && sourceIndex < targetIndex) {
+            // Source is before target in the same parent. Removing source shifts target by -1.
+            insertIndex = position === 'before' ? targetIndex - 1 : targetIndex;
+          } else {
+            insertIndex = position === 'before' ? targetIndex : targetIndex + 1;
+          }
+
+          try {
+            await bookmarksService.move(sourceId, {
+              parentId: targetParentId,
+              index: Math.max(0, insertIndex),
+            });
+          } catch (err) {
+            console.warn(`Erro ao reordenar item ${sourceId}:`, err);
+          }
+        } else {
+          // Multiple items
+          let insertIndex = position === 'before' ? targetIndex : targetIndex + 1;
+          for (const id of sourceIds) {
+            try {
+              await bookmarksService.move(id, {
+                parentId: targetParentId,
+                index: Math.max(0, insertIndex),
+              });
+              insertIndex++;
+            } catch (err) {
+              console.warn(`Erro ao reordenar item múltiplo ${id}:`, err);
+            }
+          }
+        }
+      }
+
+      clearSelection();
+      await loadTree();
+    },
+    [nodeMap, createLocalSnapshot, clearSelection, loadTree]
+  );
+
   const pruneEmptyFoldersAction = useCallback(async () => {
     await createLocalSnapshot('Limpeza de Pastas Vazias');
     const count = await pruneEmptyFolders();
@@ -618,6 +725,7 @@ export function useBookmarks() {
     deleteDuplicates,
     moveBookmark,
     moveMultiple,
+    moveItemsToTarget,
     refreshTree: loadTree,
     parentPathMap,
     pruneEmptyFolders: pruneEmptyFoldersAction,

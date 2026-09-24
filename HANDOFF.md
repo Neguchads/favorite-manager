@@ -14,6 +14,74 @@ Formato de cada entrada:
 
 ---
 
+## 2026-09-24 — Antigravity — sistema completo de arrastar e soltar (Drag and Drop) com reordenação para cima/baixo e movimentação entre pastas
+- Arquivos alterados:
+  - `src/utils/dragDrop.ts` (novo)
+  - `src/hooks/useBookmarks.ts`
+  - `src/components/tree/FolderTreeNode.tsx`
+  - `src/components/layout/Sidebar.tsx`
+  - `src/components/layout/MainContent.tsx`
+  - `src/components/list/BookmarkItemRow.tsx`
+  - `src/components/list/FolderItemRow.tsx`
+  - `src/components/list/BookmarkCard.tsx`
+  - `src/components/list/FolderCard.tsx`
+  - `src/App.tsx`
+- Verificado: `npm run build` executado com sucesso e 0 erros (tsc + vite build em 3.21s, 1637 módulos).
+- Pendente / próximo passo: Testes de interação com o mouse no Edge via `dist/`.
+- Avisos para o outro agente:
+  1. **Arrastar e Soltar Completo e Universal**:
+     - Suporta arrastar favoritos individuais, pastas e múltiplos itens selecionados em lote.
+     - Detecção de posição de drop baseada nas coordenadas do mouse: `'before'` (reordenar acima), `'inside'` (soltar dentro da pasta) e `'after'` (reordenar abaixo).
+  2. **Indicadores Visuais**:
+     - Linha indicadora azul no topo para reordenar acima.
+     - Linha indicadora azul na base para reordenar abaixo.
+     - Destaque e anel azul para inserção dentro da pasta.
+     - Ícone de grip (`GripVertical`) exibido no hover para indicar que os itens e pastas são arrastáveis.
+  3. **Segurança de Hierarquia e Ciclos (`isDescendantOf`)**:
+     - Previne que uma pasta seja movida para dentro de si mesma ou para dentro de qualquer uma de suas subpastas descendentes.
+     - Pastas raiz do sistema ('1' Barra de favoritos, '2' Outros favoritos) não podem ser arrastadas e aceitam apenas drops no modo `'inside'`.
+  4. **Cálculo de Índices no Chromium**:
+     - `moveItemsToTarget` calcula com precisão matemática o deslocamento de índice (`sourceIndex < targetIndex ? targetIndex - 1 : targetIndex`) ao mover irmãos na mesma pasta pai.
+
+---
+
+## 2026-09-24 — Antigravity — criação da skill de agente `manifest-v3-extension-craft` encapsulando toda a engenharia e arquitetura da extensão
+- Arquivos alterados:
+  - `C:\Users\Desktop\.gemini\config\skills\manifest-v3-extension-craft\SKILL.md` (novo)
+  - `C:\Users\Desktop\.gemini\config\skills\manifest-v3-extension-craft\references\architecture.md` (novo)
+  - `C:\Users\Desktop\.gemini\config\skills\manifest-v3-extension-craft\references\bookmarks-and-tree-safety.md` (novo)
+  - `C:\Users\Desktop\.gemini\config\skills\manifest-v3-extension-craft\references\netscape-html-spec.md` (novo)
+- Verificado: `npm run build` executado com sucesso e 0 erros (tsc + vite build em 3.67s, 1636 módulos transformados).
+- Pendente / próximo passo: Pronta para uso em novos projetos ou extensões Manifest V3 por qualquer agente.
+- Avisos para o outro agente:
+  1. A skill global `manifest-v3-extension-craft` foi estruturada seguindo rigorosamente os padrões de `writing-skills` e `skill-creator`.
+  2. Sintetiza todo o aprendizado prático: multi-surface Vite build (popup, side panel, full tab, background.js), regras de ouro do Service Worker Manifest V3, indexação determinística de pastas (`parentId:folderTitle`), poda seletiva, snapshots de segurança pré-mutação, verificação HTTP resiliente (HEAD com fallback para GET Range bytes=0-1024), e parser/gerador de HTML Netscape.
+
+---
+
+## 2026-09-24 — Antigravity — revisão completa de código, funções, botões e integridade do projeto
+- Arquivos alterados: `tailwind.config.js`, `src/components/common/CommandPaletteModal.tsx`, `src/components/common/ConfirmDialog.tsx`, `src/components/popup/PopupContent.tsx`, `src/components/sidepanel/SidePanelContent.tsx`.
+- Verificado: `npm run build` executado com sucesso e 0 erros (tsc + vite build em 9.68s, saída em `dist/`).
+- Pendente / próximo passo: Testes no Microsoft Edge via `edge://extensions` (recarregar extensão a partir de `dist/`).
+- Avisos para o outro agente:
+  1. **Auditoria Geral de Todas as Funcionalidades**:
+     - **Os 7 bugs prioritários de AGENTS.md estão 100% resolvidos**:
+       - Bug 1 (Hierarchy folder mapping): Mapa baseado em `parentId:folderTitle` previne duplicações de subpastas.
+       - Bug 2 (Auto-organize no `onCreated`): Desativado por padrão (opt-in no storage) e respeita subpastas manuais.
+       - Bug 3 (Restauração de Snapshots): `restoreSnapshot` implementado e conectado ao botão de restauração na UI.
+       - Bug 4 (Criação de favoritos com IDs inválidos): `resolveSafeParentId` sanitiza sempre para uma pasta válida ('1' ou subpasta real).
+       - Bug 5 (Limpeza de pastas pós-IA): `pruneEmptyFolders` opera seletivamente sobre `candidateFolderIds` (apenas pastas esvaziadas pela operação).
+       - Bug 6 (Debounce de eventos de favoritos): Debounce de 300ms ativo em `useBookmarks.ts`.
+       - Bug 7 (Checagem de links 403/405): Trata códigos de recusa de bots como online sem falsos positivos.
+  2. **Refinamentos e Correções Aplicadas**:
+     - `tailwind.config.js`: Incluído `./popup.html` no array `content` para que o Tailwind compile corretamente classes do popup.
+     - `CommandPaletteModal.tsx`: Habilitada busca fuzzy tolerante a erros de digitação (Levenshtein) para ações e favoritos no Command Palette (Ctrl+K).
+     - `ConfirmDialog.tsx`: Botão de confirmação alinhado com o token padrão `bg-sky-600 hover:bg-sky-700`.
+     - `PopupContent.tsx`: Conectado `onSaveToFolder` na `PopupFolderTree`, permitindo salvar a guia ativa diretamente em qualquer pasta da árvore via ícone de estrela.
+     - `SidePanelContent.tsx`: Passado `sortAlphabetical: true` na execução do plano de IA no painel lateral.
+
+---
+
 ## 2026-09-23 — Antigravity — importação de ideias do MasterFavorites: busca fuzzy tolerante a erros de digitação, estratégia de duplicatas pelo título mais completo e detecção/atualização de redirecionamentos 301/302
 - Arquivos alterados: `src/utils/search.ts`, `src/components/duplicates/DuplicatesView.tsx`, `src/background/index.ts`, `src/services/health/index.ts`, `src/components/cleanup/CleanupView.tsx`.
 - Verificado: `npm run build` executado com sucesso e 0 erros (tsc + vite build em 3.63s, saída em `dist/`).

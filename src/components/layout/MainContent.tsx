@@ -63,6 +63,11 @@ interface MainContentProps {
   onOpenWorkspaceTabs?: () => void;
   onOpenMoveModal?: (item: BookmarkNode) => void;
   onMoveBookmark?: (id: string, targetParentId: string) => Promise<void>;
+  onMoveToTarget?: (
+    sourceIds: string[],
+    targetId: string,
+    position: 'before' | 'after' | 'inside'
+  ) => Promise<void> | void;
   parentPathMap: Map<string, string>;
   searchQuery: string;
   duplicates: BookmarkDuplicateGroup[];
@@ -113,6 +118,7 @@ export const MainContent: React.FC<MainContentProps> = ({
   onOpenWorkspaceTabs,
   onOpenMoveModal,
   onMoveBookmark,
+  onMoveToTarget,
   parentPathMap,
   searchQuery,
   duplicates,
@@ -257,6 +263,7 @@ export const MainContent: React.FC<MainContentProps> = ({
             subfolderCount={folderSubfolderCount[sub.id] || 0}
             isExpanded={expandedFolderIds.has(sub.id)}
             isSelected={selectedIds.has(sub.id)}
+            selectedIds={selectedIds}
             onToggleSelect={onToggleSelect}
             onToggleExpand={handleToggleExpandFolder}
             onOpen={onNavigateToFolder}
@@ -265,6 +272,7 @@ export const MainContent: React.FC<MainContentProps> = ({
             onMoveFolder={onMoveFolder}
             onOpenInNewWindow={onOpenFolderInNewWindow}
             onDropBookmark={onMoveBookmark}
+            onMoveToTarget={onMoveToTarget}
             onContextMenu={handleFolderContextMenu}
           >
             {expandedFolderIds.has(sub.id) && renderFolderInternalContent(sub)}
@@ -278,12 +286,14 @@ export const MainContent: React.FC<MainContentProps> = ({
             item={bookmark}
             folderPath={parentPathMap.get(bookmark.parentId || '')}
             isSelected={selectedIds.has(bookmark.id)}
+            selectedIds={selectedIds}
             isInspected={selectedItem?.id === bookmark.id}
             onToggleSelect={onToggleSelect}
             onInspect={onInspect}
             onEdit={onEdit}
             onDelete={onDelete}
             onMove={onOpenMoveModal}
+            onMoveToTarget={onMoveToTarget}
             onContextMenu={handleBookmarkContextMenu}
           />
         ))}
@@ -559,6 +569,7 @@ export const MainContent: React.FC<MainContentProps> = ({
                       subfolderCount={folderSubfolderCount[folder.id] || 0}
                       isExpanded={isExpanded}
                       isSelected={selectedIds.has(folder.id)}
+                      selectedIds={selectedIds}
                       onToggleSelect={onToggleSelect}
                       onToggleExpand={handleToggleExpandFolder}
                       onOpen={onNavigateToFolder}
@@ -567,6 +578,7 @@ export const MainContent: React.FC<MainContentProps> = ({
                       onMoveFolder={onMoveFolder}
                       onOpenInNewWindow={onOpenFolderInNewWindow}
                       onDropBookmark={onMoveBookmark}
+                      onMoveToTarget={onMoveToTarget}
                       onContextMenu={handleFolderContextMenu}
                     >
                       {isExpanded && renderFolderInternalContent(folder)}
@@ -583,6 +595,7 @@ export const MainContent: React.FC<MainContentProps> = ({
                     itemCount={folderItemCount[folder.id] || 0}
                     subfolderCount={folderSubfolderCount[folder.id] || 0}
                     isSelected={selectedIds.has(folder.id)}
+                    selectedIds={selectedIds}
                     onToggleSelect={onToggleSelect}
                     onOpen={onNavigateToFolder}
                     onEdit={onEditFolder}
@@ -590,6 +603,7 @@ export const MainContent: React.FC<MainContentProps> = ({
                     onMoveFolder={onMoveFolder}
                     onOpenInNewWindow={onOpenFolderInNewWindow}
                     onDropBookmark={onMoveBookmark}
+                    onMoveToTarget={onMoveToTarget}
                     onContextMenu={handleFolderContextMenu}
                   />
                 ))}
@@ -643,12 +657,14 @@ export const MainContent: React.FC<MainContentProps> = ({
                   item={item}
                   folderPath={folderPath}
                   isSelected={selectedIds.has(item.id)}
+                  selectedIds={selectedIds}
                   isInspected={selectedItem?.id === item.id}
                   onToggleSelect={onToggleSelect}
                   onInspect={onInspect}
                   onEdit={onEdit}
                   onDelete={onDelete}
                   onMove={onOpenMoveModal}
+                  onMoveToTarget={onMoveToTarget}
                   onContextMenu={handleBookmarkContextMenu}
                 />
               );
@@ -664,12 +680,14 @@ export const MainContent: React.FC<MainContentProps> = ({
                   item={item}
                   folderPath={folderPath}
                   isSelected={selectedIds.has(item.id)}
+                  selectedIds={selectedIds}
                   isInspected={selectedItem?.id === item.id}
                   onToggleSelect={onToggleSelect}
                   onInspect={onInspect}
                   onEdit={onEdit}
                   onDelete={onDelete}
                   onMove={onOpenMoveModal}
+                  onMoveToTarget={onMoveToTarget}
                   onContextMenu={handleBookmarkContextMenu}
                 />
               );

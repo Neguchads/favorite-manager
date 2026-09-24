@@ -67,6 +67,7 @@ export const App: React.FC = () => {
     deleteDuplicates,
     moveBookmark,
     moveMultiple,
+    moveItemsToTarget,
     pruneEmptyFolders,
     parentPathMap,
     refreshTree,
@@ -327,6 +328,7 @@ export const App: React.FC = () => {
           cleanupCount={stats.emptyFoldersCount + stats.missingTitlesCount}
           onOpenCreateFolder={() => setIsCreateFolderOpen(true)}
           onDropBookmark={moveBookmark}
+          onMoveToTarget={moveItemsToTarget}
         />
 
         {/* Central Content (Visualizador com subpastas estilo edge://favorites/) */}
@@ -361,6 +363,7 @@ export const App: React.FC = () => {
           onOpenCreateFolder={() => setIsCreateFolderOpen(true)}
           onOpenMoveModal={handleOpenMoveForItem}
           onMoveBookmark={moveBookmark}
+          onMoveToTarget={moveItemsToTarget}
           parentPathMap={parentPathMap}
           searchQuery={searchQuery}
           duplicates={duplicates}

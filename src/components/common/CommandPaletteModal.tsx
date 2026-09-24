@@ -12,6 +12,7 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import { BookmarkNode } from '../../types/bookmarks';
+import { fuzzyContains } from '../../utils/search';
 
 interface CommandPaletteModalProps {
   isOpen: boolean;
@@ -143,7 +144,10 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
 
   const matchingActions = cleanQ
     ? actions.filter(
-        (a) => a.title.toLowerCase().includes(cleanQ) || a.subtitle.toLowerCase().includes(cleanQ)
+        (a) =>
+          a.title.toLowerCase().includes(cleanQ) ||
+          a.subtitle.toLowerCase().includes(cleanQ) ||
+          fuzzyContains(cleanQ, `${a.title} ${a.subtitle}`, 0.72)
       )
     : actions;
 
@@ -151,10 +155,8 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
     ? bookmarks
         .filter((b) => {
           if (!b.url) return false;
-          return (
-            (b.title && b.title.toLowerCase().includes(cleanQ)) ||
-            b.url.toLowerCase().includes(cleanQ)
-          );
+          const text = `${b.title || ''} ${b.url}`;
+          return text.toLowerCase().includes(cleanQ) || fuzzyContains(cleanQ, text, 0.72);
         })
         .slice(0, 25)
         .map((b) => ({

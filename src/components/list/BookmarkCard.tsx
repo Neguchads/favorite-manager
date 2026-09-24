@@ -3,17 +3,24 @@ import { ExternalLink, Edit2, Trash2, Globe, FolderInput } from 'lucide-react';
 import { BookmarkNode } from '../../types/bookmarks';
 import { extractDomain, getFaviconUrl } from '../../utils/url';
 import { formatDateShort } from '../../utils/date';
+import { parseDragPayload, getDropPosition, DropPosition } from '../../utils/dragDrop';
 
 interface BookmarkCardProps {
   item: BookmarkNode;
   folderPath?: string;
   isSelected: boolean;
+  selectedIds?: Set<string>;
   isInspected: boolean;
   onToggleSelect: (id: string) => void;
   onInspect: (item: BookmarkNode) => void;
   onEdit: (item: BookmarkNode) => void;
   onDelete: (id: string) => void;
   onMove?: (item: BookmarkNode) => void;
+  onMoveToTarget?: (
+    sourceIds: string[],
+    targetId: string,
+    position: 'before' | 'after' | 'inside'
+  ) => void;
   onContextMenu?: (e: React.MouseEvent, item: BookmarkNode) => void;
 }
 
@@ -21,29 +28,77 @@ export const BookmarkCard: React.FC<BookmarkCardProps> = ({
   item,
   folderPath,
   isSelected,
+  selectedIds,
   isInspected,
   onToggleSelect,
   onInspect,
   onEdit,
   onDelete,
   onMove,
+  onMoveToTarget,
   onContextMenu,
 }) => {
   const [imgError, setImgError] = useState(false);
+  const [dropPosition, setDropPosition] = useState<DropPosition | null>(null);
   const domain = extractDomain(item.url);
   const favicon = getFaviconUrl(item.url);
+
+  const handleDragStart = (e: React.DragEvent) => {
+    if (isSelected && selectedIds && selectedIds.size > 1) {
+      e.dataTransfer.setData(
+        'application/json',
+        JSON.stringify({ type: 'multiple', ids: Array.from(selectedIds) })
+      );
+      e.dataTransfer.setData('text/plain', `${selectedIds.size} itens selecionados`);
+    } else {
+      e.dataTransfer.setData(
+        'application/json',
+        JSON.stringify({ type: 'bookmark', id: item.id })
+      );
+      e.dataTransfer.setData('text/plain', item.url || '');
+    }
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+
+    const pos = getDropPosition(e, false);
+    if (dropPosition !== pos) {
+      setDropPosition(pos);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setDropPosition(null);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const finalPos = dropPosition || 'after';
+    setDropPosition(null);
+
+    const payload = parseDragPayload(e);
+    if (!payload || payload.ids.length === 0) return;
+    if (payload.ids.includes(item.id)) return;
+
+    if (onMoveToTarget) {
+      onMoveToTarget(payload.ids, item.id, finalPos);
+    }
+  };
 
   return (
     <div
       draggable={true}
-      onDragStart={(e) => {
-        e.dataTransfer.setData(
-          'application/json',
-          JSON.stringify({ type: 'bookmark', id: item.id })
-        );
-        e.dataTransfer.setData('text/plain', item.url || '');
-        e.dataTransfer.effectAllowed = 'move';
-      }}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
       onClick={() => onInspect(item)}
       onDoubleClick={() => {
         if (item.url) window.open(item.url, '_blank');
@@ -63,6 +118,13 @@ export const BookmarkCard: React.FC<BookmarkCardProps> = ({
           : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-sm'
       }`}
     >
+      {/* Reordering indicator lines */}
+      {dropPosition === 'before' && (
+        <div className="absolute top-0 left-0 right-0 h-1 bg-sky-500 rounded-t-xl z-10 shadow-xs shadow-sky-500/50" />
+      )}
+      {dropPosition === 'after' && (
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-sky-500 rounded-b-xl z-10 shadow-xs shadow-sky-500/50" />
+      )}
       <div>
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center space-x-2 min-w-0">

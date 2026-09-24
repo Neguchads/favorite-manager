@@ -23,6 +23,11 @@ interface SidebarProps {
   cleanupCount: number;
   onOpenCreateFolder: () => void;
   onDropBookmark?: (bookmarkId: string, targetFolderId: string) => void;
+  onMoveToTarget?: (
+    sourceIds: string[],
+    targetId: string,
+    position: 'before' | 'after' | 'inside'
+  ) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -35,6 +40,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   cleanupCount,
   onOpenCreateFolder,
   onDropBookmark,
+  onMoveToTarget,
 }) => {
   // Extract top-level root folders (usually Barra de favoritos, Outros favoritos, etc.)
   const rootNode = tree[0];
@@ -227,6 +233,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 folderItemCount={folderItemCount}
                 level={0}
                 onDropBookmark={onDropBookmark}
+                onMoveToTarget={onMoveToTarget}
               />
             ))}
           </div>

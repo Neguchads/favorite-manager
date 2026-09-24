@@ -45,9 +45,17 @@ export const SidePanelContent: React.FC = () => {
   const handleApplyAiPlan = async (
     plan: AiProposedPlan,
     onProgress?: (current: number, total: number, percentage: number) => void,
-    cleanEmptyFolders: boolean = true
+    cleanEmptyFolders: boolean = true,
+    sortAlphabetical: boolean = true
   ) => {
-    const res = await executeAiPlanWithHierarchy(plan, tree, '1', onProgress, cleanEmptyFolders);
+    const res = await executeAiPlanWithHierarchy(
+      plan,
+      tree,
+      '1',
+      onProgress,
+      cleanEmptyFolders,
+      sortAlphabetical
+    );
     await refreshTree();
     return res;
   };

@@ -86,6 +86,21 @@ export const PopupContent: React.FC = () => {
     setActiveTab('bookmarks'); // Switch to bookmarks view to see its contents
   };
 
+  const handleSaveActiveTabToFolder = async (folderId: string) => {
+    if (typeof chrome !== 'undefined' && chrome.tabs?.query) {
+      try {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (tab && tab.url) {
+          await createBookmark(tab.title || tab.url, tab.url, folderId);
+          setActiveSection(folderId);
+          setActiveTab('bookmarks');
+        }
+      } catch (e) {
+        console.warn('Erro ao salvar aba na pasta:', e);
+      }
+    }
+  };
+
   const handleOpenCreateFolderModal = (parentId: string = '1') => {
     setTargetParentFolderId(parentId);
     setIsCreateFolderOpen(true);
@@ -425,6 +440,7 @@ export const PopupContent: React.FC = () => {
             activeFolderId={activeSection}
             folderItemCount={folderItemCount}
             onSelectFolder={handleSelectFolderFromTree}
+            onSaveToFolder={handleSaveActiveTabToFolder}
             onCreateFolder={handleOpenCreateFolderModal}
           />
         </div>

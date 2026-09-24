@@ -1,19 +1,26 @@
 import React, { useState } from 'react';
-import { ExternalLink, Edit2, Trash2, Globe, FolderInput } from 'lucide-react';
+import { ExternalLink, Edit2, Trash2, Globe, FolderInput, GripVertical } from 'lucide-react';
 import { BookmarkNode } from '../../types/bookmarks';
 import { extractDomain, getFaviconUrl } from '../../utils/url';
 import { formatDateShort } from '../../utils/date';
+import { parseDragPayload, getDropPosition, DropPosition } from '../../utils/dragDrop';
 
 interface BookmarkItemRowProps {
   item: BookmarkNode;
   folderPath?: string;
   isSelected: boolean;
+  selectedIds?: Set<string>;
   isInspected: boolean;
   onToggleSelect: (id: string) => void;
   onInspect: (item: BookmarkNode) => void;
   onEdit: (item: BookmarkNode) => void;
   onDelete: (id: string) => void;
   onMove?: (item: BookmarkNode) => void;
+  onMoveToTarget?: (
+    sourceIds: string[],
+    targetId: string,
+    position: 'before' | 'after' | 'inside'
+  ) => void;
   onContextMenu?: (e: React.MouseEvent, item: BookmarkNode) => void;
 }
 
@@ -21,29 +28,80 @@ export const BookmarkItemRow: React.FC<BookmarkItemRowProps> = ({
   item,
   folderPath,
   isSelected,
+  selectedIds,
   isInspected,
   onToggleSelect,
   onInspect,
   onEdit,
   onDelete,
   onMove,
+  onMoveToTarget,
   onContextMenu,
 }) => {
   const [imgError, setImgError] = useState(false);
+  const [dropPosition, setDropPosition] = useState<DropPosition | null>(null);
+
   const domain = extractDomain(item.url);
   const favicon = getFaviconUrl(item.url);
+
+  const handleDragStart = (e: React.DragEvent) => {
+    if (isSelected && selectedIds && selectedIds.size > 1) {
+      e.dataTransfer.setData(
+        'application/json',
+        JSON.stringify({ type: 'multiple', ids: Array.from(selectedIds) })
+      );
+      e.dataTransfer.setData('text/plain', `${selectedIds.size} itens selecionados`);
+    } else {
+      e.dataTransfer.setData(
+        'application/json',
+        JSON.stringify({ type: 'bookmark', id: item.id })
+      );
+      e.dataTransfer.setData('text/plain', item.url || '');
+    }
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+
+    // Bookmarks can only be reordered 'before' or 'after'
+    const pos = getDropPosition(e, false);
+    if (dropPosition !== pos) {
+      setDropPosition(pos);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setDropPosition(null);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const finalPos = dropPosition || 'after';
+    setDropPosition(null);
+
+    const payload = parseDragPayload(e);
+    if (!payload || payload.ids.length === 0) return;
+
+    if (payload.ids.includes(item.id)) return; // don't drop on self
+
+    if (onMoveToTarget) {
+      onMoveToTarget(payload.ids, item.id, finalPos);
+    }
+  };
 
   return (
     <div
       draggable={true}
-      onDragStart={(e) => {
-        e.dataTransfer.setData(
-          'application/json',
-          JSON.stringify({ type: 'bookmark', id: item.id })
-        );
-        e.dataTransfer.setData('text/plain', item.url || '');
-        e.dataTransfer.effectAllowed = 'move';
-      }}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
       onClick={() => onInspect(item)}
       onDoubleClick={() => {
         if (item.url) window.open(item.url, '_blank');
@@ -55,7 +113,7 @@ export const BookmarkItemRow: React.FC<BookmarkItemRowProps> = ({
           onContextMenu(e, item);
         }
       }}
-      className={`group flex items-center justify-between px-3 py-2 border-b border-slate-100 dark:border-slate-800/80 cursor-pointer transition-colors text-xs select-none ${
+      className={`group relative flex items-center justify-between px-3 py-2 border-b border-slate-100 dark:border-slate-800/80 cursor-pointer transition-colors text-xs select-none ${
         isInspected
           ? 'bg-sky-50/80 dark:bg-sky-950/40'
           : isSelected
@@ -63,7 +121,20 @@ export const BookmarkItemRow: React.FC<BookmarkItemRowProps> = ({
           : 'hover:bg-slate-50 dark:hover:bg-slate-800/30'
       }`}
     >
-      <div className="flex items-center space-x-3 min-w-0 flex-1">
+      {/* Reordering indicator lines */}
+      {dropPosition === 'before' && (
+        <div className="absolute top-0 left-0 right-0 h-0.5 bg-sky-500 rounded-full z-10 shadow-xs shadow-sky-500/50" />
+      )}
+      {dropPosition === 'after' && (
+        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-sky-500 rounded-full z-10 shadow-xs shadow-sky-500/50" />
+      )}
+
+      <div className="flex items-center space-x-2.5 min-w-0 flex-1">
+        {/* Grip Handle */}
+        <span title="Arrastar para reordenar" className="shrink-0 -ml-1">
+          <GripVertical className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing" />
+        </span>
+
         {/* Checkbox */}
         <input
           type="checkbox"
