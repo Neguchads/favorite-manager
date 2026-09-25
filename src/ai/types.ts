@@ -43,3 +43,12 @@ export interface ChatMessage {
   content: string;
   timestamp?: number;
 }
+
+export interface MiniAgentBookmarkContext {
+  totalBookmarks: number;
+  totalFolders: number;
+  unorganizedCount: number;
+  topCategories: { category: string; count: number; percentage: number }[];
+  topDomains: { domain: string; count: number }[];
+  topExistingFolders: { name: string; count: number }[];
+}

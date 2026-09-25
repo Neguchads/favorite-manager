@@ -1,26 +1,34 @@
-import { AiBookmarkItem, AiProposedPlan, OllamaConfig } from './types';
+import { AiBookmarkItem, AiProposedPlan, OllamaConfig, MiniAgentBookmarkContext } from './types';
 import { queryOllama } from './ollama';
 import { buildCategorizationPrompt } from './prompts';
 
 export const TAXONOMY_MASTER_CATEGORIES = [
   'Arte & Design',
   'Compras',
+  'Comunicação & Redes Sociais',
   'Dev & IA',
+  'Eletroeletrônica',
   'Eletrônica',
   'Engenharia & Mecânica',
+  'Entretenimento',
   'Espiritualidade',
   'Estudos',
   'Filmes & Séries',
+  'Finanças',
   'Governo',
   'Jogos',
+  'Mecânica',
   'Música',
   'Negócios & Finanças',
   'Notícias',
+  'Notícias & Informação',
   'Outros',
   'Produtividade',
   'Redes Sociais',
   'Saúde & Bem-Estar',
+  'Serviços & Utilidades',
   'Tecnologia',
+  'Trabalho & Carreira',
   'Viagens & Turismo',
 ] as const;
 
@@ -729,6 +737,14 @@ export const MASTER_REDUNDANT_SUBFOLDERS: Record<string, Set<string>> = {
   'Notícias': new Set(['notícias', 'noticias', 'notícias & atualidades', 'geral', '(geral)']),
   'Produtividade': new Set(['produtividade', 'utilitários', 'produtividade & ferramentas', 'geral', '(geral)']),
   'Outros': new Set(['outros', 'geral', '(geral)', 'diversos', 'outros & geral']),
+  'Mecânica': new Set(['mecânica', 'mecanica', 'engenharia', 'geral', '(geral)']),
+  'Eletroeletrônica': new Set(['eletroeletrônica', 'eletroeletronica', 'eletrônica', 'eletronica', 'elétrica', 'geral', '(geral)']),
+  'Serviços & Utilidades': new Set(['serviços', 'servicos', 'utilidades', 'geral', '(geral)']),
+  'Comunicação & Redes Sociais': new Set(['comunicação', 'comunicacao', 'redes sociais', 'sociais', 'geral', '(geral)']),
+  'Notícias & Informação': new Set(['notícias', 'noticias', 'informação', 'informacao', 'geral', '(geral)']),
+  'Trabalho & Carreira': new Set(['trabalho', 'carreira', 'vagas', 'geral', '(geral)']),
+  'Finanças': new Set(['finanças', 'financas', 'bancos', 'geral', '(geral)']),
+  'Entretenimento': new Set(['entretenimento', 'geral', '(geral)']),
 };
 
 /**
@@ -923,23 +939,32 @@ export function matchWithExistingFolders(
   ]);
 
   const ALIAS_GROUPS: Record<string, string[]> = {
-    'Jogos': ['games', 'jogos', 'gaming', 'jogos de pc'],
-    'Dev & IA': ['dev', 'programacao', 'programação', 'dev & ia', 'ia & dev', 'desenvolvimento', 'ia', 'inteligencia artificial'],
-    'Governo': ['governo & cidadania', 'governo', 'cidadania', 'gov'],
-    'Compras': ['lojas & compras', 'compras', 'lojas', 'shopping'],
-    'Estudos': ['estudos & educação', 'estudos', 'educação', 'faculdade', 'cursos', 'estudo'],
-    'Tecnologia': ['tecnologia & informática', 'tecnologia', 'informatica', 'informática', 'ti', 'tech'],
-    'Saúde & Bem-Estar': ['saúde, fitness & bem-estar', 'saúde', 'saude', 'fitness', 'bem-estar'],
-    'Negócios & Finanças': ['negócios & carreira', 'finanças', 'financas', 'bancos', 'investimentos', 'negocios', 'negócios'],
-    'Filmes & Séries': ['filmes, séries & animes', 'filmes', 'series', 'séries', 'cinema'],
-    'Arte & Design': ['arte, design & personalização', 'arte & design', 'design', 'arte'],
+    'Jogos': ['games', 'jogos', 'gaming', 'jogos de pc', 'entretenimento / jogos'],
+    'Dev & IA': ['dev', 'programacao', 'programação', 'dev & ia', 'ia & dev', 'desenvolvimento', 'ia', 'inteligencia artificial', 'tecnologia / programação & desenvolvimento', 'tecnologia / inteligência artificial'],
+    'Tecnologia': ['tecnologia & informática', 'tecnologia', 'informatica', 'informática', 'ti', 'tech', 'dev & ia', 'dev'],
+    'Governo': ['governo & cidadania', 'governo', 'cidadania', 'gov', 'serviços públicos', 'servicos publicos', 'serviços & utilidades / serviços públicos & documentos'],
+    'Compras': ['lojas & compras', 'compras', 'lojas', 'shopping', 'lojas & ofertas'],
+    'Estudos': ['estudos & educação', 'estudos', 'educação', 'faculdade', 'cursos', 'estudo', 'livros, artigos & pesquisa', 'faculdade & cursos'],
+    'Saúde & Bem-Estar': ['saúde, fitness & bem-estar', 'saúde', 'saude', 'fitness', 'bem-estar', 'treino & nutrição', 'medicina & cuidados'],
+    'Negócios & Finanças': ['negócios & carreira', 'finanças', 'financas', 'bancos', 'investimentos', 'negocios', 'negócios', 'trabalho & carreira', 'finanças / bancos, investimentos & crédito'],
+    'Finanças': ['negócios & finanças', 'finanças', 'financas', 'bancos', 'investimentos', 'bancos, investimentos & crédito'],
+    'Trabalho & Carreira': ['negócios & carreira', 'vagas & profissões', 'trabalho & carreira', 'carreira', 'vagas', 'empregos'],
+    'Filmes & Séries': ['filmes, séries & animes', 'filmes', 'series', 'séries', 'cinema', 'streaming & mídia', 'animes & mangás'],
+    'Entretenimento': ['jogos', 'filmes & séries', 'animes & mangás', 'streaming & mídia'],
+    'Arte & Design': ['arte, design & personalização', 'arte & design', 'design', 'arte', 'design & ilustração', 'wallpapers & ícones'],
     'Viagens & Turismo': ['turismo, viagens & eventos', 'viagens', 'turismo', 'viagem'],
-    'Redes Sociais': ['redes sociais & comunicação', 'redes sociais', 'sociais', 'social'],
-    'Produtividade': ['produtividade & ferramentas', 'produtividade', 'utilitários'],
-    'Notícias': ['notícias & atualidades', 'notícias', 'noticias', 'jornais'],
-    'Espiritualidade': ['espiritualidade & religião', 'religião', 'espiritualidade', 'fé'],
-    'Eletrônica': ['eletroeletrônica', 'eletrônica', 'eletronica', 'elétrica'],
-    'Engenharia & Mecânica': ['mecânica & engenharia', 'engenharia', 'mecanica', 'mecânica'],
+    'Redes Sociais': ['redes sociais & comunicação', 'redes sociais', 'sociais', 'social', 'comunicação & redes sociais', 'redes sociais & mensagens'],
+    'Comunicação & Redes Sociais': ['redes sociais & comunicação', 'redes sociais', 'sociais', 'social', 'redes sociais & mensagens', 'comunicação & redes sociais'],
+    'Produtividade': ['produtividade & ferramentas', 'produtividade', 'utilitários', 'ferramentas online', 'serviços & utilidades'],
+    'Serviços & Utilidades': ['serviços & utilidades', 'ferramentas online', 'serviços públicos & documentos', 'governo', 'produtividade', 'utilitários'],
+    'Notícias': ['notícias & atualidades', 'notícias', 'noticias', 'jornais', 'notícias & informação'],
+    'Notícias & Informação': ['notícias & atualidades', 'notícias', 'noticias', 'jornais', 'notícias & informação'],
+    'Espiritualidade': ['espiritualidade & religião', 'religião', 'espiritualidade', 'fé', 'religião & filosofia', 'astrologia & numerologia', 'cabala & hermetismo'],
+    'Eletrônica': ['eletroeletrônica', 'eletrônica', 'eletronica', 'elétrica', 'eletrônica & circuitos', 'microcontroladores & diy'],
+    'Eletroeletrônica': ['eletroeletrônica', 'eletrônica', 'eletronica', 'elétrica', 'eletrônica & circuitos'],
+    'Engenharia & Mecânica': ['mecânica & engenharia', 'engenharia', 'mecanica', 'mecânica', 'mecânica / automotiva', 'mecânica / industrial & usinagem'],
+    'Mecânica': ['engenharia & mecânica', 'mecânica & engenharia', 'engenharia', 'mecanica', 'mecânica'],
+    'Música': ['músicas', 'musicas', 'música', 'musica', 'som', 'hinários & ccb', 'partituras, cifras & teoria', 'instrumentos & áudio'],
     'Outros': ['outros & geral', 'outros', 'diversos'],
   };
 
@@ -1532,5 +1557,99 @@ export async function generateAiPlan(
       },
     },
     usedOllama,
+  };
+}
+
+/**
+ * Fast, in-memory catalog diagnostic for the Mini-Agent.
+ * Analyzes thousands of bookmarks in milliseconds to provide deep live context.
+ */
+export function extractBookmarkCatalogSummary(
+  items: Array<{ id: string; title: string; url?: string; folderPath?: string; parentId?: string }>,
+  folders: Array<{ id: string; title: string; parentId?: string }>,
+  parentPathMap?: Record<string, string> | Map<string, string>
+): MiniAgentBookmarkContext {
+  // Only count actual bookmarks (with url)
+  const bookmarkItems = items.filter((i) => Boolean(i.url));
+  const totalBookmarks = bookmarkItems.length;
+  const totalFolders = folders.length;
+
+  if (totalBookmarks === 0) {
+    return {
+      totalBookmarks: 0,
+      totalFolders,
+      unorganizedCount: 0,
+      topCategories: [],
+      topDomains: [],
+      topExistingFolders: [],
+    };
+  }
+
+  const categoryCounts: Record<string, number> = {};
+  const domainCounts: Record<string, number> = {};
+  const folderCounts: Record<string, number> = {};
+  let unorganizedCount = 0;
+
+  for (const item of bookmarkItems) {
+    // 1. Current folder identification
+    const rawParentId = (item as any).parentId;
+    let folderName = item.folderPath;
+    if (!folderName && parentPathMap && rawParentId) {
+      folderName = parentPathMap instanceof Map ? parentPathMap.get(rawParentId) : (parentPathMap as any)[rawParentId];
+    }
+    if (!folderName || folderName === '1' || folderName === '2') {
+      folderName = 'Barra de favoritos (Raiz)';
+      unorganizedCount++;
+    } else {
+      const lower = folderName.toLowerCase();
+      if (lower.includes('outros') || lower.includes('geral') || lower.includes('all')) {
+        unorganizedCount++;
+      }
+    }
+
+    folderCounts[folderName] = (folderCounts[folderName] || 0) + 1;
+
+    // 2. Domain frequency tracking
+    try {
+      if (item.url) {
+        const parsed = new URL(item.url);
+        const host = parsed.hostname.replace(/^www\./, '').toLowerCase();
+        if (host && !host.includes('newtab') && !host.includes('extensions')) {
+          domainCounts[host] = (domainCounts[host] || 0) + 1;
+        }
+      }
+    } catch {}
+
+    // 3. Fast semantic classification
+    const classified = classifyBookmarkIntelligently(item.title || '', item.url || '', folderName);
+    const masterCat = classified.split(' / ')[0].trim();
+    categoryCounts[masterCat] = (categoryCounts[masterCat] || 0) + 1;
+  }
+
+  const topCategories = Object.entries(categoryCounts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([category, count]) => ({
+      category,
+      count,
+      percentage: Math.round((count / totalBookmarks) * 100),
+    }));
+
+  const topDomains = Object.entries(domainCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([domain, count]) => ({ domain, count }));
+
+  const topExistingFolders = Object.entries(folderCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([name, count]) => ({ name, count }));
+
+  return {
+    totalBookmarks,
+    totalFolders,
+    unorganizedCount,
+    topCategories,
+    topDomains,
+    topExistingFolders,
   };
 }

@@ -25,9 +25,13 @@ import { Modal } from '../common/Modal';
 import { BookmarkNode } from '../../types/bookmarks';
 import { FolderOption } from '../../hooks/useBookmarks';
 import { checkOllamaConnection, chatWithOllama, DEFAULT_OLLAMA_CONFIG } from '../../ai/ollama';
-import { generateAiPlan, capitalizeFolderWords } from '../../ai/classifier';
+import { generateAiPlan, capitalizeFolderWords, extractBookmarkCatalogSummary } from '../../ai/classifier';
 import { AiProposedPlan, OllamaConfig, ChatMessage } from '../../ai/types';
-import { MINI_AGENT_SYSTEM_PROMPT, MINI_AGENT_QUICK_CHIPS } from '../../ai/prompts';
+import {
+  MINI_AGENT_QUICK_CHIPS,
+  buildMiniAgentSystemPrompt,
+  generateDetailedBookmarkAnalysis,
+} from '../../ai/prompts';
 import { createLocalSnapshot } from '../../services/backup';
 
 interface AiOrganizeModalProps {
@@ -109,15 +113,41 @@ export const AiOrganizeModal: React.FC<AiOrganizeModalProps> = ({
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Live in-memory catalog summary of the user's bookmarks for the Mini-Agent
+  const bookmarkContext = useMemo(() => {
+    return extractBookmarkCatalogSummary(itemsToOrganize, allFolders, parentPathMap);
+  }, [itemsToOrganize, allFolders, parentPathMap]);
+
   // Mini-Agent Chat state
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => [
     {
       role: 'assistant',
       content:
-        'Olá! Sou seu Mini-Agente de IA local. Posso te ajudar a planejar a estrutura das suas pastas, criar regras personalizadas para extensões e favoritos ou tirar dúvidas. Como posso te ajudar?',
+        itemsToOrganize.length > 0
+          ? `Olá! Sou seu Mini-Agente de IA do Favorite Manager. Já carreguei e analisei seus **${itemsToOrganize.length} favoritos** e **${allFolders.length} pastas** nesta sessão! 🚀\n\nPosso te mostrar o diagnóstico detalhado da sua biblioteca, identificar pastas sobrecarregadas ou planejar uma nova estrutura em Title Case. Como posso te ajudar agora?`
+          : 'Olá! Sou seu Mini-Agente de IA local do Favorite Manager. Posso te ajudar a planejar a estrutura das suas pastas, criar regras personalizadas para extensões e favoritos ou tirar dúvidas. Como posso te ajudar?',
       timestamp: Date.now(),
     },
   ]);
+
+  // Keep greeting synchronized if bookmarks count updates
+  useEffect(() => {
+    if (
+      itemsToOrganize.length > 0 &&
+      chatMessages.length === 1 &&
+      chatMessages[0].role === 'assistant' &&
+      !chatMessages[0].content.includes(itemsToOrganize.length.toString())
+    ) {
+      setChatMessages([
+        {
+          role: 'assistant',
+          content: `Olá! Sou seu Mini-Agente de IA do Favorite Manager. Já carreguei e analisei seus **${itemsToOrganize.length} favoritos** e **${allFolders.length} pastas** nesta sessão! 🚀\n\nPosso te mostrar o diagnóstico detalhado da sua biblioteca, identificar pastas sobrecarregadas ou planejar uma nova estrutura em Title Case. Como posso te ajudar agora?`,
+          timestamp: Date.now(),
+        },
+      ]);
+    }
+  }, [itemsToOrganize.length, allFolders.length]);
+
   const [chatInput, setChatInput] = useState('');
   const [isChatting, setIsChatting] = useState(false);
   const chatMessagesEndRef = useRef<HTMLDivElement>(null);
@@ -306,6 +336,15 @@ export const AiOrganizeModal: React.FC<AiOrganizeModalProps> = ({
   function generateSmartAssistantAnswer(query: string): string {
     const q = query.toLowerCase();
 
+    // Direct diagnostic or bookmark analysis request
+    if (
+      /analis|diagn[oó]stic|meus favoritos|minhas pastas|quantos|resumo|estrutura atual|como est[aã]o|o que tem/i.test(
+        q
+      )
+    ) {
+      return generateDetailedBookmarkAnalysis(bookmarkContext);
+    }
+
     if (/organiz|redund[aâ]ncia|pasta|nicho|estrutur|t[ií]tulo|mai[uú]scul|f[aá]ceis|ortografia/i.test(q)) {
       return `### 📁 Proposta de Organização Inteligente e Sem Redundâncias
 
@@ -400,11 +439,21 @@ Você pode clicar na aba **"Organizar Favoritos"** a qualquer momento para gerar
     try {
       if (ollamaStatus.connected) {
         const fullMessages: ChatMessage[] = [
-          { role: 'system', content: MINI_AGENT_SYSTEM_PROMPT },
+          { role: 'system', content: buildMiniAgentSystemPrompt(bookmarkContext) },
           ...chatMessages.filter((m) => m.role !== 'system'),
           userMsg,
         ];
-        const responseText = await chatWithOllama(fullMessages, ollamaConfig);
+        let responseText = await chatWithOllama(fullMessages, ollamaConfig);
+
+        // Intercept false safety/privacy refusal and replace with factual live analysis
+        const isRefusal =
+          /n[aã]o tenho acesso|quest[oõ]es de privacidade|n[aã]o consigo acessar|exporte os favoritos|copie o conte[uú]do/i.test(
+            responseText
+          );
+        if (isRefusal) {
+          responseText = generateDetailedBookmarkAnalysis(bookmarkContext);
+        }
+
         setChatMessages((prev) => [
           ...prev,
           { role: 'assistant', content: responseText, timestamp: Date.now() },
@@ -1166,6 +1215,33 @@ Você pode clicar na aba **"Organizar Favoritos"** a qualquer momento para gerar
         {activeTab === 'chat_agent' && (
           <div className="space-y-3">
             {renderOllamaBar()}
+
+            {/* Live Library Status Pill */}
+            <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-gradient-to-r from-violet-50/80 to-indigo-50/80 dark:from-violet-950/40 dark:to-indigo-950/40 rounded-xl border border-violet-200/80 dark:border-violet-900/60 text-[11px]">
+              <div className="flex items-center space-x-2 text-slate-700 dark:text-slate-200">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span>
+                  <strong>{bookmarkContext.totalBookmarks}</strong> favoritos carregados • <strong>{bookmarkContext.totalFolders}</strong> pastas indexadas
+                </span>
+                {bookmarkContext.unorganizedCount > 0 && (
+                  <span className="px-1.5 py-0.2 rounded text-[10px] bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 font-medium">
+                    {bookmarkContext.unorganizedCount} para otimizar
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => handleSendChatMessage('📊 Analisar meus favoritos agora')}
+                disabled={isChatting}
+                className="px-2.5 py-1 bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-semibold text-[10px] transition-all flex items-center space-x-1 cursor-pointer disabled:opacity-50 shadow-2xs"
+              >
+                <Sparkles className="w-3 h-3" />
+                <span>📊 Diagnosticar Meus Favoritos</span>
+              </button>
+            </div>
 
             {/* Quick prompts & Copy Entire Chat */}
             <div className="flex flex-wrap items-center justify-between gap-2">
