@@ -188,6 +188,8 @@ export async function sortFoldersAlphabetically(
 
     for (let i = 0; i < sortedChildren.length; i++) {
       const node = sortedChildren[i];
+      // Index diffing: skip the API call if the item is already in the correct position
+      if (node.index === i) continue;
       try {
         await bookmarksService.move(node.id, { parentId, index: i });
       } catch (err) {

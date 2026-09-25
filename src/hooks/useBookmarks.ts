@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useDeferredValue } from 'react';
 import { BookmarkNode, NavigationSection, SortField, SortDirection, ViewMode } from '../types/bookmarks';
 import { bookmarksService, pruneEmptyFolders, sortFoldersAlphabetically } from '../services/bookmarks';
 import { parseSearchQuery, matchesSearch } from '../utils/search';
@@ -30,6 +30,8 @@ export function useBookmarks() {
 
   const [activeSection, setActiveSection] = useState<NavigationSection | string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  // Deferred value keeps the input responsive — heavy filtering runs as a lower-priority task
+  const deferredSearchQuery = useDeferredValue(searchQuery);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [selectedItem, setSelectedItem] = useState<BookmarkNode | null>(null);
 
@@ -167,12 +169,15 @@ export function useBookmarks() {
     };
   }, [tree]);
 
-  // Parsed search query
-  const parsedQuery = useMemo(() => parseSearchQuery(searchQuery), [searchQuery]);
+  // Parsed search query — uses deferred value so filtering is lower-priority than input
+  const parsedQuery = useMemo(() => parseSearchQuery(deferredSearchQuery), [deferredSearchQuery]);
 
-  // Duplicates & Cleanup analysis
+  // Duplicates & Cleanup analysis — analyzeCleanup receives pre-computed count to avoid double traversal
   const duplicates = useMemo(() => findDuplicates(tree), [tree]);
-  const cleanupReport = useMemo(() => analyzeCleanup(tree), [tree]);
+  const cleanupReport = useMemo(() => {
+    const duplicateCount = duplicates.reduce((acc, g) => acc + g.items.length, 0);
+    return analyzeCleanup(tree, duplicateCount);
+  }, [tree, duplicates]);
 
   // Calculate statistics
   const stats = useMemo(() => {
@@ -247,7 +252,7 @@ export function useBookmarks() {
 
   // Subfolders under current folder (like real edge://favorites/)
   const currentSubfolders = useMemo<BookmarkNode[]>(() => {
-    if (searchQuery.trim()) return [];
+    if (deferredSearchQuery.trim()) return [];
 
     let targetNode: BookmarkNode | undefined;
     if (activeSection === 'bookmarks_bar') {
@@ -262,13 +267,13 @@ export function useBookmarks() {
       return targetNode.children.filter((b) => !b.url);
     }
     return [];
-  }, [activeSection, searchQuery, nodeMap]);
+  }, [activeSection, deferredSearchQuery, nodeMap]);
 
   // Items to display based on active section and search
   const displayedItems = useMemo(() => {
     let items: BookmarkNode[] = [];
 
-    if (searchQuery.trim()) {
+    if (deferredSearchQuery.trim()) {
       // Global search across all bookmarks
       items = allBookmarks.filter((b) => {
         const folderPath = b.parentId ? parentPathMap.get(b.parentId) : '';
@@ -319,7 +324,7 @@ export function useBookmarks() {
     return items;
   }, [
     activeSection,
-    searchQuery,
+    deferredSearchQuery,
     parsedQuery,
     allBookmarks,
     nodeMap,

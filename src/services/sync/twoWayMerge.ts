@@ -61,6 +61,13 @@ export async function applyRemoteCatalogMerge(
   // 1. Take safety snapshot before performing merge
   await createLocalSnapshot('Snapshot Pré-Sincronização entre Navegadores');
 
+  // Acquire session mutex to suppress background auto-organization during batch sync
+  if (typeof chrome !== 'undefined' && chrome.storage?.session) {
+    try {
+      await chrome.storage.session.set({ isBulkOperating: true });
+    } catch {}
+  }
+
   // 2. Fetch current tree and build lookup sets
   const currentTree = await bookmarksService.getTree();
   const localCatalog = extractCatalogFromTree(currentTree);
@@ -79,39 +86,47 @@ export async function applyRemoteCatalogMerge(
   let localAdded = 0;
   let itemsProcessed = 0;
 
-  for (const remoteItem of remoteItems) {
-    itemsProcessed++;
-    if (onProgress) {
-      onProgress(itemsProcessed, remoteItems.length);
+  try {
+    for (const remoteItem of remoteItems) {
+      itemsProcessed++;
+      if (onProgress) {
+        onProgress(itemsProcessed, remoteItems.length);
+      }
+
+      if (!remoteItem.url) continue;
+
+      const normalizedRemote = normalizeSyncUrl(remoteItem.url);
+
+      // If already exists locally, skip to avoid duplicates
+      if (localUrlSet.has(normalizedRemote)) {
+        continue;
+      }
+
+      // Determine target folder
+      const folderPath = remoteItem.folderPath?.trim() || 'Barra de favoritos';
+      const targetFolderId = await ensureHierarchicalFolder(folderPath, '1', existingFolderMap);
+
+      // Create bookmark locally
+      await bookmarksService.create({
+        parentId: targetFolderId,
+        title: remoteItem.title || remoteItem.url,
+        url: remoteItem.url,
+      });
+
+      localUrlSet.add(normalizedRemote);
+      localAdded++;
     }
 
-    if (!remoteItem.url) continue;
-
-    const normalizedRemote = normalizeSyncUrl(remoteItem.url);
-
-    // If already exists locally, skip to avoid duplicates
-    if (localUrlSet.has(normalizedRemote)) {
-      continue;
+    return {
+      localAdded,
+      remoteAdded: 0,
+      itemsProcessed,
+    };
+  } finally {
+    if (typeof chrome !== 'undefined' && chrome.storage?.session) {
+      try {
+        await chrome.storage.session.set({ isBulkOperating: false });
+      } catch {}
     }
-
-    // Determine target folder
-    const folderPath = remoteItem.folderPath?.trim() || 'Barra de favoritos';
-    const targetFolderId = await ensureHierarchicalFolder(folderPath, '1', existingFolderMap);
-
-    // Create bookmark locally
-    await bookmarksService.create({
-      parentId: targetFolderId,
-      title: remoteItem.title || remoteItem.url,
-      url: remoteItem.url,
-    });
-
-    localUrlSet.add(normalizedRemote);
-    localAdded++;
   }
-
-  return {
-    localAdded,
-    remoteAdded: 0,
-    itemsProcessed,
-  };
 }

@@ -151,6 +151,14 @@ chrome.bookmarks.onCreated.addListener(async (id, bookmark) => {
   if (!bookmark.url) return; // Skip folder creation
 
   try {
+    // Global Mutex Check: Suppress auto-organization and event loops during bulk imports or sync
+    if (chrome.storage?.session) {
+      try {
+        const { isBulkOperating } = await chrome.storage.session.get('isBulkOperating');
+        if (isBulkOperating === true) return;
+      } catch {}
+    }
+
     const { autoOrganizeOnCreate } = await chrome.storage.local.get(['autoOrganizeOnCreate']);
     // Bug 2 Fix: MUST be explicitly set to true. Disabled by default to prevent sync/import race conditions.
     if (autoOrganizeOnCreate !== true) return;
@@ -275,7 +283,34 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         });
         clearTimeout(timeoutId);
 
-        const text = await res.text();
+        // Stream the response and abort as soon as we find </title> or exceed 100 KB.
+        // Avoids downloading entire large pages / binary blobs for title extraction.
+        const MAX_BYTES = 100 * 1024; // 100 KB
+        const reader = res.body?.getReader();
+        const decoder = new TextDecoder('utf-8', { fatal: false });
+        let chunk = '';
+        let bytesRead = 0;
+
+        if (reader) {
+          try {
+            while (true) {
+              const { value, done } = await reader.read();
+              if (done) break;
+              bytesRead += value.byteLength;
+              chunk += decoder.decode(value, { stream: true });
+              // Early abort once we've found the closing </title> tag
+              if (/<\/title>/i.test(chunk)) { reader.cancel(); break; }
+              if (bytesRead >= MAX_BYTES) { reader.cancel(); break; }
+            }
+          } catch {
+            // reader already cancelled or network error — use whatever we have
+          }
+        } else {
+          // Fallback for environments without streaming body support
+          chunk = await res.text();
+        }
+
+        const text = chunk;
         const titleMatch = text.match(/<title[^>]*>([^<]+)<\/title>/i);
         let title = titleMatch ? titleMatch[1].trim() : '';
 

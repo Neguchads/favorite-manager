@@ -178,10 +178,18 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setSelectedIndex((prev) => (prev < allItems.length - 1 ? prev + 1 : 0));
+      const next = selectedIndex < allItems.length - 1 ? selectedIndex + 1 : 0;
+      setSelectedIndex(next);
+      queueMicrotask(() => {
+        listRef.current?.children[next]?.scrollIntoView({ block: 'nearest' });
+      });
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : allItems.length - 1));
+      const prev = selectedIndex > 0 ? selectedIndex - 1 : allItems.length - 1;
+      setSelectedIndex(prev);
+      queueMicrotask(() => {
+        listRef.current?.children[prev]?.scrollIntoView({ block: 'nearest' });
+      });
     } else if (e.key === 'Enter') {
       e.preventDefault();
       const selected = allItems[selectedIndex];

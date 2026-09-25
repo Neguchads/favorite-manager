@@ -61,6 +61,13 @@ export async function importBookmarks(options: ImportOptions): Promise<ImportRes
   // 1. Create safety snapshot before touching bookmarks
   const snapshotId = await createLocalSnapshot('Snapshot prévio à Importação de Favoritos');
 
+  // Acquire session mutex to suppress background auto-organization and event flood
+  if (typeof chrome !== 'undefined' && chrome.storage?.session) {
+    try {
+      await chrome.storage.session.set({ isBulkOperating: true });
+    } catch {}
+  }
+
   let totalBookmarksImported = 0;
   let totalBookmarksSkipped = 0;
   let totalFoldersCreated = 0;
@@ -289,5 +296,11 @@ export async function importBookmarks(options: ImportOptions): Promise<ImportRes
       snapshotId,
       error: err?.message || 'Falha ao processar arquivo de importação',
     };
+  } finally {
+    if (typeof chrome !== 'undefined' && chrome.storage?.session) {
+      try {
+        await chrome.storage.session.set({ isBulkOperating: false });
+      } catch {}
+    }
   }
 }

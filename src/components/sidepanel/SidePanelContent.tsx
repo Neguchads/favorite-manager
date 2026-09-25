@@ -15,8 +15,11 @@ import { AiOrganizeModal } from '../modals/AiOrganizeModal';
 import { AiProposedPlan } from '../../ai/types';
 import { executeAiPlanWithHierarchy } from '../../services/bookmarks';
 import { useTranslation } from '../../i18n';
+import { useTheme } from '../../hooks/useTheme';
 
 export const SidePanelContent: React.FC = () => {
+  // Sync dark/light theme in Side Panel
+  useTheme();
   const { t, language, setLanguage } = useTranslation();
   const {
     tree,

@@ -1,8 +1,14 @@
 import { BookmarkNode, CleanupReport } from '../../types/bookmarks';
 import { isValidUrl } from '../../utils/url';
-import { findDuplicates } from '../duplicates';
 
-export function analyzeCleanup(tree: BookmarkNode[]): CleanupReport {
+/**
+ * Analyzes the bookmark tree for cleanup issues.
+ * @param tree - Root bookmark tree
+ * @param precomputedDuplicateCount - Pre-computed duplicate count from findDuplicates().
+ *   Pass 0 if not yet computed. The caller (useBookmarks) should supply this to avoid
+ *   a redundant full-tree traversal.
+ */
+export function analyzeCleanup(tree: BookmarkNode[], precomputedDuplicateCount = 0): CleanupReport {
   const emptyFolders: BookmarkNode[] = [];
   const missingTitles: BookmarkNode[] = [];
   const invalidUrls: BookmarkNode[] = [];
@@ -38,12 +44,10 @@ export function analyzeCleanup(tree: BookmarkNode[]): CleanupReport {
     traverse(root);
   }
 
-  const duplicates = findDuplicates(tree);
-
   return {
     emptyFolders,
     missingTitles,
     invalidUrls,
-    duplicateCount: duplicates.reduce((acc, g) => acc + g.items.length, 0),
+    duplicateCount: precomputedDuplicateCount,
   };
 }

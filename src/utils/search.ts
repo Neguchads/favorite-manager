@@ -40,26 +40,30 @@ export function stringSimilarity(s1: string, s2: string): number {
 }
 
 /**
- * Checks if a needle fuzzy-matches any word or substring within haystack
+ * Checks if a needle fuzzy-matches any word or substring within haystack.
+ * Fast path: exact substring check runs first (O(n) via indexOf).
+ * Levenshtein is only engaged for needles with 4+ characters to avoid
+ * costly matrix allocations on every keystroke for common short queries.
  */
 export function fuzzyContains(needle: string, haystack: string, threshold = 0.72): boolean {
   const n = needle.trim().toLowerCase();
   const h = haystack.toLowerCase();
 
   if (!n) return true;
+  // Fast O(n) substring check — covers the vast majority of queries
   if (h.includes(n)) return true;
 
-  // Very short tokens (< 3 chars) require exact substring
-  if (n.length < 3) return false;
+  // Short tokens (< 4 chars) require exact substring — skip costly Levenshtein
+  if (n.length < 4) return false;
 
-  // Break haystack into words
+  // Break haystack into words — only reached for 4+ char needles that aren't substrings
   const words = h
     .replace(/[/\-_.:?=&+]/g, ' ')
     .split(/\s+/)
     .filter(Boolean);
 
   for (const word of words) {
-    // If length is relatively close
+    // Only compare words of similar length to avoid false positives and skip obvious misses
     if (Math.abs(word.length - n.length) <= 3) {
       if (stringSimilarity(n, word) >= threshold) {
         return true;
