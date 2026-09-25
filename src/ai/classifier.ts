@@ -1653,3 +1653,141 @@ export function extractBookmarkCatalogSummary(
     topExistingFolders,
   };
 }
+
+export interface ActionIntentResult {
+  action: 'move_bookmarks';
+  targetFolder: string;
+  query: string;
+  matchedItems: AiBookmarkItem[];
+  plan: AiProposedPlan;
+}
+
+function toTitleCaseSegment(seg: string): string {
+  return seg
+    .trim()
+    .split(/\s+/)
+    .map((word) => {
+      if (/^(ia|ccb|roms|cad|3d|diy|pc|ead|cnpj|api|ai|ui|ux|html|css|js|ts|npm)$/i.test(word)) {
+        return word.toUpperCase();
+      }
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(' ');
+}
+
+export function formatFolderTitleCase(path: string): string {
+  return path
+    .split(/[\/\\]+/)
+    .map((s) => toTitleCaseSegment(s))
+    .join(' / ');
+}
+
+/**
+ * Natural Language Function Calling Parser for the Mini-Agent Chat.
+ * Extracts intent to create folders and move bookmarks from conversational messages
+ * or structured JSON action blocks.
+ *
+ * Examples:
+ * - "Crie a pasta Estudos/Inglês e mova todos os links do Duolingo para lá"
+ * - "Mova todos os links do GitHub para Dev / Repositórios"
+ * - "Crie a pasta Compras/Hardware e mova os links da Kabum para lá"
+ */
+export function parseChatActionIntent(
+  text: string,
+  items: AiBookmarkItem[],
+  existingFolderNames: Set<string>
+): ActionIntentResult | null {
+  if (!text || !text.trim()) return null;
+
+  let targetFolder = '';
+  let query = '';
+
+  // 1. Check for structured JSON action block
+  const jsonBlockMatch = text.match(
+    /```(?:action|json)?\s*(\{[\s\S]*?"action"\s*:\s*"move_bookmarks"[\s\S]*?\})\s*```/i
+  );
+  if (jsonBlockMatch) {
+    try {
+      const parsed = JSON.parse(jsonBlockMatch[1]);
+      if (parsed.targetFolder && parsed.query) {
+        targetFolder = parsed.targetFolder;
+        query = parsed.query;
+      }
+    } catch {
+      // Fallback to regex
+    }
+  }
+
+  // 2. Pattern: "crie a pasta X e mova [links de] Y para lá"
+  if (!targetFolder || !query) {
+    const createAndMove = text.match(
+      /(?:crie|criar|nova)\s+(?:a\s+pasta\s+)?["']?([A-Za-z0-9À-ÖØ-öø-ÿ\s/&_-]+?)["']?\s+e\s+(?:mova|mover|coloque|colocar|passe|passar)\s+(?:todos\s+os\s+|os\s+)?(?:links?|favoritos?|sites?)?\s*(?:do|da|de|com|sobre|que\s+tenham)?\s+["']?([A-Za-z0-9À-ÖØ-öø-ÿ\s._-]+?)["']?\s+para\s+(?:l[aá]|ela|essa\s+pasta)/i
+    );
+    if (createAndMove) {
+      targetFolder = createAndMove[1].trim();
+      query = createAndMove[2].trim();
+    }
+  }
+
+  // 3. Pattern: "mova todos os links do Y para [a pasta] X"
+  if (!targetFolder || !query) {
+    const moveMatch = text.match(
+      /(?:mova|mover|coloque|colocar|passe|passar)\s+(?:todos\s+os\s+|os\s+)?(?:links?|favoritos?|sites?)?\s*(?:do|da|de|com|sobre)?\s+["']?([A-Za-z0-9À-ÖØ-öø-ÿ\s._-]+?)["']?\s+para\s+(?:a\s+pasta\s+)?["']?([A-Za-z0-9À-ÖØ-öø-ÿ\s/&_-]+?)["']?$/i
+    );
+    if (moveMatch) {
+      query = moveMatch[1].trim();
+      targetFolder = moveMatch[2].trim();
+    }
+  }
+
+  if (!targetFolder || !query) return null;
+
+  const cleanFolder = formatFolderTitleCase(targetFolder);
+  const cleanQuery = query
+    .toLowerCase()
+    .replace(/^(o|a|os|as|do|da|dos|das|de)\s+/i, '')
+    .trim();
+
+  if (!cleanQuery) return null;
+
+  // Match items by domain, title or URL
+  const matched = items.filter((item) => {
+    const t = (item.title || '').toLowerCase();
+    const u = (item.url || '').toLowerCase();
+    let d = '';
+    try {
+      d = new URL(item.url || '').hostname.replace(/^www\./, '').toLowerCase();
+    } catch {}
+    return t.includes(cleanQuery) || u.includes(cleanQuery) || d.includes(cleanQuery);
+  });
+
+  if (matched.length === 0) return null;
+
+  const plan: AiProposedPlan = {
+    suggestedFolders: [cleanFolder],
+    moves: matched.map((m) => ({
+      bookmarkId: m.id,
+      bookmarkTitle: m.title || 'Sem título',
+      url: m.url,
+      targetFolder: cleanFolder,
+      targetFolderExists: existingFolderNames.has(cleanFolder.toLowerCase()),
+      source: 'heuristic',
+    })),
+    stats: {
+      total: matched.length,
+      viaDomain: matched.length,
+      viaOllama: 0,
+      viaHeuristic: 0,
+      failedBatches: 0,
+    },
+  };
+
+  return {
+    action: 'move_bookmarks',
+    targetFolder: cleanFolder,
+    query: cleanQuery,
+    matchedItems: matched,
+    plan,
+  };
+}
+

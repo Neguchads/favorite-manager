@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Search,
   Plus,
@@ -18,6 +18,8 @@ import {
   UploadCloud,
   Globe,
   Radio,
+  SlidersHorizontal,
+  ChevronDown,
 } from 'lucide-react';
 import { ViewMode } from '../../types/bookmarks';
 import { ThemePreference } from '../../hooks/useTheme';
@@ -63,6 +65,22 @@ export const Header: React.FC<HeaderProps> = ({
   const { status: syncStatus, peers: syncPeers } = useSync();
   const [showSearchHelp, setShowSearchHelp] = useState(false);
   const [autoOrganize, setAutoOrganize] = useState(false);
+  const [isToolsOpen, setIsToolsOpen] = useState(false);
+  const toolsMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (toolsMenuRef.current && !toolsMenuRef.current.contains(e.target as Node)) {
+        setIsToolsOpen(false);
+      }
+    };
+    if (isToolsOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isToolsOpen]);
 
   useEffect(() => {
     if (typeof chrome !== 'undefined' && chrome.storage?.local) {
@@ -207,7 +225,7 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
 
-        {/* Right Actions */}
+        {/* Right Actions — Streamlined & Decluttered */}
         <div className="flex items-center justify-end space-x-1.5">
           {/* View Mode Toggle */}
           <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
@@ -235,167 +253,191 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           </div>
 
-          {/* Theme Selector (Claro / Escuro / Sincronizar com Navegador) */}
-          {onThemeChange && (
-            <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
-              <button
-                type="button"
-                onClick={() => onThemeChange('light')}
-                title={t('header.themeLight')}
-                className={`p-1.5 rounded-md text-xs transition-colors cursor-pointer ${
-                  theme === 'light'
-                    ? 'bg-white dark:bg-slate-700 text-amber-500 shadow-xs font-semibold'
-                    : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-100'
-                }`}
-              >
-                <Sun className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => onThemeChange('dark')}
-                title={t('header.themeDark')}
-                className={`p-1.5 rounded-md text-xs transition-colors cursor-pointer ${
-                  theme === 'dark'
-                    ? 'bg-white dark:bg-slate-700 text-sky-400 shadow-xs font-semibold'
-                    : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-100'
-                }`}
-              >
-                <Moon className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => onThemeChange('system')}
-                title={t('header.themeSystem')}
-                className={`p-1.5 rounded-md text-xs transition-colors cursor-pointer ${
-                  theme === 'system'
-                    ? 'bg-white dark:bg-slate-700 text-indigo-500 dark:text-indigo-400 shadow-xs font-semibold'
-                    : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-100'
-                }`}
-              >
-                <Monitor className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )}
-
-          {/* Language Toggle (PT-BR / EN) */}
-          <button
-            type="button"
-            onClick={() => setLanguage(language === 'pt' ? 'en' : 'pt')}
-            title={language === 'pt' ? 'Switch to English' : 'Mudar para Português'}
-            className="flex items-center space-x-1.5 px-2 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
-          >
-            <Globe className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
-            <span>{language === 'pt' ? '🇧🇷 PT' : '🇺🇸 EN'}</span>
-          </button>
-
-          {/* Auto-Organize on Bookmark Creation Toggle */}
-          <button
-            onClick={toggleAutoOrganize}
-            title={
-              autoOrganize
-                ? t('header.autoOrganizeTooltipOn')
-                : t('header.autoOrganizeTooltipOff')
-            }
-            className={`hidden xl:flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-              autoOrganize
-                ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:text-slate-700 dark:hover:text-white'
-            }`}
-          >
-            <Zap className={`w-3.5 h-3.5 ${autoOrganize ? 'text-amber-500 fill-amber-500' : 'text-slate-400 dark:text-slate-400'}`} />
-            <span>{autoOrganize ? t('header.autoOrganizeOn') : t('header.autoOrganizeOff')}</span>
-          </button>
-
-          {/* Cross-Browser Sync Button (Edge ⇄ Chrome) */}
-          {onOpenSync && (
-            <button
-              type="button"
-              onClick={onOpenSync}
-              title={
-                syncStatus === 'connected' && syncPeers.length > 0
-                  ? `🟢 Sincronizado ao vivo com ${syncPeers.map((p) => p.browser).join(', ')}`
-                  : syncStatus === 'connected'
-                  ? '🟡 Sincronização ativa (Aguardando outro navegador abrir)'
-                  : 'Sincronizar favoritos em tempo real (Edge ⇄ Chrome)'
-              }
-              className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
-                syncStatus === 'connected' && syncPeers.length > 0
-                  ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700 shadow-sm'
-                  : syncStatus === 'connected'
-                  ? 'bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border-sky-300 dark:border-sky-700'
-                  : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
-              }`}
-            >
-              <Radio
-                className={`w-3.5 h-3.5 ${
-                  syncStatus === 'connected' && syncPeers.length > 0
-                    ? 'text-emerald-500 animate-pulse'
-                    : 'text-sky-600 dark:text-sky-400'
-                }`}
-              />
-              <span className="hidden md:inline">
-                {syncStatus === 'connected' && syncPeers.length > 0
-                  ? `Edge ⇄ ${syncPeers[0].browser}`
-                  : 'Sincronizar'}
-              </span>
-            </button>
-          )}
-
-          {/* New Bookmark */}
+          {/* Primary Action: New Bookmark */}
           <button
             onClick={onOpenCreateBookmark}
             title={t('action.newBookmark')}
-            className="flex items-center space-x-1 px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
+            className="flex items-center space-x-1.5 px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold rounded-lg shadow-sm shadow-sky-500/20 transition-all cursor-pointer"
           >
-            <Plus className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
-            <span className="hidden sm:inline">{t('header.bookmark')}</span>
+            <Plus className="w-3.5 h-3.5" />
+            <span>{t('header.bookmark')}</span>
           </button>
 
-          {/* New Folder */}
-          <button
-            onClick={onOpenCreateFolder}
-            title={t('action.newFolder')}
-            className="flex items-center space-x-1 px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
-          >
-            <FolderPlus className="w-3.5 h-3.5 text-amber-500" />
-            <span className="hidden sm:inline">{t('header.folder')}</span>
-          </button>
-
-          {/* Workspaces / Open Tabs Button */}
-          {onOpenWorkspaceTabs && (
-            <button
-              onClick={onOpenWorkspaceTabs}
-              title="Salvar guias abertas de Workspaces em favoritos"
-              className="flex items-center space-x-1 px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
-            >
-              <Laptop className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
-              <span className="hidden lg:inline">{t('header.workspaceTabs')}</span>
-            </button>
-          )}
-
-          {/* Import Bookmarks HTML/JSON Button */}
-          {onOpenImport && (
-            <button
-              onClick={onOpenImport}
-              title="Importar arquivo de favoritos (HTML do Edge/Chrome ou backup JSON)"
-              className="flex items-center space-x-1 px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
-            >
-              <UploadCloud className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
-              <span className="hidden sm:inline">{t('header.import')}</span>
-            </button>
-          )}
-
-          {/* AI Organize Button */}
+          {/* Highlight Action: AI Organize Button */}
           <button
             onClick={onOpenAiOrganize}
             title="Organizar favoritos com IA local (Ollama)"
-            className="flex items-center space-x-1 px-2.5 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-xs font-medium rounded-lg shadow-sm shadow-indigo-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+            className="flex items-center space-x-1.5 px-3 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm shadow-indigo-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
           >
             <Sparkles className="w-3.5 h-3.5" />
-            <span>{t('header.aiOrganize')}</span>
+            <span className="hidden sm:inline">{t('header.aiOrganize')}</span>
           </button>
 
-          {/* Full Tab Button */}
+          {/* Decluttered Secondary Tools & Settings Popover Dropdown */}
+          <div className="relative" ref={toolsMenuRef}>
+            <button
+              onClick={() => setIsToolsOpen(!isToolsOpen)}
+              title="Mais ferramentas e preferências"
+              className={`flex items-center space-x-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
+                isToolsOpen
+                  ? 'bg-slate-200 dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-100'
+                  : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200'
+              }`}
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+              <span className="hidden lg:inline">Mais</span>
+              {syncStatus === 'connected' && syncPeers.length > 0 && (
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse ml-0.5" />
+              )}
+              <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${isToolsOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {isToolsOpen && (
+              <div className="absolute right-0 top-full mt-1.5 w-64 bg-white dark:bg-slate-850 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 p-2 z-50 animate-in fade-in zoom-in-95 duration-100 text-xs">
+                {/* Section: Ações Rápidas */}
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1">
+                  Gerenciamento
+                </div>
+                <button
+                  onClick={() => {
+                    setIsToolsOpen(false);
+                    onOpenCreateFolder();
+                  }}
+                  className="w-full flex items-center space-x-2 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-colors text-left cursor-pointer"
+                >
+                  <FolderPlus className="w-4 h-4 text-amber-500 shrink-0" />
+                  <span>{t('action.newFolder')}</span>
+                </button>
+
+                {onOpenImport && (
+                  <button
+                    onClick={() => {
+                      setIsToolsOpen(false);
+                      onOpenImport();
+                    }}
+                    className="w-full flex items-center space-x-2 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-colors text-left cursor-pointer"
+                  >
+                    <UploadCloud className="w-4 h-4 text-sky-500 shrink-0" />
+                    <span>{t('header.import')}</span>
+                  </button>
+                )}
+
+                {onOpenWorkspaceTabs && (
+                  <button
+                    onClick={() => {
+                      setIsToolsOpen(false);
+                      onOpenWorkspaceTabs();
+                    }}
+                    className="w-full flex items-center space-x-2 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-colors text-left cursor-pointer"
+                  >
+                    <Laptop className="w-4 h-4 text-indigo-500 shrink-0" />
+                    <span>{t('header.workspaceTabs')}</span>
+                  </button>
+                )}
+
+                {/* Section: Sincronização & Automação */}
+                <div className="border-t border-slate-100 dark:border-slate-800 my-1.5" />
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1">
+                  Sincronização & IA
+                </div>
+
+                {onOpenSync && (
+                  <button
+                    onClick={() => {
+                      setIsToolsOpen(false);
+                      onOpenSync();
+                    }}
+                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-colors text-left cursor-pointer"
+                  >
+                    <div className="flex items-center space-x-2 truncate">
+                      <Radio className="w-4 h-4 text-sky-500 shrink-0" />
+                      <span className="truncate">Sincronização Edge ⇄ Chrome</span>
+                    </div>
+                    {syncStatus === 'connected' && syncPeers.length > 0 && (
+                      <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-semibold shrink-0">
+                        Ativa
+                      </span>
+                    )}
+                  </button>
+                )}
+
+                <button
+                  onClick={toggleAutoOrganize}
+                  className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-colors text-left cursor-pointer"
+                >
+                  <div className="flex items-center space-x-2 truncate">
+                    <Zap className={`w-4 h-4 ${autoOrganize ? 'text-amber-500 fill-amber-500' : 'text-slate-400'}`} />
+                    <span className="truncate">Auto-organizar no Ctrl+D</span>
+                  </div>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-semibold shrink-0 ${
+                    autoOrganize
+                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
+                      : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                  }`}>
+                    {autoOrganize ? 'ON' : 'OFF'}
+                  </span>
+                </button>
+
+                {/* Section: Preferências de Aparência & Idioma */}
+                <div className="border-t border-slate-100 dark:border-slate-800 my-1.5" />
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1">
+                  Preferências
+                </div>
+
+                {onThemeChange && (
+                  <div className="px-2.5 py-1.5 flex items-center justify-between text-slate-700 dark:text-slate-200">
+                    <span className="text-xs">Tema:</span>
+                    <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                      <button
+                        type="button"
+                        onClick={() => onThemeChange('light')}
+                        title={t('header.themeLight')}
+                        className={`p-1 rounded text-xs transition-colors cursor-pointer ${
+                          theme === 'light' ? 'bg-white dark:bg-slate-700 text-amber-500 shadow-xs' : 'text-slate-400 hover:text-slate-600'
+                        }`}
+                      >
+                        <Sun className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onThemeChange('dark')}
+                        title={t('header.themeDark')}
+                        className={`p-1 rounded text-xs transition-colors cursor-pointer ${
+                          theme === 'dark' ? 'bg-white dark:bg-slate-700 text-sky-400 shadow-xs' : 'text-slate-400 hover:text-slate-600'
+                        }`}
+                      >
+                        <Moon className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onThemeChange('system')}
+                        title={t('header.themeSystem')}
+                        className={`p-1 rounded text-xs transition-colors cursor-pointer ${
+                          theme === 'system' ? 'bg-white dark:bg-slate-700 text-indigo-400 shadow-xs' : 'text-slate-400 hover:text-slate-600'
+                        }`}
+                      >
+                        <Monitor className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="px-2.5 py-1.5 flex items-center justify-between text-slate-700 dark:text-slate-200">
+                  <span className="text-xs">Idioma:</span>
+                  <button
+                    type="button"
+                    onClick={() => setLanguage(language === 'pt' ? 'en' : 'pt')}
+                    className="flex items-center space-x-1 px-2 py-0.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded border border-slate-200 dark:border-slate-700 font-semibold cursor-pointer"
+                  >
+                    <Globe className="w-3 h-3 text-sky-500" />
+                    <span>{language === 'pt' ? '🇧🇷 PT' : '🇺🇸 EN'}</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Full Tab Button (Side Panel only) */}
           {isSidePanel && (
             <button
               onClick={handleOpenFullTab}

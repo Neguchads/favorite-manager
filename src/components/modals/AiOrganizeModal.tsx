@@ -20,12 +20,18 @@ import {
   AlertCircle,
   XOctagon,
   FolderTree,
+  Play,
 } from 'lucide-react';
 import { Modal } from '../common/Modal';
 import { BookmarkNode } from '../../types/bookmarks';
 import { FolderOption } from '../../hooks/useBookmarks';
 import { checkOllamaConnection, chatWithOllama, DEFAULT_OLLAMA_CONFIG } from '../../ai/ollama';
-import { generateAiPlan, capitalizeFolderWords, extractBookmarkCatalogSummary } from '../../ai/classifier';
+import {
+  generateAiPlan,
+  capitalizeFolderWords,
+  extractBookmarkCatalogSummary,
+  parseChatActionIntent,
+} from '../../ai/classifier';
 import { AiProposedPlan, OllamaConfig, ChatMessage } from '../../ai/types';
 import {
   MINI_AGENT_QUICK_CHIPS,
@@ -436,6 +442,32 @@ Você pode clicar na aba **"Organizar Favoritos"** a qualquer momento para gerar
     if (!customPrompt) setChatInput('');
     setIsChatting(true);
 
+    // Check for direct Action Intent (Function Calling)
+    const itemsPayload = itemsToOrganize.map((item) => ({
+      id: item.id,
+      title: item.title,
+      url: item.url || '',
+      folderPath: item.parentId && parentPathMap ? parentPathMap.get(item.parentId) : undefined,
+    }));
+    const existingNames = new Set(allFolders.map((f) => f.title.toLowerCase()));
+
+    const directAction = parseChatActionIntent(textToSend, itemsPayload, existingNames);
+    if (directAction) {
+      const responseText = `⚡ **Ação de Organização Identificada (Function Calling):**\n\n- **Pasta Destino**: \`${directAction.targetFolder}\`\n- **Termo / Domínio Detectado**: \`${directAction.query}\`\n- **Favoritos Encontrados**: **${directAction.matchedItems.length}** links prontos para serem agrupados nesta pasta.\n\nRevise a lista abaixo e clique em **"Executar Esta Ação Agora"** para aplicar imediatamente com snapshot de segurança!`;
+
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: responseText,
+          timestamp: Date.now(),
+          actionPlan: directAction.plan,
+        },
+      ]);
+      setIsChatting(false);
+      return;
+    }
+
     try {
       if (ollamaStatus.connected) {
         const fullMessages: ChatMessage[] = [
@@ -454,9 +486,16 @@ Você pode clicar na aba **"Organizar Favoritos"** a qualquer momento para gerar
           responseText = generateDetailedBookmarkAnalysis(bookmarkContext);
         }
 
+        const ollamaAction = parseChatActionIntent(responseText, itemsPayload, existingNames);
+
         setChatMessages((prev) => [
           ...prev,
-          { role: 'assistant', content: responseText, timestamp: Date.now() },
+          {
+            role: 'assistant',
+            content: responseText,
+            timestamp: Date.now(),
+            actionPlan: ollamaAction ? ollamaAction.plan : undefined,
+          },
         ]);
       } else {
         const simulated = generateSmartAssistantAnswer(textToSend);
@@ -478,6 +517,38 @@ Você pode clicar na aba **"Organizar Favoritos"** a qualquer momento para gerar
       ]);
     } finally {
       setIsChatting(false);
+    }
+  };
+
+  const handleExecuteActionPlan = async (actionPlan: AiProposedPlan) => {
+    if (applying || analyzing) return;
+    try {
+      setApplying(true);
+      setError(null);
+      await createLocalSnapshot(`Snapshot prévio à Ação: ${actionPlan.suggestedFolders[0]}`);
+
+      const res = await onApplyPlan(
+        actionPlan,
+        (current, total, percentage) => {
+          setApplyProgress({ current, total, percent: percentage });
+        },
+        false,
+        false
+      );
+
+      if (res) {
+        const successMsg: ChatMessage = {
+          role: 'assistant',
+          content: `✅ **Ação Executada com Sucesso!**\n\n- **${res.movedCount}** favoritos movidos para a pasta **${actionPlan.suggestedFolders[0]}**\n- Snapshot de segurança salvo caso queira reverter.\n\nSeus favoritos já estão atualizados no navegador! 🎉`,
+          timestamp: Date.now(),
+        };
+        setChatMessages((prev) => [...prev, successMsg]);
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Falha ao executar ação de organização.');
+    } finally {
+      setApplying(false);
+      setApplyProgress(null);
     }
   };
 
@@ -1331,7 +1402,49 @@ Você pode clicar na aba **"Organizar Favoritos"** a qualquer momento para gerar
 
                     <div className="whitespace-pre-wrap">{msg.content}</div>
 
-                    {msg.role === 'assistant' && (
+                    {/* Dedicated Function Calling Action Plan Card */}
+                    {msg.actionPlan && (
+                      <div className="mt-3 p-3 bg-violet-50/90 dark:bg-violet-950/40 border border-violet-200 dark:border-violet-800 rounded-xl space-y-2 text-slate-800 dark:text-slate-100">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-1.5 text-violet-700 dark:text-violet-300 font-bold text-[11px]">
+                            <Sparkles className="w-3.5 h-3.5 text-violet-500" />
+                            <span>Ação Proposta ({msg.actionPlan.moves.length} {msg.actionPlan.moves.length === 1 ? 'favorito' : 'favoritos'})</span>
+                          </div>
+                          <span className="text-[10px] px-2 py-0.5 rounded-md bg-violet-100 dark:bg-violet-900 text-violet-750 dark:text-violet-200 font-semibold truncate max-w-[200px]">
+                            📁 {msg.actionPlan.suggestedFolders[0]}
+                          </span>
+                        </div>
+                        <div className="max-h-24 overflow-y-auto space-y-1 text-[11px] text-slate-600 dark:text-slate-300 bg-white/80 dark:bg-slate-800/80 p-2 rounded-lg border border-violet-100 dark:border-violet-900">
+                          {msg.actionPlan.moves.map((m) => (
+                            <div key={m.bookmarkId} className="truncate flex items-center space-x-1">
+                              <span className="text-violet-500">•</span>
+                              <span className="font-medium truncate">{m.bookmarkTitle}</span>
+                              <span className="text-slate-400 text-[10px] shrink-0">({m.url.replace(/^https?:\/\/(?:www\.)?/, '').split('/')[0]})</span>
+                            </div>
+                          ))}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleExecuteActionPlan(msg.actionPlan!)}
+                          disabled={applying || analyzing}
+                          className="w-full py-1.5 px-3 bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-bold text-xs flex items-center justify-center space-x-1.5 shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                        >
+                          {applying ? (
+                            <>
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              <span>Executando...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Play className="w-3.5 h-3.5 fill-white" />
+                              <span>Executar Esta Ação Agora</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
+
+                    {!msg.actionPlan && msg.role === 'assistant' && (
                       <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-700/80 flex flex-wrap items-center justify-between gap-2">
                         <div className="flex flex-wrap items-center gap-2">
                           <button

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { RotateCcw, Trash2 } from 'lucide-react';
 import { useBookmarks } from './hooks/useBookmarks';
 import { useTheme } from './hooks/useTheme';
 import { Header } from './components/layout/Header';
@@ -110,21 +111,69 @@ export const App: React.FC = () => {
     message: '',
   });
 
+  // Undo Toast state for instant single-item deletions
+  const [undoToast, setUndoToast] = useState<{
+    isOpen: boolean;
+    item: { title: string; url: string; parentId: string };
+  } | null>(null);
+
+  const undoToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const triggerUndoToast = (item: { title: string; url: string; parentId: string }) => {
+    if (undoToastTimerRef.current) clearTimeout(undoToastTimerRef.current);
+    setUndoToast({ isOpen: true, item });
+    undoToastTimerRef.current = setTimeout(() => {
+      setUndoToast(null);
+    }, 6000);
+  };
+
+  const handleUndoDelete = async () => {
+    if (!undoToast?.item) return;
+    if (undoToastTimerRef.current) clearTimeout(undoToastTimerRef.current);
+    const { title, url, parentId } = undoToast.item;
+    setUndoToast(null);
+    try {
+      await createBookmark(title, url, parentId);
+    } catch (err) {
+      console.error('Erro ao desfazer exclusão:', err);
+    }
+  };
+
   // Edit handler
   const handleOpenEdit = (item: BookmarkNode) => {
     setEditingItem(item);
     setIsEditOpen(true);
   };
 
-  // Delete single bookmark handler
-  const handlePromptDelete = (id: string) => {
-    setConfirmDelete({
-      isOpen: true,
-      ids: [id],
-      isFolder: false,
-      title: 'Excluir Favorito',
-      message: 'Tem certeza que deseja remover este item? Um snapshot de segurança será gravado antes.',
-    });
+  // Delete single bookmark handler — Instant Action + Undo Toast for individual links; modal for folders
+  const handlePromptDelete = async (id: string) => {
+    const node = nodeMap.get(id);
+    if (!node) return;
+
+    if (!node.url) {
+      // It's a folder -> keep confirmation dialog
+      setConfirmDelete({
+        isOpen: true,
+        ids: [id],
+        isFolder: true,
+        title: 'Excluir Pasta',
+        message: 'Tem certeza que deseja excluir esta pasta e todo o seu conteúdo? Um snapshot de segurança será gravado antes.',
+      });
+      return;
+    }
+
+    // Single bookmark item -> Instant Action + Undo Toast (6s)
+    const backupItem = {
+      title: node.title,
+      url: node.url,
+      parentId: node.parentId || '1',
+    };
+
+    // Execute immediately without blocking modal
+    await deleteBookmark(id);
+
+    // Trigger floating Undo Toast
+    triggerUndoToast(backupItem);
   };
 
   // Delete folder handler
@@ -186,6 +235,14 @@ export const App: React.FC = () => {
         return;
       }
 
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+        if (undoToast?.isOpen) {
+          e.preventDefault();
+          handleUndoDelete();
+          return;
+        }
+      }
+
       if (!isInput) {
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
           e.preventDefault();
@@ -235,7 +292,7 @@ export const App: React.FC = () => {
     }
 
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [displayedItems, selectedIds, selectedItem, selectAll, clearSelection, setSelectedItem]);
+  }, [displayedItems, selectedIds, selectedItem, selectAll, clearSelection, setSelectedItem, undoToast, handleUndoDelete]);
 
   // Export selected to JSON
   const handleExportSelected = () => {
@@ -561,6 +618,32 @@ export const App: React.FC = () => {
         isDestructive={true}
         confirmLabel="Excluir"
       />
+
+      {/* Instant Action + Undo Toast (Ctrl+Z) */}
+      {undoToast?.isOpen && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900 dark:bg-slate-850 text-white px-4 py-2.5 rounded-xl shadow-2xl border border-slate-700/80 flex items-center space-x-3 text-xs backdrop-blur-md animate-in fade-in slide-in-from-bottom-3 duration-200">
+          <Trash2 className="w-4 h-4 text-rose-400 shrink-0" />
+          <span className="truncate max-w-[200px] sm:max-w-[320px]">
+            Favorito <strong className="font-semibold text-slate-100">&quot;{undoToast.item.title}&quot;</strong> excluído.
+          </span>
+          <div className="h-4 w-px bg-slate-700 shrink-0" />
+          <button
+            onClick={handleUndoDelete}
+            className="px-2.5 py-1 bg-sky-600 hover:bg-sky-500 text-white font-semibold rounded-lg transition-colors flex items-center space-x-1 cursor-pointer shrink-0"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Desfazer</span>
+            <kbd className="hidden sm:inline text-[10px] font-mono bg-sky-700/80 px-1 py-0.2 rounded ml-1">Ctrl+Z</kbd>
+          </button>
+          <button
+            onClick={() => setUndoToast(null)}
+            className="p-1 text-slate-400 hover:text-slate-200 rounded transition-colors cursor-pointer"
+            title="Fechar"
+          >
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   );
 };

@@ -5,25 +5,46 @@ Registro curto de passagem de turno. Entrada mais recente no topo.
 Formato de cada entrada:
 
 ```
-## 2026-09-25 — Antigravity — Fase 1 (Virtualização de Lista e Grid com TanStack Virtual) e Fase 2 (Sugestão Preditiva no Salvamento, Favicons no Ctrl+K e Navegação Linear por Teclado)
+## 2026-09-25 — Antigravity — Conclusão de 100% dos Itens Planejados: Despoluição do Cabeçalho, Relevância BM25, Function Calling no Mini-Agente e Empacotamento Edge Store
+- Arquivos alterados:
+  - `src/components/layout/Header.tsx` (despoluição da barra superior: agrupamento de 7 ferramentas secundárias no menu dropdown popover "Mais / Ferramentas" com fechamento ao clicar fora; barra superior limpa com foco na busca, modos de visualização, "+ Favorito" e "✨ Organizar com IA")
+  - `src/utils/search.ts` (função de pontuação de relevância `scoreSearchRelevance` inspirada em BM25: prioriza títulos exatos (+160), prefixos no início do título (+110), domínios exatos (+100), palavras delimitadas (+75), tokens múltiplos e recência)
+  - `src/hooks/useBookmarks.ts` (ordenação de busca dinâmica por relevância BM25: quando há busca ativa, resultados mais relevantes aparecem imediatamente no topo da lista)
+  - `src/ai/types.ts` (`ChatMessage` enriquecido com campo opcional `actionPlan?: AiProposedPlan`)
+  - `src/ai/classifier.ts` (parser de Function Calling em linguagem natural `parseChatActionIntent` e `formatFolderTitleCase`: identifica comandos como "Crie a pasta Estudos/Inglês e mova todos os links do Duolingo para lá" ou blocos JSON de ação, gerando um plano executável com Title Case)
+  - `src/components/modals/AiOrganizeModal.tsx` (integração do Function Calling no chat: detecção de intenções de ação, renderização de Card interativo com preview de links e botão direto "▶ Executar Esta Ação Agora", execução segura com snapshot prévio)
+  - `Favorite-Manager-v1.1.0-EdgeStore.zip` (gerado e copiado para `C:\Users\Desktop\Downloads\Favorite-Manager-v1.1.0-EdgeStore.zip` com 198 KB)
+- Verificado:
+  - `scratch/test-new-features.ts`: 100% aprovado (BM25 ranking GitHub #1 e Function Calling natural language parsing para "Estudos / Inglês").
+  - `scratch/test-full-suite.ts`: 56/56 testes passando com 100% de sucesso.
+  - `npm run build`: `tsc && vite build` concluído com sucesso e 0 erros (1653 módulos transformados em 4.86s).
+- Pendente / próximo passo: Nenhum! 100% dos pilares e itens do planejamento foram implementados, testados e empacotados. O usuário pode carregar o `.zip` ou pasta `dist/` no Edge.
+- Avisos para o outro agente:
+  1. **Despoluição do Header**: O cabeçalho agora mantém apenas os botões primários. Preferências de Tema, Idioma, Workspaces, Importação e Sincronização ficam organizadas no popover "Mais".
+  2. **Busca Inteligente**: A busca agora tem comportamento similar ao Spotlight / Raycast, elevando primeiro os sites e links onde o termo buscado está no início do título ou domínio.
+  3. **Function Calling no Chat**: O usuário pode conversar com o Mini-Agente e emitir ordens de ação diretas, recebendo o Card de execução com confirmação instantânea.
+```
+## 2026-09-25 — Antigravity — Fase 1 (Virtualização de Lista e Grid com TanStack Virtual), Fase 2 (Sugestão Preditiva, Favicons, Navegação por Teclado, Instant Action + Undo Toast Ctrl+Z) e Fase 3 (Auto-Cura de Links 404 via Wayback Machine)
 - Arquivos alterados:
   - `src/components/layout/MainContent.tsx` (integração de `@tanstack/react-virtual` com `rowVirtualizer` e `gridVirtualizer`, suporte dinâmico a `lanes` com ResizeObserver, contenção de `scrollMargin` com subpastas, redução de 45.000 nós no DOM para ~250 nós e 60 FPS estáveis)
   - `src/components/popup/SaveCurrentTabCard.tsx` (sugestão preditiva inteligente de pasta via `classifyBookmarkIntelligently` ao abrir a extensão, pre-seleção automática e pill visual com botão 'Usar')
   - `src/components/common/CommandPaletteModal.tsx` (exibição de favicons reais em alta resolução via `getFaviconUrl` com fallback gracioso para `<Globe />`, eliminando ícone estático genérico)
-  - `src/App.tsx` (navegação contínua por teclado estilo Raycast/Linear: setas `ArrowDown`/`ArrowUp` movem o foco de inspeção, `Enter` abre em nova aba, `Shift+Enter` em nova janela, `Espaço` alterna a gaveta de detalhes e `Escape` limpa seleção)
+  - `src/App.tsx` (navegação contínua por teclado estilo Raycast/Linear: setas `ArrowDown`/`ArrowUp` movem o foco, `Enter` abre em nova aba, `Shift+Enter` em nova janela, `Espaço` alterna a gaveta de detalhes, `Escape` limpa seleção; padrão Instant Action para exclusão unitária com Toast flutuante de 6 segundos e restauração imediata via botão `Desfazer` ou atalho `Ctrl+Z`)
+  - `src/components/cleanup/CleanupView.tsx` (auto-cura de links quebrados: botão de 1 clique `Salvar Snapshot` atualiza a URL do favorito quebrado diretamente para o snapshot preservado no Archive.org)
   - `src/i18n/translations.ts` (novas chaves de tradução `popup.suggestedFolder` e `popup.useSuggestion` em pt-BR e en)
 - Verificado:
+  - `npx tsx scratch/test-undo-and-autoheal.ts`: 3/3 testes passando com 100% de sucesso.
   - `npx tsx scratch/test-virtualization-and-ergonomics.ts`: 6/6 testes de sugestão preditiva passando com 100% de sucesso.
   - `npx tsx scratch/test-full-suite.ts`: 56/56 testes da suíte completa passando com 100% de sucesso.
-  - `npm run build`: `tsc && vite build` concluído com sucesso e 0 erros (1653 módulos transformados em 4.65s).
-- Pendente / próximo passo: Continuação do roteiro da Fase 2 e 3 (Padrão Undo Toast Ctrl+Z para exclusões unitárias e busca semântica).
+  - `npm run build`: `tsc && vite build` concluído com sucesso e 0 erros (1653 módulos transformados em 15.39s).
+- Pendente / próximo passo: Despoluição do cabeçalho (`Header.tsx`) e busca híbrida BM25.
 - Avisos para o outro agente:
-  1. **Virtualização com @tanstack/react-virtual**:
-     - `parentRef` no container `flex-1 overflow-y-auto` gerencia o scroll.
-     - `subfoldersRef` mede dinamicamente a altura de subpastas para alimentar `scrollMargin`.
-     - No modo `'cards'`, `gridRows` agrupa os favoritos pelo número de colunas responsivas (1 a 4).
-  2. **Sugestão de Pasta no Popup**:
-     - Ao salvar uma aba ativa, a extensão calcula a classificação heurística em < 5ms e busca a pasta existente mais próxima em `allFolders`.
+  1. **Exclusões Unitárias sem Modal Bloqueante**:
+     - Clicar na lixeira de um único favorito executa a remoção imediatamente e aciona o toast `undoToast` por 6s.
+     - Clicar em `Desfazer` ou pressionar `Ctrl+Z` restaura o favorito com título, url e pasta idênticos.
+     - Pastas e exclusões em massa continuam protegidas pelo modal `ConfirmDialog`.
+  2. **Auto-Cura no CleanupView**:
+     - Ao detectar link 404 com snapshot no Wayback Machine, o usuário pode clicar em `Salvar Snapshot` para atualizar o bookmark para a versão arquivada.
 
 ## 2026-09-25 — Antigravity — Integração da Inteligência da Skill "organizar-tudo" no Motor de IA da Extensão e Aplicação da Taxonomia Perfeita
 - Arquivos alterados:

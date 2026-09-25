@@ -161,3 +161,84 @@ export function matchesSearch(
 
   return true;
 }
+
+/**
+ * Calculates a BM25-inspired relevance score for search ranking.
+ * Higher score = more relevant result.
+ * Priorities:
+ * 1. Exact title match or title starts with query (Prefix match)
+ * 2. Exact domain match or domain starts with query (e.g. "github" -> github.com)
+ * 3. Title contains term as word boundary
+ * 4. Title contains term as substring
+ * 5. URL and folder matches
+ * 6. Recency bonus for recently added bookmarks
+ */
+export function scoreSearchRelevance(
+  node: BookmarkNode,
+  query: SearchQuery,
+  folderPath?: string
+): number {
+  if (!query.raw) return 0;
+
+  const textQuery = (query.text || query.raw).toLowerCase().trim();
+  if (!textQuery) return 0;
+
+  const title = (node.title || '').toLowerCase().trim();
+  const url = (node.url || '').toLowerCase().trim();
+  const domain = extractDomain(node.url).toLowerCase().trim();
+  const folder = (folderPath || '').toLowerCase().trim();
+
+  let score = 0;
+
+  // 1. Title matching
+  if (title === textQuery) {
+    score += 160;
+  } else if (title.startsWith(textQuery)) {
+    score += 110;
+  } else if (title.includes(` ${textQuery}`) || title.includes(`-${textQuery}`) || title.includes(`/${textQuery}`)) {
+    score += 75;
+  } else if (title.includes(textQuery)) {
+    score += 45;
+  }
+
+  // 2. Domain matching
+  if (domain === textQuery || domain === `www.${textQuery}` || domain.startsWith(`${textQuery}.`)) {
+    score += 100;
+  } else if (domain.includes(textQuery)) {
+    score += 55;
+  }
+
+  // 3. Multi-token query weighting (BM25 term coverage)
+  const tokens = textQuery.split(/\s+/).filter(Boolean);
+  if (tokens.length > 1) {
+    let matchedTokens = 0;
+    for (const token of tokens) {
+      if (title.startsWith(token)) score += 30;
+      else if (title.includes(token)) score += 15;
+      if (domain.includes(token)) score += 20;
+      if (url.includes(token)) score += 10;
+      if (folder.includes(token)) score += 5;
+      if (title.includes(token) || domain.includes(token) || url.includes(token)) {
+        matchedTokens++;
+      }
+    }
+    if (matchedTokens === tokens.length) {
+      score += 40;
+    }
+  }
+
+  // 4. Explicit token filters bonus
+  if (query.domain && domain.includes(query.domain)) score += 50;
+  if (query.title && title.includes(query.title)) score += 50;
+  if (query.folder && folder.includes(query.folder)) score += 30;
+
+  // 5. Recency tie-breaker (max 10 points)
+  if (node.dateAdded) {
+    const ageDays = (Date.now() - node.dateAdded) / (1000 * 60 * 60 * 24);
+    if (ageDays < 30) {
+      score += Math.max(0, 10 - Math.floor(ageDays / 3));
+    }
+  }
+
+  return score;
+}

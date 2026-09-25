@@ -72,6 +72,18 @@ export const CleanupView: React.FC<CleanupViewProps> = ({
   const [isScanningHealth, setIsScanningHealth] = useState(false);
   const [healthProgress, setHealthProgress] = useState<{ current: number; total: number } | null>(null);
   const [healthResults, setHealthResults] = useState<LinkHealthResult[]>([]);
+  const [restoredArchiveMap, setRestoredArchiveMap] = useState<Record<string, boolean>>({});
+
+  const handleRestoreArchiveUrl = async (res: LinkHealthResult) => {
+    if (!onUpdateBookmark || !res.waybackUrl) return;
+    try {
+      await onUpdateBookmark(res.bookmark.id, res.bookmark.title, res.waybackUrl);
+      setRestoredArchiveMap((prev) => ({ ...prev, [res.bookmark.id]: true }));
+      if (onRefresh) await onRefresh();
+    } catch (err) {
+      console.warn('Erro ao restaurar link via Wayback Machine:', err);
+    }
+  };
 
   // Handler: Clean all trackers
   const handleCleanAllTrackers = async () => {
@@ -662,6 +674,18 @@ export const CleanupView: React.FC<CleanupViewProps> = ({
                             </div>
 
                             <div className="flex items-center space-x-2">
+                              {onUpdateBookmark && res.waybackUrl && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRestoreArchiveUrl(res)}
+                                  disabled={restoredArchiveMap[res.bookmark.id]}
+                                  title="Atualizar URL deste favorito para a versão preservada no Archive.org"
+                                  className="flex items-center space-x-1 px-2.5 py-1 text-emerald-600 dark:text-emerald-400 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 disabled:opacity-60 rounded transition-colors text-[11px] font-medium cursor-pointer"
+                                >
+                                  <Check className="w-3.5 h-3.5" />
+                                  <span>{restoredArchiveMap[res.bookmark.id] ? 'Preservado!' : 'Salvar Snapshot'}</span>
+                                </button>
+                              )}
                               <a
                                 href={res.waybackUrl}
                                 target="_blank"
@@ -670,7 +694,7 @@ export const CleanupView: React.FC<CleanupViewProps> = ({
                                 className="flex items-center space-x-1 px-2.5 py-1 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 rounded transition-colors text-[11px]"
                               >
                                 <History className="w-3.5 h-3.5" />
-                                <span>Wayback Machine</span>
+                                <span>Wayback</span>
                               </a>
                               <button
                                 onClick={() => onDeleteBookmark(res.bookmark.id)}

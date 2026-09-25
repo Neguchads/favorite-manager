@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useDeferredValue } from 'react';
 import { BookmarkNode, NavigationSection, SortField, SortDirection, ViewMode } from '../types/bookmarks';
 import { bookmarksService, pruneEmptyFolders, sortFoldersAlphabetically } from '../services/bookmarks';
-import { parseSearchQuery, matchesSearch } from '../utils/search';
+import { parseSearchQuery, matchesSearch, scoreSearchRelevance } from '../utils/search';
 import { extractDomain } from '../utils/url';
 import { findDuplicates } from '../services/duplicates';
 import { analyzeCleanup } from '../services/cleanup';
@@ -304,22 +304,39 @@ export function useBookmarks() {
       }
     }
 
-    // Sort items
-    items.sort((a, b) => {
-      let comparison = 0;
-      if (sortField === 'title') {
-        comparison = (a.title || '').localeCompare(b.title || '');
-      } else if (sortField === 'domain') {
-        const dA = extractDomain(a.url);
-        const dB = extractDomain(b.url);
-        comparison = dA.localeCompare(dB);
-      } else if (sortField === 'dateAdded') {
-        comparison = (a.dateAdded || 0) - (b.dateAdded || 0);
-      } else if (sortField === 'url') {
-        comparison = (a.url || '').localeCompare(b.url || '');
+    // Sort items: When searching, elevate results by BM25 relevance score
+    if (deferredSearchQuery.trim()) {
+      const scoreMap = new Map<string, number>();
+      for (const item of items) {
+        const folderPath = item.parentId ? parentPathMap.get(item.parentId) : '';
+        scoreMap.set(item.id, scoreSearchRelevance(item, parsedQuery, folderPath));
       }
-      return sortDirection === 'asc' ? comparison : -comparison;
-    });
+
+      items.sort((a, b) => {
+        const scoreDiff = (scoreMap.get(b.id) || 0) - (scoreMap.get(a.id) || 0);
+        if (scoreDiff !== 0) return scoreDiff;
+
+        // Tie-breaker: alphabetical
+        return (a.title || '').localeCompare(b.title || '');
+      });
+    } else {
+      // Standard Section Sort
+      items.sort((a, b) => {
+        let comparison = 0;
+        if (sortField === 'title') {
+          comparison = (a.title || '').localeCompare(b.title || '');
+        } else if (sortField === 'domain') {
+          const dA = extractDomain(a.url);
+          const dB = extractDomain(b.url);
+          comparison = dA.localeCompare(dB);
+        } else if (sortField === 'dateAdded') {
+          comparison = (a.dateAdded || 0) - (b.dateAdded || 0);
+        } else if (sortField === 'url') {
+          comparison = (a.url || '').localeCompare(b.url || '');
+        }
+        return sortDirection === 'asc' ? comparison : -comparison;
+      });
+    }
 
     return items;
   }, [
