@@ -88,6 +88,9 @@ export const DOMAIN_SUBFOLDER_MAP: Record<string, string> = {
   'tidbcloud.com': 'Dev & IA / Ferramentas',
   'graphify.com': 'Dev & IA / Inteligência Artificial',
   'open-vsx.org': 'Dev & IA / Ferramentas',
+  'antigravity.google': 'Dev & IA / Inteligência Artificial',
+  'grok.com': 'Dev & IA / Inteligência Artificial',
+  'civitai.com': 'Dev & IA / Inteligência Artificial',
 
   // Jogos
   'nexusmods.com': 'Jogos / Mods',
@@ -98,6 +101,11 @@ export const DOMAIN_SUBFOLDER_MAP: Record<string, string> = {
   'mugenguild.com': 'Jogos / Mods',
   'filterblade.xyz': 'Jogos / Mods',
   'dyndolod.info': 'Jogos / Mods',
+  'rockstargames.com': 'Jogos / PC',
+  'bethesda.net': 'Jogos / PC',
+  'enbdev.com': 'Jogos / Mods',
+  'martysmods.com': 'Jogos / Mods',
+  'central-mods.com.br': 'Jogos / Mods',
   'unknowncheats.me': 'Jogos / Mods',
   'gamehacking.org': 'Jogos / Mods',
   'wabbajack.org': 'Jogos / Mods',
@@ -156,6 +164,9 @@ export const DOMAIN_SUBFOLDER_MAP: Record<string, string> = {
   'musical.congregacao.org.br': 'Música / Hinários & CCB',
   'evangelizar2017.com.br': 'Música / Hinários & CCB',
   'atelierlabussiere.com': 'Música / Instrumentos & Luthiaria',
+  'atelierkamroyan.com.br': 'Música / Instrumentos & Luthiaria',
+  'chordu.com': 'Música / Partituras & Cifras',
+  'amar.art.br': 'Música',
   'ubc.org.br': 'Música',
   'spotify.com': 'Música / Streaming',
   'open.spotify.com': 'Música / Streaming',
@@ -190,6 +201,8 @@ export const DOMAIN_SUBFOLDER_MAP: Record<string, string> = {
   'mundomanuais.com': 'Engenharia & Mecânica / Usinagem & Ferramentas',
   'bamaqmaquinas.com.br': 'Engenharia & Mecânica / Usinagem & Ferramentas',
   'retroescavadeiras.net': 'Engenharia & Mecânica / Usinagem & Ferramentas',
+  'argalit.com.br': 'Engenharia & Mecânica / Usinagem & Ferramentas',
+  'gessopadrao.com.br': 'Engenharia & Mecânica / Usinagem & Ferramentas',
   'autopapo.uol.com.br': 'Engenharia & Mecânica / Automotivo',
   'blogiveco.com.br': 'Engenharia & Mecânica / Automotivo',
   'volvotrucks.com.br': 'Engenharia & Mecânica / Automotivo',
@@ -198,6 +211,14 @@ export const DOMAIN_SUBFOLDER_MAP: Record<string, string> = {
   'motosblog.com.br': 'Engenharia & Mecânica / Automotivo',
   'latinncap.com': 'Engenharia & Mecânica / Automotivo',
   'totalenergies.com.br': 'Engenharia & Mecânica / Automotivo',
+  'ultimatespecs.com': 'Engenharia & Mecânica / Automotivo',
+  'mhhauto.com': 'Engenharia & Mecânica / Automotivo',
+  'repxpert.com.br': 'Engenharia & Mecânica / Automotivo',
+  'canaldapeca.com.br': 'Engenharia & Mecânica / Automotivo',
+  'carrosnaweb.com.br': 'Engenharia & Mecânica / Automotivo',
+  'busclub.com.br': 'Engenharia & Mecânica / Automotivo',
+  'nemigaparts.com': 'Engenharia & Mecânica / Automotivo',
+  'stefanelli.eng.br': 'Engenharia & Mecânica',
   'site.vistoriapro.com.br': 'Engenharia & Mecânica / Inspeção & Manutenção',
   'arenatecnica.com': 'Engenharia & Mecânica / Inspeção & Manutenção',
   'engeteles.com.br': 'Engenharia & Mecânica / Inspeção & Manutenção',
@@ -209,10 +230,14 @@ export const DOMAIN_SUBFOLDER_MAP: Record<string, string> = {
   'm.apkpure.com': 'Tecnologia / Android',
   'rexdl.com': 'Tecnologia / Android',
   'nextpit.com.br': 'Tecnologia / Android',
+  'bstweaker.tk': 'Tecnologia / Android',
   'clubedohardware.com.br': 'Tecnologia / Hardware',
   'hardware.com.br': 'Tecnologia / Hardware',
   'hwinfo.com': 'Tecnologia / Hardware',
   'egpu.io': 'Tecnologia / Hardware',
+  'bbbaterias.com.br': 'Tecnologia / Hardware',
+  'techspot.com': 'Tecnologia / Hardware',
+  'cpuid.com': 'Tecnologia / Hardware',
   'coderbag.com': 'Tecnologia / Windows & Sistemas',
   'tailscale.com': 'Tecnologia / Redes & Segurança',
   'zerotier.com': 'Tecnologia / Redes & Segurança',
@@ -240,11 +265,23 @@ export const DOMAIN_SUBFOLDER_MAP: Record<string, string> = {
   'tecnicoporcompetencia.com.br': 'Estudos / Faculdades & EAD',
   'certificacaoporcompetencia.com.br': 'Estudos / Faculdades & EAD',
   'socrative.com': 'Estudos / Faculdades & EAD',
+  'cefetmg.br': 'Estudos / Faculdades & EAD',
+  'colaboraread.com.br': 'Estudos / Faculdades & EAD',
   'scilab.org': 'Estudos / Ciências Exatas',
   'maxima.sourceforge.io': 'Estudos / Ciências Exatas',
   'mathworks.com': 'Estudos / Ciências Exatas',
   'geogebra.org': 'Estudos / Ciências Exatas',
   'oba.org.br': 'Estudos / Ciências Exatas',
+  'porcentagem.org': 'Estudos / Ciências Exatas',
+  'todamateria.com.br': 'Estudos / Ciências Exatas',
+  'brainly.com.br': 'Estudos / Ciências Exatas',
+  'canaldoensino.com.br': 'Estudos / Livros & Artigos',
+  'cblservicos.org.br': 'Estudos / Livros & Artigos',
+  'bdtd.uerj.br': 'Estudos / Livros & Artigos',
+  'more.ufsc.br': 'Estudos / Livros & Artigos',
+  'acrobatiq.com': 'Estudos / Faculdades & EAD',
+  'alunodigital.anhanguera.com': 'Estudos / Faculdades & EAD',
+  'copeve.cefetmg.br': 'Estudos / Concursos & Cursos',
   'scholar.google.com': 'Estudos / Livros & Artigos',
   'scholar.google.com.br': 'Estudos / Livros & Artigos',
   'scielo.br': 'Estudos / Livros & Artigos',
@@ -269,6 +306,14 @@ export const DOMAIN_SUBFOLDER_MAP: Record<string, string> = {
 
   // Saúde & Bem-Estar
   'tuasaude.com': 'Saúde & Bem-Estar / Medicina & Cuidados',
+  'boaconsulta.com': 'Saúde & Bem-Estar / Medicina & Cuidados',
+  'minhavida.com.br': 'Saúde & Bem-Estar / Medicina & Cuidados',
+  'biotreino.com.br': 'Saúde & Bem-Estar / Treino & Fitness',
+  'sportllux.com.br': 'Saúde & Bem-Estar / Treino & Fitness',
+  'mundoboaforma.com.br': 'Saúde & Bem-Estar / Nutrição & Suplementos',
+  'dicasdemulher.com.br': 'Saúde & Bem-Estar / Nutrição & Suplementos',
+  'ciclovivo.com.br': 'Saúde & Bem-Estar',
+  'lojarelvaverde.com.br': 'Saúde & Bem-Estar / Nutrição & Suplementos',
   'hapvida.com.br': 'Saúde & Bem-Estar / Medicina & Cuidados',
   'doctorfeet.com.br': 'Saúde & Bem-Estar / Medicina & Cuidados',
   'farmaciaeficacia.com.br': 'Saúde & Bem-Estar / Medicina & Cuidados',
@@ -277,6 +322,9 @@ export const DOMAIN_SUBFOLDER_MAP: Record<string, string> = {
   'mutantnation.com': 'Saúde & Bem-Estar / Nutrição & Suplementos',
   'bodynutry.ind.br': 'Saúde & Bem-Estar / Nutrição & Suplementos',
   'ativo.com': 'Saúde & Bem-Estar / Treino & Fitness',
+  'decathlon.com.br': 'Saúde & Bem-Estar / Treino & Fitness',
+  'treinus.com.br': 'Saúde & Bem-Estar / Treino & Fitness',
+  'nhlbi.nih.gov': 'Saúde & Bem-Estar / Medicina & Cuidados',
   'veganize.com.br': 'Saúde & Bem-Estar / Nutrição & Suplementos',
   'cantinhovegetariano.com.br': 'Saúde & Bem-Estar / Nutrição & Suplementos',
   'tempodecozimento.com.br': 'Saúde & Bem-Estar / Nutrição & Suplementos',
@@ -312,6 +360,8 @@ export const DOMAIN_SUBFOLDER_MAP: Record<string, string> = {
   'serasaconsumidor.com.br': 'Negócios & Finanças / Investimentos & Bancos',
   'sebrae.com.br': 'Negócios & Finanças / Empreendedorismo & Marcas',
   'contabilizei.com.br': 'Negócios & Finanças / Empreendedorismo & Marcas',
+  'agendor.com.br': 'Negócios & Finanças / Vendas & Gestão',
+  'consolidesuamarca.com.br': 'Negócios & Finanças / Empreendedorismo & Marcas',
   'registrodemarca.arenamarcas.com.br': 'Negócios & Finanças / Empreendedorismo & Marcas',
   'trademark-search.marcaria.com': 'Negócios & Finanças / Empreendedorismo & Marcas',
   'regify.global': 'Negócios & Finanças / Empreendedorismo & Marcas',
@@ -333,12 +383,16 @@ export const DOMAIN_SUBFOLDER_MAP: Record<string, string> = {
   'cosmosdaily.co': 'Espiritualidade / Astrologia & Numerologia',
   'abrame.org.br': 'Espiritualidade / Bíblia & Teologia',
   'apologeticavii.wordpress.com': 'Espiritualidade / Bíblia & Teologia',
+  'febnet.org.br': 'Espiritualidade / Filosofia & Misticismo',
+  'ordoaa.com.br': 'Espiritualidade / Filosofia & Misticismo',
+  'dicionariodesimbolos.com.br': 'Espiritualidade / Filosofia & Misticismo',
 
   // Governo
   'detran.mg.gov.br': 'Governo / Trânsito & Detran',
   'detran.sp.gov.br': 'Governo / Trânsito & Detran',
   'detran.rj.gov.br': 'Governo / Trânsito & Detran',
   'seguradoralider.com.br': 'Governo / Trânsito & Detran',
+  'cft.org.br': 'Governo / Serviços Públicos',
   'gov.br': 'Governo / Serviços Públicos',
   'planalto.gov.br': 'Governo / Serviços Públicos',
   'receita.fazenda.gov.br': 'Governo / Serviços Públicos',
@@ -353,6 +407,9 @@ export const DOMAIN_SUBFOLDER_MAP: Record<string, string> = {
   'crunchyroll.com': 'Filmes & Séries / Animes',
   'saikoani.me': 'Filmes & Séries / Animes',
   'animeq.blog': 'Filmes & Séries / Animes',
+  'adorocinema.com': 'Filmes & Séries',
+  'revistabula.com': 'Filmes & Séries',
+  'legiaodosherois.com.br': 'Filmes & Séries / Animações & HQs',
   'netflix.com': 'Filmes & Séries / Streaming',
   'primevideo.com': 'Filmes & Séries / Streaming',
   'disneyplus.com': 'Filmes & Séries / Streaming',
@@ -366,6 +423,9 @@ export const DOMAIN_SUBFOLDER_MAP: Record<string, string> = {
   'jellyfin.org': 'Filmes & Séries / Streaming',
   'app.plex.tv': 'Filmes & Séries / Streaming',
   'dailymotion.com': 'Filmes & Séries / Streaming',
+  'bludv.tv': 'Filmes & Séries / Torrents & Downloads',
+  'bludvfilmes.com': 'Filmes & Séries / Torrents & Downloads',
+  'comandotorrents.to': 'Filmes & Séries / Torrents & Downloads',
   'ondebaixa.com': 'Filmes & Séries / Torrents & Downloads',
   'reidostorrents.com': 'Filmes & Séries / Torrents & Downloads',
   'torrentclaw.com': 'Filmes & Séries / Torrents & Downloads',
@@ -380,8 +440,20 @@ export const DOMAIN_SUBFOLDER_MAP: Record<string, string> = {
   'canva.com': 'Arte & Design / Modelagem 3D & Design',
   'figma.com': 'Arte & Design / Modelagem 3D & Design',
   'free3d.com': 'Arte & Design / Modelagem 3D & Design',
+  'artvee.com': 'Arte & Design',
+  'create.vista.com': 'Arte & Design',
+  'floorplanner.com': 'Arte & Design / Arquitetura & Construção',
+  'useum.org': 'Arte & Design',
 
   // Compras
+  'menshairstylestoday.com': 'Compras / Moda & Vestuário',
+  'manualdohomemmoderno.com.br': 'Compras / Moda & Vestuário',
+  'relogiosbrpremium.com': 'Compras / Moda & Vestuário',
+  'br.puma.com': 'Compras / Moda & Vestuário',
+  'rider.com.br': 'Compras / Moda & Vestuário',
+  'belezanaweb.com.br': 'Compras / Perfumaria',
+  'lojabrmetaverso.com.br': 'Compras / Hardware & Informática',
+  'cofermeta.com.br': 'Compras / Hardware & Informática',
   'kabum.com.br': 'Compras / Hardware & Informática',
   'pichau.com.br': 'Compras / Hardware & Informática',
   'terabyteshop.com.br': 'Compras / Hardware & Informática',
@@ -400,6 +472,11 @@ export const DOMAIN_SUBFOLDER_MAP: Record<string, string> = {
   'netshoes.com.br': 'Compras / Marketplaces',
 
   // Produtividade
+  'addoncrop.com': 'Produtividade / Extensões & Ferramentas',
+  'rewards.bing.com': 'Produtividade / Recompensas & Pontos',
+  'docusign.com': 'Produtividade / Nuvem & Arquivos',
+  'obsproject.com': 'Produtividade / Gravação & Edição',
+  'checklistfacil.com.br': 'Produtividade / Nuvem & Arquivos',
   'ilovepdf.com': 'Produtividade / Nuvem & Arquivos',
   'iloveimg.com': 'Produtividade / Nuvem & Arquivos',
   'smallpdf.com': 'Produtividade / Nuvem & Arquivos',
@@ -428,6 +505,9 @@ export const DOMAIN_SUBFOLDER_MAP: Record<string, string> = {
   'skyscanner.com.br': 'Viagens & Turismo',
   'tripadvisor.com.br': 'Viagens & Turismo',
   'tripadvisor.com': 'Viagens & Turismo',
+  'apureguria.com': 'Viagens & Turismo',
+  'destinosnotaveis.com.br': 'Viagens & Turismo',
+  'rotadasemocoesbrasil.com.br': 'Viagens & Turismo',
   'latamairlines.com': 'Viagens & Turismo',
   'voegol.com.br': 'Viagens & Turismo',
   'voeazul.com.br': 'Viagens & Turismo',
@@ -517,7 +597,16 @@ export function cleanUrlAndExtractContext(
   } catch {}
 
   if (folderContext) {
-    extraText += ' ' + folderContext.replace(/[\/\-_.]+/g, ' ');
+    const cleanFolderContext = folderContext
+      .replace(/barra de favoritos/gi, '')
+      .replace(/outros favoritos/gi, '')
+      .replace(/bookmarks bar/gi, '')
+      .replace(/other bookmarks/gi, '')
+      .replace(/favoritos m[oó]veis/gi, '')
+      .trim();
+    if (cleanFolderContext && cleanTitle.trim().length < 25) {
+      extraText += ' ' + cleanFolderContext.replace(/[\/\-_.]+/g, ' ');
+    }
   }
 
   const fullText = `${cleanTitle} ${domain} ${extraText}`.toLowerCase();
@@ -620,6 +709,34 @@ export function capitalizeFolderWords(folderPath: string): string {
  * Eliminates redundant legacy category names, converts "/ Geral" into master folder,
  * and ensures all words are Title Cased.
  */
+export const MASTER_REDUNDANT_SUBFOLDERS: Record<string, Set<string>> = {
+  'Jogos': new Set(['games', 'jogos', 'gaming', 'jogo', 'geral', '(geral)']),
+  'Governo': new Set(['governo', 'cidadania', 'gov', 'governo & cidadania', 'governo e cidadania', 'geral', '(geral)']),
+  'Filmes & Séries': new Set(['filmes', 'series', 'séries', 'filmes & séries', 'filmes e séries', 'cinema', 'filme', 'série', 'geral', '(geral)']),
+  'Compras': new Set(['lojas', 'compras', 'loja', 'compra', 'shopping', 'lojas & compras', 'lojas e compras', 'geral', '(geral)']),
+  'Estudos': new Set(['educação', 'educacao', 'estudos', 'estudo', 'estudos & educação', 'estudos e educação', 'geral', '(geral)']),
+  'Música': new Set(['músicas', 'musicas', 'música', 'musica', 'som', 'geral', '(geral)']),
+  'Tecnologia': new Set(['informática', 'informatica', 'tecnologia', 'tech', 'ti', 'tecnologia & informática', 'geral', '(geral)']),
+  'Saúde & Bem-Estar': new Set(['saúde', 'saude', 'bem-estar', 'fitness', 'saúde & fitness', 'geral', '(geral)']),
+  'Negócios & Finanças': new Set(['finanças', 'financas', 'negócios', 'negocios', 'negócios & carreira', 'geral', '(geral)']),
+  'Arte & Design': new Set(['arte', 'design', 'artes', 'arte & design', 'geral', '(geral)']),
+  'Viagens & Turismo': new Set(['viagens', 'turismo', 'viagem', 'turismo, viagens & eventos', 'geral', '(geral)']),
+  'Redes Sociais': new Set(['redes sociais', 'sociais', 'social', 'redes', 'redes sociais & comunicação', 'geral', '(geral)']),
+  'Eletrônica': new Set(['eletrônica', 'eletronica', 'elétrica', 'eletrica', 'eletroeletrônica', 'geral', '(geral)']),
+  'Engenharia & Mecânica': new Set(['mecânica', 'mecanica', 'engenharia', 'mecânica & engenharia', 'geral', '(geral)']),
+  'Dev & IA': new Set(['dev', 'programação', 'programacao', 'desenvolvimento', 'dev & ia', 'geral', '(geral)']),
+  'Espiritualidade': new Set(['espiritualidade', 'religião', 'religiao', 'espiritualidade & religião', 'geral', '(geral)']),
+  'Notícias': new Set(['notícias', 'noticias', 'notícias & atualidades', 'geral', '(geral)']),
+  'Produtividade': new Set(['produtividade', 'utilitários', 'produtividade & ferramentas', 'geral', '(geral)']),
+  'Outros': new Set(['outros', 'geral', '(geral)', 'diversos', 'outros & geral']),
+};
+
+/**
+ * Validates, normalizes, and sanitizes folder paths returned by AI models or heuristic rules.
+ * Eliminates redundant legacy category names, converts "/ Geral" into master folder,
+ * prevents repeated subfolders (e.g. "Animes / Animes", "Jogos / Games"),
+ * and ensures all words are Title Cased.
+ */
 export function validateAndSanitizeFolder(rawFolder: string): string {
   if (!rawFolder || typeof rawFolder !== 'string') return 'Outros';
 
@@ -629,11 +746,23 @@ export function validateAndSanitizeFolder(rawFolder: string): string {
     .replace(/^\/+|\/+$/g, '')
     .trim();
 
-  const parts = cleaned.split(/\s*\/\s*/).map((s) => s.trim()).filter(Boolean);
+  let parts = cleaned.split(/\s*\/\s*/).map((s) => s.trim()).filter(Boolean);
   if (parts.length === 0) return 'Outros';
 
-  let master = parts[0];
-  let sub = parts.length > 1 ? parts.slice(1).join(' / ') : '';
+  // Strip system root folder prefixes if multiple parts exist
+  const SYSTEM_ROOT_NAMES = new Set([
+    'barra de favoritos',
+    'outros favoritos',
+    'favoritos móveis',
+    'favoritos moveis',
+    'bookmarks bar',
+    'other bookmarks',
+    'mobile bookmarks',
+    'bookmarks toolbar',
+  ]);
+  while (parts.length > 1 && SYSTEM_ROOT_NAMES.has(parts[0].toLowerCase())) {
+    parts.shift();
+  }
 
   // Canonical normalization map to eliminate legacy or redundant names
   const CANONICAL_MASTER_MAP: Record<string, string> = {
@@ -687,19 +816,53 @@ export function validateAndSanitizeFolder(rawFolder: string): string {
     'espiritualidade e religião': 'Espiritualidade',
     'outros & geral': 'Outros',
     'outros e geral': 'Outros',
+    'ferramentas': 'Produtividade',
+    'estilo & moda': 'Compras',
+    'moda & estilo': 'Compras',
+    'moda': 'Compras',
+    'estilo': 'Compras',
   };
 
-  const masterLower = master.toLowerCase();
-  if (CANONICAL_MASTER_MAP[masterLower]) {
-    master = CANONICAL_MASTER_MAP[masterLower];
+  const rawMaster = parts[0].toLowerCase();
+  let master = CANONICAL_MASTER_MAP[rawMaster] || parts[0];
+  let subparts = parts.slice(1);
+
+  // Special case: "Animes" as top-level folder becomes "Filmes & Séries / Animes"
+  if (rawMaster === 'animes' || rawMaster === 'anime') {
+    master = 'Filmes & Séries';
+    subparts = ['Animes', ...subparts.filter((p) => p.toLowerCase() !== 'animes' && p.toLowerCase() !== 'anime')];
   }
 
-  // Eliminate "Geral" subfolder
-  if (sub.toLowerCase() === 'geral' || sub.toLowerCase() === '(geral)') {
-    sub = '';
+  // Special case: "Serviços Públicos" as top-level folder becomes "Governo / Serviços Públicos"
+  if (rawMaster === 'serviços públicos' || rawMaster === 'servicos publicos') {
+    master = 'Governo';
+    subparts = [
+      'Serviços Públicos',
+      ...subparts.filter(
+        (p) => p.toLowerCase() !== 'serviços públicos' && p.toLowerCase() !== 'servicos publicos'
+      ),
+    ];
   }
 
-  const result = sub ? `${master} / ${sub}` : master;
+  // Filter out redundant, duplicate, or synonym subfolder parts
+  const redundantSet = MASTER_REDUNDANT_SUBFOLDERS[master];
+  const cleanedSubparts: string[] = [];
+  const seenParts = new Set<string>([master.toLowerCase()]);
+
+  for (const part of subparts) {
+    const pLower = part.toLowerCase().trim();
+    if (!pLower || pLower === 'geral' || pLower === '(geral)') continue;
+    if (seenParts.has(pLower)) continue;
+    if (redundantSet && redundantSet.has(pLower)) continue;
+
+    cleanedSubparts.push(part);
+    seenParts.add(pLower);
+  }
+
+  const result = cleanedSubparts.length > 0
+    ? `${master} / ${cleanedSubparts.join(' / ')}`
+    : master;
+
   return capitalizeFolderWords(result);
 }
 
@@ -720,7 +883,7 @@ export function matchWithExistingFolders(
   if (parts.length === 0) return 'Outros';
 
   const master = parts[0];
-  const sub = parts.length > 1 ? parts.slice(1).join(' / ') : '';
+  const subparts = parts.slice(1);
 
   const REDUNDANT_NAMES = new Set([
     'turismo, viagens & eventos',
@@ -750,27 +913,34 @@ export function matchWithExistingFolders(
     'espiritualidade & religião',
     'mecânica & engenharia',
     'outros & geral',
+    'geral',
+    'ferramentas',
+    'servicos publicos',
+    'serviços públicos',
+    'eletroeletrônica',
+    'eletroeletronica',
+    'arte & design',
   ]);
 
   const ALIAS_GROUPS: Record<string, string[]> = {
-    'Jogos': ['games', 'jogos', 'games & jogos', 'jogos & games', 'gaming', 'jogos de pc'],
-    'Dev & IA': ['dev', 'programacao', 'programação', 'dev & ia', 'ia & dev', 'desenvolvimento', 'ia', 'inteligencia artificial', 'programação, dev & ia'],
-    'Governo': ['governo & cidadania', 'governo', 'cidadania', 'servicos publicos', 'serviços públicos', 'gov'],
+    'Jogos': ['games', 'jogos', 'gaming', 'jogos de pc'],
+    'Dev & IA': ['dev', 'programacao', 'programação', 'dev & ia', 'ia & dev', 'desenvolvimento', 'ia', 'inteligencia artificial'],
+    'Governo': ['governo & cidadania', 'governo', 'cidadania', 'gov'],
     'Compras': ['lojas & compras', 'compras', 'lojas', 'shopping'],
     'Estudos': ['estudos & educação', 'estudos', 'educação', 'faculdade', 'cursos', 'estudo'],
     'Tecnologia': ['tecnologia & informática', 'tecnologia', 'informatica', 'informática', 'ti', 'tech'],
     'Saúde & Bem-Estar': ['saúde, fitness & bem-estar', 'saúde', 'saude', 'fitness', 'bem-estar'],
     'Negócios & Finanças': ['negócios & carreira', 'finanças', 'financas', 'bancos', 'investimentos', 'negocios', 'negócios'],
-    'Filmes & Séries': ['filmes, séries & animes', 'filmes', 'series', 'séries', 'cinema', 'animes'],
+    'Filmes & Séries': ['filmes, séries & animes', 'filmes', 'series', 'séries', 'cinema'],
     'Arte & Design': ['arte, design & personalização', 'arte & design', 'design', 'arte'],
     'Viagens & Turismo': ['turismo, viagens & eventos', 'viagens', 'turismo', 'viagem'],
     'Redes Sociais': ['redes sociais & comunicação', 'redes sociais', 'sociais', 'social'],
-    'Produtividade': ['produtividade & ferramentas', 'produtividade', 'utilitários', 'ferramentas'],
+    'Produtividade': ['produtividade & ferramentas', 'produtividade', 'utilitários'],
     'Notícias': ['notícias & atualidades', 'notícias', 'noticias', 'jornais'],
     'Espiritualidade': ['espiritualidade & religião', 'religião', 'espiritualidade', 'fé'],
     'Eletrônica': ['eletroeletrônica', 'eletrônica', 'eletronica', 'elétrica'],
     'Engenharia & Mecânica': ['mecânica & engenharia', 'engenharia', 'mecanica', 'mecânica'],
-    'Outros': ['outros & geral', 'outros', 'geral', 'diversos'],
+    'Outros': ['outros & geral', 'outros', 'diversos'],
   };
 
   let matchedMaster = master;
@@ -791,9 +961,24 @@ export function matchWithExistingFolders(
     }
   }
 
-  const result = !sub || sub.toLowerCase() === 'geral' || sub.toLowerCase() === '(geral)'
-    ? matchedMaster
-    : `${matchedMaster} / ${sub}`;
+  // Filter subparts against matchedMaster and redundancies
+  const redundantSet = MASTER_REDUNDANT_SUBFOLDERS[matchedMaster];
+  const cleanedSubparts: string[] = [];
+  const seenParts = new Set<string>([matchedMaster.toLowerCase()]);
+
+  for (const part of subparts) {
+    const pLower = part.toLowerCase().trim();
+    if (!pLower || pLower === 'geral' || pLower === '(geral)') continue;
+    if (seenParts.has(pLower)) continue;
+    if (redundantSet && redundantSet.has(pLower)) continue;
+
+    cleanedSubparts.push(part);
+    seenParts.add(pLower);
+  }
+
+  const result = cleanedSubparts.length > 0
+    ? `${matchedMaster} / ${cleanedSubparts.join(' / ')}`
+    : matchedMaster;
 
   return capitalizeFolderWords(result);
 }
@@ -820,7 +1005,7 @@ export function classifyBookmarkIntelligently(
 
   // 2. DEV & IA
   const isAI =
-    /\b(claude|chatgpt|openai|ollama|huggingface|llm|ia|ai|intelig[eê]ncia\s?artificial|prompt|neural|machine\s?learning|deep\s?learning|perplexity|midjourney|copilot|gemini|colaboratory|colab|elevenlabs|suno|sunoforge|deepseek|neuralwriter|quillbot|zerogpt|hunyuan|metademolab|labs\.google|multiagente|agentic|stable\s?diffusion)\b/i.test(
+    /\b(claude|chatgpt|openai|ollama|huggingface|llm|ia|ai|intelig[eê]ncia\s?artificial|prompt|neural|machine\s?learning|deep\s?learning|perplexity|midjourney|copilot|gemini|colaboratory|colab|elevenlabs|suno|sunoforge|deepseek|deepseekv3|neuralwriter|quillbot|zerogpt|hunyuan|metademolab|labs\.google|multiagente|agentic|stable\s?diffusion|grok|antigravity|civitai|metaverso)\b/i.test(
       fullText
     );
   const isDev =
@@ -846,7 +1031,7 @@ export function classifyBookmarkIntelligently(
 
   // 3. JOGOS
   const isGame =
-    /\b(nexusmods|fitgirl|torrentgamesps3|psxdownloads|mixmods|coolrom|steam|steampowered|epicgames|roblox|twitch|poe\.ninja|mobalytics|maxroll|elderscrolls|fallout|skyrim|ps[1-5]|playstation|xbox|nintendo|switch|game|jogos?|gameplay|emulador|rpcs3|pcsx2|retroarch|roms?|curseforge|modding|gamevicio|kotaku|voxel|speedrun|minecraft|diablo|elden\s?ring|dark\s?souls|gta|resident\s?evil|assassin'?s\s?creed|thewitcher|witcher|god\s?of\s?war|gran\s?turismo|gt6|horizon\s?zero|red\s?dead|pokemon|pokémon|zelda|mario|pathofexile|path\s?of\s?exile|poe2|poe\s?2|filterblade|craftofexile|poe2db|poe2builder|ppsspp|vimm\.net|cdromance|mugen|mugenation|mugenguild|modrinth|faithfulpack|inforcraft|terralith|aom\.heavengames|smite2|skse|soul\s?reaver|retroachievements|bonkerslots|icy-veins|overwolf|taskbarhero|filecrypt|ggmax|steamdb|devil\s?may\s?cry|mortal\s?kombat|mk|fatalit|mordhau|ryse|crimson\s?desert|dante|cheats|unknowncheats|gamehacking|nenyooo|wabbajack|loadorderlibrary|x360ce|gamepad|ipega|kart|kart[oó]dromo|gtplanet|dyndolod|lod|delirious|divines|skidrow|reloaded|yougametubebr)\b/i.test(
+    /\b(nexusmods|fitgirl|torrentgamesps3|psxdownloads|mixmods|coolrom|steam|steampowered|epicgames|roblox|twitch|poe\.ninja|mobalytics|maxroll|elderscrolls|fallout|skyrim|ps[1-5]|playstation|xbox|nintendo|switch|game|jogos?|gameplay|emulador|rpcs3|pcsx2|retroarch|roms?|curseforge|modding|gamevicio|kotaku|voxel|speedrun|minecraft|diablo|elden\s?ring|dark\s?souls|gta|resident\s?evil|assassin'?s\s?creed|thewitcher|witcher|god\s?of\s?war|gran\s?turismo|gt6|horizon\s?zero|red\s?dead|pokemon|pokémon|zelda|mario|pathofexile|path\s?of\s?exile|poe2|poe\s?2|filterblade|craftofexile|poe2db|poe2builder|ppsspp|vimm\.net|cdromance|mugen|mugenation|mugenguild|modrinth|faithfulpack|inforcraft|terralith|aom\.heavengames|smite2|skse|soul\s?reaver|retroachievements|bonkerslots|icy-veins|overwolf|taskbarhero|filecrypt|ggmax|steamdb|devil\s?may\s?cry|mortal\s?kombat|mk|fatalit|mordhau|ryse|crimson\s?desert|dante|cheats|unknowncheats|gamehacking|nenyooo|wabbajack|loadorderlibrary|x360ce|gamepad|ipega|kart|kart[oó]dromo|gtplanet|dyndolod|lod|delirious|divines|skidrow|reloaded|yougametubebr|kof\s?98|the\s?king\s?of\s?fighters|central-mods|martysmods|enbdev|patreon.*(combo|archer|mod|build))\b/i.test(
       fullText
     );
 
@@ -860,13 +1045,13 @@ export function classifyBookmarkIntelligently(
     if (/\b(xbox|game\s?pass|xbox\s?360|xbox\s?one|series\s?[xs]|halo|forza|gears)\b/i.test(fullText)) {
       return 'Jogos / Xbox';
     }
-    if (/\b(nexusmods|mixmods|curseforge|mods?|modding|enb|skse|modorganizer|vortex|shader|modrinth|faithfulpack|filterblade|mugen|mugenation|mugenguild|dyndolod|lod|wabbajack|loadorderlibrary|unknowncheats|gamehacking|nenyooo|mordhau)\b/i.test(fullText)) {
+    if (/\b(nexusmods|mixmods|curseforge|mods?|modding|enb|skse|modorganizer|vortex|shader|modrinth|faithfulpack|filterblade|mugen|mugenation|mugenguild|dyndolod|lod|wabbajack|loadorderlibrary|unknowncheats|gamehacking|nenyooo|mordhau|central-mods|martysmods|enbdev|patreon)\b/i.test(fullText)) {
       return 'Jogos / Mods';
     }
     if (/\b(coolrom|emulador|emulator|retroarch|rpcs3|pcsx2|roms?|bios|iso|ppsspp|vimm\.net|retroachievements|x360ce|snesforever)\b/i.test(fullText)) {
       return 'Jogos / Emuladores & ROMs';
     }
-    if (/\b(poe\.ninja|mobalytics|maxroll|fandom|skyrim|fallout|elderscrolls|wiki|guia|build|detonado|ign|gamevicio|poe2db|poe2builder|craftofexile|icy-veins|taskbarhero|timesaver|cheat|fatalit|neoseeker)\b/i.test(fullText)) {
+    if (/\b(poe\.ninja|mobalytics|maxroll|fandom|skyrim|fallout|elderscrolls|wiki|guia|build|detonado|ign|gamevicio|poe2db|poe2builder|craftofexile|icy-veins|taskbarhero|timesaver|cheat|fatalit|neoseeker|kof|the\s?king\s?of\s?fighters)\b/i.test(fullText)) {
       return 'Jogos / Wikis & Guias';
     }
     if (/\b(steam|epic\s?games|gog|fitgirl|itch\.io|roblox|pc\s?gamer|twitch|minecraft|path\s?of\s?exile|pathofexile|steamdb|ea\.com|capcom|skidrow|reloaded|delirious|divines)\b/i.test(fullText)) {
@@ -899,7 +1084,7 @@ export function classifyBookmarkIntelligently(
 
   // 5. ENGENHARIA & MECÂNICA
   const isMech =
-    /\b(mec[aâ]nica|automotivo|automotiva|autopapo|ve[ií]culo|scania|trator|tractor|usinagem|torno|fresa|cnc|solidworks|autodesk|grabcad|thingiverse|printables|motor|motores|oficina|lojadomecanico|pe[cç]as\s?auto|chassi|freio|suspens[aã]o|inspe[cç][aã]o\s?veicular|t[eé]cnico\s?mec[aâ]nico|c[aâ]mbio|embreagem|inje[cç][aã]o\s?eletr[oô]nica|torque|gestauto|iveco|caminh[aã]o|motoniveladora|retroescavadeira|escavadeira|caterpillar|komatsu|john\s?deere|volvo\s?trucks|mercedes.*axor|pneu|calibragem|óleo.*caminhão|vistoriapro|seguradora\s?lider|dpvat|kartodromo|reboque|volkswagenag|elsa2go|koenigsegg|porsche|rennsport|sedan|bmw|doutor\s?carro|doutorie|rolamento|sonda\s?lambda|yamaha|xt660|honda|pantogr[aá]fico|raven|elevador\s?raven|sekurit|vidros\s?originais|latinncap|verniz|massa\s?corrida|lixamento|lixa\s?\d+|sanca\s?de\s?gesso)\b/i.test(
+    /\b(mec[aâ]nica|automotivo|automotiva|autopapo|ve[ií]culo|scania|trator|tractor|usinagem|torno|fresa|cnc|solidworks|autodesk|grabcad|thingiverse|printables|motor|motores|oficina|lojadomecanico|pe[cç]as\s?auto|chassi|freio|suspens[aã]o|inspe[cç][aã]o\s?veicular|t[eé]cnico\s?mec[aâ]nico|c[aâ]mbio|embreagem|inje[cç][aã]o\s?eletr[oô]nica|torque|gestauto|iveco|caminh[aã]o|motoniveladora|retroescavadeira|escavadeira|caterpillar|komatsu|john\s?deere|volvo\s?trucks|mercedes.*axor|pneu|calibragem|óleo.*caminhão|vistoriapro|seguradora\s?lider|dpvat|kartodromo|reboque|volkswagenag|elsa2go|koenigsegg|porsche|rennsport|sedan|bmw|doutor\s?carro|doutorie|rolamento|sonda\s?lambda|yamaha|xt660|honda|pantogr[aá]fico|raven|elevador\s?raven|sekurit|vidros\s?originais|latinncap|verniz|massa\s?corrida|lixamento|lixa\s?\d+|sanca\s?de\s?gesso|gesso|volume\s?de\s?gesso|sanca|reforma|obra|pincel|pinc[eé]is|trinchas|argalit|mhhauto|car-specs|ultimatespecs|carrosnaweb|tuatara|centodieci|nemigaparts|corsaclube|carros\s?usados|noticiasautomotivas|apex\s?tool|belzer|pedivela|movimento\s?central|pintar\s?(porta|madeira)|peltier|electude|c6auto)\b/i.test(
       fullText
     );
 
@@ -907,13 +1092,13 @@ export function classifyBookmarkIntelligently(
     if (/\b(solidworks|grabcad|autocad|fusion|thingiverse|printables|3d|cad|cam|modelagem|perspectiva\s?isom[eé]trica)\b/i.test(fullText)) {
       return 'Engenharia & Mecânica / CAD & Modelagem 3D';
     }
-    if (/\b(usinagem|torno|fresa|cnc|ret[ií]fica|ferramentas?|lojadomecanico|equipamentos|mundomanuais|motoniveladora|retroescavadeira|escavadeira|caterpillar|komatsu|chave\s?para\s?escavadeira|verniz|massa\s?corrida|lixamento|lixa|sanca)\b/i.test(fullText)) {
+    if (/\b(usinagem|torno|fresa|cnc|ret[ií]fica|ferramentas?|lojadomecanico|equipamentos|mundomanuais|motoniveladora|retroescavadeira|escavadeira|caterpillar|komatsu|chave\s?para\s?escavadeira|verniz|massa\s?corrida|lixamento|lixa|sanca|gesso|pincel|trincha|argalit|belzer|apex\s?tool|pedivela)\b/i.test(fullText)) {
       return 'Engenharia & Mecânica / Usinagem & Ferramentas';
     }
     if (/\b(inspe[cç][aã]o\s?veicular|t[eé]cnico\s?mec[aâ]nico|manuten[cç][aã]o\s?mec[aâ]nica|abnt|senai|gestauto|ficha\s?de\s?inspeção|vistoriapro|norma\s?t[eé]cnica\s?din|engeteles|rolamento|falhas\s?em\s?rolamentos|latinncap)\b/i.test(fullText)) {
       return 'Engenharia & Mecânica / Inspeção & Manutenção';
     }
-    if (/\b(autopapo|ve[ií]culo|carro|moto|scania|trator|caminh[aã]o|motor|c[aâ]mbio|suspens[aã]o|oficina|freio|chassi|iveco|volvo|mercedes|pneu|calibragem|nissan|koenigsegg|porsche|gol\s?1\.0|bmw|doutor\s?carro|doutorie|sonda\s?lambda|yamaha|xt660|honda|sekurit|pantogr[aá]fico|raven)\b/i.test(fullText)) {
+    if (/\b(autopapo|ve[ií]culo|carro|moto|scania|trator|caminh[aã]o|motor|c[aâ]mbio|suspens[aã]o|oficina|freio|chassi|iveco|volvo|mercedes|pneu|calibragem|nissan|koenigsegg|porsche|gol\s?1\.0|bmw|doutor\s?carro|doutorie|sonda\s?lambda|yamaha|xt660|honda|sekurit|pantogr[aá]fico|raven|mhhauto|car-specs|ultimatespecs|carrosnaweb|tuatara|centodieci|nemigaparts|corsaclube|carros\s?usados|noticiasautomotivas|c6auto)\b/i.test(fullText)) {
       return 'Engenharia & Mecânica / Automotivo';
     }
     return 'Engenharia & Mecânica';
@@ -921,7 +1106,7 @@ export function classifyBookmarkIntelligently(
 
   // 6. MÚSICA
   const isMusic =
-    /\b(m[uú]sica|music|som|audio|[aá]udio|spotify|deezer|cifraclub|violino|viola|viol[aã]o|teclado|piano|luthier|luteria|partitura|partituras|solfejo|hin[aá]rio|hinos?|ccb|congregacao\s?crista|cifra|tablatura|songsterr|sound|acorde|afina[cç][aã]o|nota\s?l[aá]|440\s?hz|bach|chaconne|cello|pozzoli|orquestra|filarmonica|tocata|sinfonia|cifradventista|muse\s?sounds|mozart|requiem|polifonia|oitavado|ubc|musescore|atelierlabussiere)\b/i.test(
+    /\b(m[uú]sica|music|som|audio|[aá]udio|spotify|deezer|cifraclub|violino|viola|viol[aã]o|teclado|piano|luthier|luteria|partitura|partituras|solfejo|hin[aá]rio|hinos?|ccb|congregacao\s?crista|cifra|tablatura|songsterr|sound|acorde|afina[cç][aã]o|nota\s?l[aá]|440\s?hz|bach|chaconne|cello|pozzoli|orquestra|filarmonica|tocata|sinfonia|cifradventista|muse\s?sounds|mozart|requiem|polifonia|oitavado|ubc|musescore|atelierlabussiere|chordu|amar\.art|atelierkamroyan|ecad|musicaliza[cç][aã]o|violinistas|canalparaviolinistas)\b/i.test(
       fullText
     );
 
@@ -929,10 +1114,10 @@ export function classifyBookmarkIntelligently(
     if (/\b(ccb|congregacao\s?crista|hinos?|hin[aá]rio|ensaios?|reuni[aã]o\s?de\s?jovens|sistema\s?de\s?administra[cç][aã]o\s?musical|evangelizarccb|cifradventista)\b/i.test(fullText)) {
       return 'Música / Hinários & CCB';
     }
-    if (/\b(violino|viola|viol[aã]o|teclado|piano|luthier|luteria|instrumentos?|cravelha|espalheira|arco|cordas|cello|atelierlabussiere)\b/i.test(fullText)) {
+    if (/\b(violino|viola|viol[aã]o|teclado|piano|luthier|luteria|instrumentos?|cravelha|espalheira|arco|cordas|cello|atelierlabussiere|atelierkamroyan)\b/i.test(fullText)) {
       return 'Música / Instrumentos & Luthiaria';
     }
-    if (/\b(partitura|partituras|cifra|cifras|tablatura|cifraclub|songsterr|ultimate\s?guitar|sheet|musescore)\b/i.test(fullText)) {
+    if (/\b(partitura|partituras|cifra|cifras|tablatura|cifraclub|songsterr|ultimate\s?guitar|sheet|musescore|chordu)\b/i.test(fullText)) {
       return 'Música / Partituras & Cifras';
     }
     if (/\b(teoria|solfejo|bona|escalas|harmonia|compasso|ritmo|pozzoli|440\s?hz|afina[cç][aã]o|tonalidades|polifonia|oitavado)\b/i.test(fullText)) {
@@ -946,18 +1131,18 @@ export function classifyBookmarkIntelligently(
 
   // 7. TECNOLOGIA
   const isTech =
-    /\b(android|samsung|motorola|xiaomi|smartphone|celular|windows|formatar|formata[cç][aã]o|bios|driver|drivers|intel|amd|ryzen|geforce|rtx|gtx|processador|placa\s?m[aã]e|mem[oó]ria\s?ram|ssd|hd|pendrive|hardware|clubedohardware|hardware\.com|techtudo|canaltech|olhar\s?digital|oficinadanet|tudocelular|nextpit|apkpure|rexdl|apkmirror|root|magisk|twrp|bootloader|rom\s?custom|firmware|192\.168|roteador|modem|wi-?fi|rede|dns|ip|airdroid|remotedesktop|anydesk|teamviewer|xdaforums|hwinfo|egpu|quickcpu|can\s?you\s?run\s?it|virustotal|hybrid-analysis|any\.run|edge\s?extensions|microsoftedge|truecaller|fiberhome|dd-wrt|supersu|lenovo|tpm|minhaclaro|claro\.com|vivo\.com|tim\.com|downdetector|razer|surround|hdmi|dvi|dhcp)\b/i.test(
+    /\b(android|samsung|motorola|xiaomi|smartphone|celular|windows|formatar|formata[cç][aã]o|bios|driver|drivers|intel|amd|ryzen|geforce|rtx|gtx|processador|placa\s?m[aã]e|mem[oó]ria\s?ram|ssd|hd|pendrive|hardware|clubedohardware|hardware\.com|techtudo|canaltech|olhar\s?digital|oficinadanet|tudocelular|nextpit|apkpure|rexdl|apkmirror|root|magisk|twrp|bootloader|rom\s?custom|firmware|192\.168|roteador|modem|wi-?fi|rede|dns|ip|airdroid|remotedesktop|anydesk|teamviewer|xdaforums|hwinfo|egpu|quickcpu|can\s?you\s?run\s?it|virustotal|hybrid-analysis|any\.run|edge\s?extensions|microsoftedge|truecaller|fiberhome|dd-wrt|supersu|lenovo|tpm|minhaclaro|claro\.com|vivo\.com|tim\.com|downdetector|razer|surround|hdmi|dvi|dhcp|bbbaterias|problema\s?na\s?fonte|4k\s?monitors?|monitor\s?4k|techspot|cpuid|cpu-z|chrome:\/\/flags|edge:\/\/flags|flags\b|bluestacks|bluewa)\b/i.test(
       fullText
     );
 
   if (isTech) {
-    if (/\b(android|samsung|motorola|xiaomi|celular|smartphone|apk|apkpure|rexdl|root|magisk|twrp|bootloader|rom\s?custom|tudocelular|xdaforums|truecaller|supersu)\b/i.test(fullText)) {
+    if (/\b(android|samsung|motorola|xiaomi|celular|smartphone|apk|apkpure|rexdl|root|magisk|twrp|bootloader|rom\s?custom|tudocelular|xdaforums|truecaller|supersu|bluestacks|bluewa)\b/i.test(fullText)) {
       return 'Tecnologia / Android';
     }
-    if (/\b(windows|formatar|formata[cç][aã]o|driver|drivers|office|word|excel|sistema\s?operacional|powershell|cmd|quickcpu|microsoftedge|tpm|lenovo|edge\s?extensions)\b/i.test(fullText)) {
+    if (/\b(windows|formatar|formata[cç][aã]o|driver|drivers|office|word|excel|sistema\s?operacional|powershell|cmd|quickcpu|microsoftedge|tpm|lenovo|edge\s?extensions|flags|virtualbox|k-lite|codec|dvdvideosoft|dropit)\b/i.test(fullText)) {
       return 'Tecnologia / Windows & Sistemas';
     }
-    if (/\b(hardware|clubedohardware|intel|amd|ryzen|geforce|processador|placa\s?m[aã]e|mem[oó]ria\s?ram|ssd|fonte|perif[eé]ricos|hwinfo|egpu|can\s?you\s?run\s?it|razer|hdmi|dvi|dhcp)\b/i.test(fullText)) {
+    if (/\b(hardware|clubedohardware|intel|amd|ryzen|geforce|processador|placa\s?m[aã]e|mem[oó]ria\s?ram|ssd|fonte|perif[eé]ricos|hwinfo|egpu|can\s?you\s?run\s?it|razer|hdmi|dvi|dhcp|bbbaterias|problema\s?na\s?fonte|4k\s?monitor|techspot|cpuid|cpu-z|crystalmark|crystaldiskinfo)\b/i.test(fullText)) {
       return 'Tecnologia / Hardware';
     }
     if (/\b(192\.168|roteador|modem|wi-?fi|rede|dns|ip|airdroid|remotedesktop|anydesk|virustotal|hybrid-analysis|any\.run|fiberhome|dd-wrt|downdetector|minhaclaro|claro|vivo|tim)\b/i.test(fullText)) {
@@ -968,18 +1153,18 @@ export function classifyBookmarkIntelligently(
 
   // 8. SAÚDE & BEM-ESTAR
   const isHealth =
-    /\b(sa[uú]de|fitness|suplemento|suplementos|emagrecimento|perder\s?barriga|dieta|prote[ií]na|tuasaude|natusvita|gsuplementos|growth|treino|muscula[cç][aã]o|academia|receita|receitas|rem[eé]dio|medicamento|hapvida|m[eé]dico|hospital|nutri|calorias|vitaminas?|anatomia|peso|jejum|carboidrato|creatina|whey|mutant\s?mass|calos|doctor\s?feet|farmacia|l'oreal|glandulas\s?sebaceas|astigmatismo|lenscope|óculos|ocitocina|horm[oô]nio|desejo\s?sexual|antiss[oó]dio|hipertens[aã]o|reten[cç][aã]o|gordura\s?localizada|resist[eê]ncia\s?na\s?corrida|ativo\.com|inhame|pudim|bolo|torta|cozimento|culin[aá]ria|vegano|vegetariano|presunto\s?vegetariano|dicas\s?veganas|descascar\s?batatas|veganize|cantinho\s?vegetariano|bodynutry)\b/i.test(
+    /\b(sa[uú]de|fitness|suplemento|suplementos|emagrecimento|perder\s?barriga|dieta|prote[ií]na|tuasaude|natusvita|gsuplementos|growth|treino|muscula[cç][aã]o|academia|receita|receitas|rem[eé]dio|medicamento|hapvida|m[eé]dico|hospital|nutri|calorias|vitaminas?|anatomia|peso|jejum|carboidrato|creatina|whey|mutant\s?mass|calos|doctor\s?feet|farmacia|l'oreal|glandulas\s?sebaceas|astigmatismo|lenscope|óculos|ocitocina|horm[oô]nio|desejo\s?sexual|antiss[oó]dio|hipertens[aã]o|reten[cç][aã]o|gordura\s?localizada|resist[eê]ncia\s?na\s?corrida|ativo\.com|inhame|pudim|bolo|torta|cozimento|culin[aá]ria|vegano|vegetariano|presunto\s?vegetariano|dicas\s?veganas|descascar\s?batatas|veganize|cantinho\s?vegetariano|bodynutry|fimose|cirurgia|banho\s?de\s?sol|ch[aá]\s?mate|ch[aá]|alimentos?|nutri[cç][aã]o|circula[cç][aã]o|abd[oô]men|trincar\s?a?\s?barriga|barriga|[aá]cido\s?l[aá]tico|lactato|muscular|m[uú]sculos?|espinhas?|bacne|caminhar\s?emagrece|imc|calcule\s?seu\s?imc|aspartame|doce\s?veneno|suco|feij[aã]o|fruta|verdura|legume|percentual\s?de\s?gordura|ollie|gordura|treinus|exercicioemcasa|skate|auto-hemoterapia|dynamed|dietacrua|vapza|biotipo|neat\b|metabolismo|acne|nutrientes|nutritienda|endom[oó]rfico|ectomorfo|mesomorfo)\b/i.test(
       fullText
     );
 
   if (isHealth) {
-    if (/\b(suplemento|suplementos|prote[ií]na|creatina|whey|natusvita|gsuplementos|growth|vitaminas?|mutant\s?mass|bodynutry|receita|receitas|culin[aá]ria|alimento|alimentos|ch[aá]|suco|comida|dieta|carboidrato|vegano|vegetariano|pudim|bolo|torta|cozimento|batata|veganize|cantinho\s?vegetariano|presunto\s?vegetariano)\b/i.test(fullText)) {
+    if (/\b(suplemento|suplementos|prote[ií]na|creatina|whey|natusvita|gsuplementos|growth|vitaminas?|mutant\s?mass|bodynutry|receita|receitas|culin[aá]ria|alimento|alimentos|ch[aá]|suco|comida|dieta|carboidrato|vegano|vegetariano|pudim|bolo|torta|cozimento|batata|veganize|cantinho\s?vegetariano|presunto\s?vegetariano|feij[aã]o|fruta|verdura|legume|aspartame|dietacrua|vapza|nutrientes|nutritienda)\b/i.test(fullText)) {
       return 'Saúde & Bem-Estar / Nutrição & Suplementos';
     }
-    if (/\b(fitness|treino|muscula[cç][aã]o|academia|exerc[ií]cio|emagrecimento|perder\s?barriga|peso|corrida|resist[eê]ncia\s?na\s?corrida|ativo\.com)\b/i.test(fullText)) {
+    if (/\b(fitness|treino|muscula[cç][aã]o|academia|exerc[ií]cio|emagrecimento|perder\s?barriga|peso|corrida|resist[eê]ncia\s?na\s?corrida|ativo\.com|caminhar\s?emagrece|abd[oô]men|trincar|barriga|[aá]cido\s?l[aá]tico|lactato|muscular|m[uú]sculo|percentual\s?de\s?gordura|ollie|treinus|exercicioemcasa|skate|neat\b|biotipo|endom[oó]rfico|ectomorfo|mesomorfo|metabolismo)\b/i.test(fullText)) {
       return 'Saúde & Bem-Estar / Treino & Fitness';
     }
-    if (/\b(tuasaude|hapvida|m[eé]dico|hospital|rem[eé]dio|medicamento|sintoma|sintomas|doen[cç]a|exame|anatomia|doctor\s?feet|farmacia|lenscope|óculos|ocitocina|horm[oô]nio|antiss[oó]dio|hipertens[aã]o)\b/i.test(fullText)) {
+    if (/\b(tuasaude|hapvida|m[eé]dico|hospital|rem[eé]dio|medicamento|sintoma|sintomas|doen[cç]a|exame|anatomia|doctor\s?feet|farmacia|lenscope|óculos|ocitocina|horm[oô]nio|antiss[oó]dio|hipertens[aã]o|fimose|cirurgia|banho\s?de\s?sol|espinhas?|bacne|circula[cç][aã]o|imc|auto-hemoterapia|dynamed|acne)\b/i.test(fullText)) {
       return 'Saúde & Bem-Estar / Medicina & Cuidados';
     }
     return 'Saúde & Bem-Estar';
@@ -987,24 +1172,24 @@ export function classifyBookmarkIntelligently(
 
   // 9. ESTUDOS
   const isEdu =
-    /\b(estudo|estudos|curso|cursos|concurso|concursos|portaleduca|sestsenat|enem|fuvest|vestibular|prova|scribd|pdfcoffee|archive\.org|z-lib|livro|livros|biblioteca|faculdade|universidade|uninter|estacio|fatecie|senac|mec|e-mec|abnt|scielo|scholar|idioma|idiomas|ingl[eê]s|portugu[eê]s|gram[aá]tica|matem[aá]tica|f[ií]sica|qu[ií]mica|filosofia|hist[oó]ria|biologia|fauna|flora|artigo|tese|aula|aulas|geometria|c[aá]lculo|lacconcursos|mesalva|guiadoestudante|qconcursos|bvirtual|scilab|maxima|matlab|worldcat|doceru|conjugacao|abed|documento\s?do\s?estudante|forma\s?brasil|certifica[cç][aã]o\s?por\s?compet[eê]ncia|ietaam|pronounce|toucan|memorizar|alem[aã]o|german|shadowing|speaking|conversas|conversação|ouino|duolingo|geogebra|socrative|oba\b|pensador|passeidireto|c[eé]lula|contronyms|kroton|senai|monsterconcursos)\b/i.test(
+    /\b(estudo|estudos|curso|cursos|concurso|concursos|portaleduca|sestsenat|enem|fuvest|vestibular|prova|scribd|pdfcoffee|archive\.org|z-lib|livro|livros|biblioteca|faculdade|universidade|uninter|estacio|fatecie|senac|mec|e-mec|abnt|scielo|scholar|idioma|idiomas|ingl[eê]s|portugu[eê]s|gram[aá]tica|matem[aá]tica|f[ií]sica|qu[ií]mica|filosofia|hist[oó]ria|biologia|fauna|flora|artigo|tese|aula|aulas|geometria|c[aá]lculo|lacconcursos|mesalva|guiadoestudante|qconcursos|bvirtual|scilab|maxima|matlab|worldcat|doceru|conjugacao|abed|documento\s?do\s?estudante|forma\s?brasil|certifica[cç][aã]o\s?por\s?compet[eê]ncia|ietaam|pronounce|toucan|memorizar|alem[aã]o|german|shadowing|speaking|conversas|conversação|ouino|duolingo|geogebra|socrative|oba\b|pensador|passeidireto|c[eé]lula|contronyms|kroton|senai|monsterconcursos|porcentagem|fra[cç][oõ]es|decimais|astronomia|carl\s?sagan|universo\s?bidimensional|ci[eê]ncia|revistas?\s?gr[aá]tis|tcc|estudantes?\s?universit[aá]rios?|benef[ií]cios?\s?universit[aá]rio|aluno\s?digital|anhanguera|cefet|cefetmg|colaborar|colaboraread|dicio|sambatech|institutodeengenharia|elivros|cesec|exame\s?de\s?banca|esquemaria)\b/i.test(
       fullText
     );
 
   if (isEdu) {
-    if (/\b(concurso|concursos|enem|fuvest|vestibular|portaleduca|sestsenat|lacconcursos|mesalva|guiadoestudante|qconcursos|prova|gabarito|edital|quest[aã]o|monsterconcursos)\b/i.test(fullText)) {
+    if (/\b(concurso|concursos|enem|fuvest|vestibular|portaleduca|sestsenat|lacconcursos|mesalva|guiadoestudante|qconcursos|prova|gabarito|edital|quest[aã]o|monsterconcursos|cesec|exame\s?de\s?banca|esquemaria)\b/i.test(fullText)) {
       return 'Estudos / Concursos & Cursos';
     }
-    if (/\b(scribd|pdfcoffee|archive\.org|biblioteca|livro|livros|pdf|e-?book|apostila|leitura|books\.google|bvirtual|worldcat|doceru|passeidireto|abnt|scielo|scholar|artigo\s?cient[ií]fico|tese|disserta[cç][aã]o|norma\s?t[eé]cnica)\b/i.test(fullText)) {
+    if (/\b(scribd|pdfcoffee|archive\.org|biblioteca|livro|livros|pdf|e-?book|apostila|leitura|books\.google|bvirtual|worldcat|doceru|passeidireto|abnt|scielo|scholar|artigo\s?cient[ií]fico|tese|disserta[cç][aã]o|norma\s?t[eé]cnica|revistas?\s?gr[aá]tis|tcc|bdtd|elivros)\b/i.test(fullText)) {
       return 'Estudos / Livros & Artigos';
     }
-    if (/\b(faculdade|universidade|uninter|estacio|fatecie|senac|e-?mec|mec\.gov|gradua[cç][aã]o|p[oó]s-gradua[cç][aã]o|forma\s?brasil|certifica[cç][aã]o\s?por\s?compet[eê]ncia|ietaam|abed|kroton|senai|socrative)\b/i.test(fullText)) {
+    if (/\b(faculdade|universidade|uninter|estacio|fatecie|senac|e-?mec|mec\.gov|gradua[cç][aã]o|p[oó]s-gradua[cç][aã]o|forma\s?brasil|certifica[cç][aã]o\s?por\s?compet[eê]ncia|ietaam|abed|kroton|senai|socrative|estudantes?\s?universit[aá]rios?|benef[ií]cios?\s?universit[aá]rio|aluno\s?digital|anhanguera|cefet|colaborar|sambatech|institutodeengenharia)\b/i.test(fullText)) {
       return 'Estudos / Faculdades & EAD';
     }
-    if (/\b(idioma|idiomas|ingl[eê]s|english|portugu[eê]s|gram[aá]tica|dicion[aá]rio|vocabulary|pronounce|toucan|conjugacao|alem[aã]o|german|shadowing|speaking|conversas|conversação|ouino|duolingo|contronyms)\b/i.test(fullText)) {
+    if (/\b(idioma|idiomas|ingl[eê]s|english|portugu[eê]s|gram[aá]tica|dicion[aá]rio|vocabulary|pronounce|toucan|conjugacao|alem[aã]o|german|shadowing|speaking|conversas|conversação|ouino|duolingo|contronyms|dicio)\b/i.test(fullText)) {
       return 'Estudos / Idiomas';
     }
-    if (/\b(matem[aá]tica|f[ií]sica|qu[ií]mica|c[aá]lculo|geometria|[aá]lgebra|scilab|maxima|matlab|geogebra|oba\b)\b/i.test(fullText)) {
+    if (/\b(matem[aá]tica|f[ií]sica|qu[ií]mica|c[aá]lculo|geometria|[aá]lgebra|scilab|maxima|matlab|geogebra|oba\b|porcentagem|fra[cç][oõ]es|decimais|carl\s?sagan|universo\s?bidimensional|ci[eê]ncia|astronomia)\b/i.test(fullText)) {
       return 'Estudos / Ciências Exatas';
     }
     if (/\b(filosofia|hist[oó]ria|sociologia|geografia|pensador|biologia|fauna|flora|animais|plantas|c[eé]lula)\b/i.test(fullText)) {
@@ -1015,18 +1200,18 @@ export function classifyBookmarkIntelligently(
 
   // 10. NEGÓCIOS & FINANÇAS
   const isBusiness =
-    /\b(sebrae|contabilizei|cnpj|mei|abrir\s?empresa|empresa|neg[oó]cio|emprego|empregos|vagas?|trabalho|curr[ií]culo|banco|investimento|b3|statusinvest|fundamentus|infomoney|bv\.com|meutudo|arpejo|renda|finan[cç]as|paypal|ita[uú]|mercadopago|mepoupe|guardardinheiro|abac|idinheiro|consorcio|aluguel|financiamento|inpi|marca|patente|registrodemarca|zendesk|b2b|universia|carreiras|aterpa|escola\s?do\s?trabalhador|ponto\s?mais|f[eé]rias|minimum-wage|green\s?card|vale\.com|abb|hotmart|serasa|tabela\s?para\s?juntar|poupar|tesouro\s?direto|genial|empiricus|canal\s?dark)\b/i.test(
+    /\b(sebrae|contabilizei|cnpj|mei|abrir\s?empresa|empresa|neg[oó]cio|emprego|empregos|vagas?|trabalho|curr[ií]culo|banco|investimento|b3|statusinvest|fundamentus|infomoney|bv\.com|meutudo|arpejo|renda|finan[cç]as|paypal|ita[uú]|mercadopago|mepoupe|guardardinheiro|abac|idinheiro|consorcio|aluguel|financiamento|inpi|marca|patente|registrodemarca|zendesk|b2b|universia|carreiras|aterpa|escola\s?do\s?trabalhador|ponto\s?mais|f[eé]rias|minimum-wage|green\s?card|vale\.com|abb|hotmart|serasa|tabela\s?para\s?juntar|poupar|tesouro\s?direto|genial|empiricus|canal\s?dark|auditoria|juntar\s?10\s?mil|canal\s?conecta|empregabilidade|administra[cç][aã]o\s?de\s?vendas|crm|easynvest|juros|cart[oõ]es\s?de\s?cr[eé]dito|parcelas?|foregon|conjur|mobills|apexfintech|economiasemsegredos|kwai.*dinheiro|ganhar\s?dinheiro)\b/i.test(
       fullText
     );
 
   if (isBusiness) {
-    if (/\b(sebrae|contabilizei|cnpj|mei|abrir\s?empresa|contabilidade|empresa|neg[oó]cio|inpi|marcas?|patente|zendesk|b2b|canal\s?dark)\b/i.test(fullText)) {
+    if (/\b(sebrae|contabilizei|cnpj|mei|abrir\s?empresa|contabilidade|empresa|neg[oó]cio|inpi|marcas?|patente|zendesk|b2b|canal\s?dark|administra[cç][aã]o\s?de\s?vendas|crm|ganhar\s?dinheiro)\b/i.test(fullText)) {
       return 'Negócios & Finanças / Empreendedorismo & Marcas';
     }
-    if (/\b(emprego|empregos|vagas?|trabalho|curr[ií]culo|contrata|processo\s?seletivo|universia|carreiras|vale\.com|escola\s?do\s?trabalhador|abb|green\s?card)\b/i.test(fullText)) {
+    if (/\b(emprego|empregos|vagas?|trabalho|curr[ií]culo|contrata|processo\s?seletivo|universia|carreiras|vale\.com|escola\s?do\s?trabalhador|abb|green\s?card|canal\s?conecta|empregabilidade)\b/i.test(fullText)) {
       return 'Negócios & Finanças / Vagas & Carreira';
     }
-    if (/\b(banco|investimento|investir|b3|statusinvest|fundamentus|infomoney|ações|fiis|tesouro|carteira|cr[eé]dito|empr[eé]stimo|renda|paypal|ita[uú]|mercadopago|mepoupe|guardardinheiro|abac|idinheiro|financiamento|hotmart|serasa|poupar|genial|empiricus)\b/i.test(fullText)) {
+    if (/\b(banco|investimento|investir|b3|statusinvest|fundamentus|infomoney|ações|fiis|tesouro|carteira|cr[eé]dito|empr[eé]stimo|renda|paypal|ita[uú]|mercadopago|mepoupe|guardardinheiro|abac|idinheiro|financiamento|hotmart|serasa|poupar|genial|empiricus|auditoria|juntar\s?10\s?mil|easynvest|juros|cart[oõ]es\s?de\s?cr[eé]dito|parcelas?|foregon|conjur|mobills|apexfintech|economiasemsegredos)\b/i.test(fullText)) {
       return 'Negócios & Finanças / Investimentos & Bancos';
     }
     return 'Negócios & Finanças';
@@ -1034,7 +1219,7 @@ export function classifyBookmarkIntelligently(
 
   // 11. ESPIRITUALIDADE
   const isReligion =
-    /\b(b[ií]blia|estudosdabiblia|congregacaocristanobrasil|conteudoespirita|emsonho|sonhos?\.com|guiadaalma|evangelho|deus|ora[cç][aã]o|espiritismo|espiritualidade|teologia|mitologia|lendas|folclore|amorc|rosacruz|abrame|v[oó]s\s?sois\s?deuses|gematria|astrologia|hor[oó]scopo|mapa\s?astral|astrolink|viastral|personare|numerologia|kabbalah|cabala|sacramentos|significado\s?espiritual|awakened|spine|caduceu|elohim|hebrew|transliteration|hermetically)\b/i.test(
+    /\b(b[ií]blia|estudosdabiblia|congregacaocristanobrasil|conteudoespirita|emsonho|sonhos?\.com|guiadaalma|evangelho|deus|ora[cç][aã]o|espiritismo|espiritualidade|teologia|mitologia|lendas|folclore|amorc|rosacruz|abrame|v[oó]s\s?sois\s?deuses|gematria|astrologia|hor[oó]scopo|mapa\s?astral|astrolink|viastral|personare|numerologia|kabbalah|cabala|sacramentos|significado\s?espiritual|awakened|spine|caduceu|elohim|hebrew|transliteration|hermetically|astrvm\s?argentvm|ordoaa|abismo|thelema|crowley|febnet|federa[cç][aã]o\s?esp[ií]rita|dicion[aá]rio\s?de\s?s[ií]mbolos)\b/i.test(
       fullText
     );
 
@@ -1045,7 +1230,7 @@ export function classifyBookmarkIntelligently(
     if (/\b(astrologia|hor[oó]scopo|mapa\s?astral|astrolink|viastral|personare|numerologia|kabbalah|cabala|gematria|fases\s?da\s?lua|calendario\s?lunar)\b/i.test(fullText)) {
       return 'Espiritualidade / Astrologia & Numerologia';
     }
-    if (/\b(sonho|sonhos|significado\s?dos\s?sonhos|espiritismo|espirita|guiadaalma|amorc|rosacruz|mitologia|lendas|folclore|awakened|caduceu|hermetically)\b/i.test(fullText)) {
+    if (/\b(sonho|sonhos|significado\s?dos\s?sonhos|espiritismo|espirita|guiadaalma|amorc|rosacruz|mitologia|lendas|folclore|awakened|caduceu|hermetically|astrvm|ordoaa|abismo|thelema|crowley|febnet|dicion[aá]rio\s?de\s?s[ií]mbolos|wemystic|vida\s?espiritual)\b/i.test(fullText)) {
       return 'Espiritualidade / Filosofia & Misticismo';
     }
     return 'Espiritualidade';
@@ -1053,12 +1238,12 @@ export function classifyBookmarkIntelligently(
 
   // 12. GOVERNO
   const isGov =
-    /\b(gov\.br|detran|detran\.mg|planalto|prefeitura|contagem|fazenda|receita\s?federal|cnh|ipva|multa|legisla[cç][aã]o|lei|decreto|di[aá]rio\s?oficial|título\s?de\s?eleitor|inss|previd[eê]ncia|vakinha|crea|confea|resolvvi|advogado|jusbrasil|contran|tse|naomeperturbe|dni)\b/i.test(
+    /\b(gov\.br|detran|detran\.mg|planalto|prefeitura|contagem|fazenda|receita\s?federal|cnh|ipva|multa|legisla[cç][aã]o|lei|decreto|di[aá]rio\s?oficial|título\s?de\s?eleitor|inss|previd[eê]ncia|vakinha|crea|confea|resolvvi|advogado|jusbrasil|contran|tse|naomeperturbe|dni|cadastro\s?[uú]nico|cad[uú]nico|benef[ií]cios?\s?para\s?quem\s?é\s?cadastrado|cart[oó]rio|vara\s?de\s?fam[ií]lia|certid[aã]o|cft|trt|comprovante\s?de\s?resid[eê]ncia|aprovadetran|exame\s?de\s?dire[cç][aã]o)\b/i.test(
       fullText
     );
 
   if (isGov) {
-    if (/\b(detran|cnh|ipva|multa|ve[ií]culo|tr[aâ]nsito|contran)\b/i.test(fullText)) {
+    if (/\b(detran|cnh|ipva|multa|ve[ií]culo|tr[aâ]nsito|contran|aprovadetran|exame\s?de\s?dire[cç][aã]o)\b/i.test(fullText)) {
       return 'Governo / Trânsito & Detran';
     }
     return 'Governo / Serviços Públicos';
@@ -1066,18 +1251,18 @@ export function classifyBookmarkIntelligently(
 
   // 13. FILMES & SÉRIES
   const isCinema =
-    /\b(filme|filmes|s[eé]rie|s[eé]ries|anime|animes|netflix|primevideo|disney\+|max|hbomax|crunchyroll|imdb|letterboxd|cinema|torrent|ondebaixa|reidostorrents|comando\s?torrents|torrentclaw|stremio|plex|jellyfin|saikoani|dailymotion|star\+|origem|sherlock\s?holmes|alem\s?da\s?linha|prendame|yu\s?yu\s?hakusho)\b/i.test(
+    /\b(filme|filmes|s[eé]rie|s[eé]ries|anime|animes|netflix|primevideo|disney\+|max|hbomax|crunchyroll|imdb|letterboxd|cinema|torrent|ondebaixa|reidostorrents|comando\s?torrents|torrentclaw|stremio|plex|jellyfin|saikoani|dailymotion|star\+|origem|sherlock\s?holmes|alem\s?da\s?linha|prendame|yu\s?yu\s?hakusho|ok\.ru\/video|trailer|dublado|legendado|adorocinema|revistabula|legiaodosherois|bludv|atra[ií]dos\s?pelo\s?perigo|dragon\s?ball|goku|eles\s?vivem)\b/i.test(
       fullText
     );
 
   if (isCinema) {
-    if (/\b(anime|animes|crunchyroll|manga|saikoani|yu\s?yu\s?hakusho)\b/i.test(fullText)) {
+    if (/\b(anime|animes|crunchyroll|manga|saikoani|yu\s?yu\s?hakusho|otaku|tokyo\s?ghoul|naruto|dragon\s?ball|goku|shurato)\b/i.test((title || '').toLowerCase())) {
       return 'Filmes & Séries / Animes';
     }
-    if (/\b(torrent|ondebaixa|reidostorrents|torrentclaw|download)\b/i.test(fullText)) {
+    if (/\b(torrent|ondebaixa|reidostorrents|torrentclaw|download|bludv)\b/i.test(fullText)) {
       return 'Filmes & Séries / Torrents & Downloads';
     }
-    if (/\b(stremio|plex|jellyfin|star\+|netflix|primevideo|disney\+|max)\b/i.test(fullText)) {
+    if (/\b(stremio|plex|jellyfin|star\+|netflix|primevideo|disney\+|max|ok\.ru|eles\s?vivem)\b/i.test(fullText)) {
       return 'Filmes & Séries / Streaming';
     }
     return 'Filmes & Séries';
@@ -1085,7 +1270,7 @@ export function classifyBookmarkIntelligently(
 
   // 14. ARTE & DESIGN
   const isArt =
-    /\b(arte|artes|desenho|pintura|escultura|arquitetura|design|designer|decora[cç][aã]o|planta\s?baixa|fachada|hq|quadrinhos|comic|manga|mang[aá]|deviantart|artstation|canva|inkscape|custom-cursor|cursor|icon-icons|ícones|wallpaper|wallpapers|wallhaven|alphacoders|visualskins|rainmeter|free3d|3d\s?models|blender)\b/i.test(
+    /\b(arte|artes|desenho|pintura|escultura|arquitetura|design|designer|decora[cç][aã]o|planta\s?baixa|fachada|hq|quadrinhos|comic|manga|mang[aá]|deviantart|artstation|canva|inkscape|custom-cursor|cursor|icon-icons|ícones|wallpaper|wallpapers|wallhaven|alphacoders|visualskins|rainmeter|free3d|3d\s?models|blender|artvee|create\.vista|floorplanner)\b/i.test(
       fullText
     );
 
@@ -1093,7 +1278,7 @@ export function classifyBookmarkIntelligently(
     if (/\b(custom-cursor|cursor|icon-icons|ícones|wallpaper|wallpapers|wallhaven|alphacoders|visualskins|rainmeter|betterdiscord)\b/i.test(fullText)) {
       return 'Arte & Design / Wallpapers & Ícones';
     }
-    if (/\b(arquitetura|planta\s?baixa|fachada|decora[cç][aã]o|reforma|constru[cç][aã]o)\b/i.test(fullText)) {
+    if (/\b(arquitetura|planta\s?baixa|fachada|decora[cç][aã]o|reforma|constru[cç][aã]o|floorplanner)\b/i.test(fullText)) {
       return 'Arte & Design / Arquitetura & Construção';
     }
     if (/\b(hq|quadrinhos|comic|manga|mang[aá]|universo\s?hq)\b/i.test(fullText)) {
@@ -1104,18 +1289,21 @@ export function classifyBookmarkIntelligently(
 
   // 15. COMPRAS
   const isShop =
-    /\b(loja|lojas|produto|produtos|mercadolivre|amazon|shopee|aliexpress|kabum|pichau|terabyte|superepi|perfumaria|perfume|fragr[aâ]ncia|comprar|compras|pre[cç]o|promo[cç][aã]o|desconto|cupom|pelando|promobit|carrinho|pedido|correios|inktec|casas\s?bahia|zoom|netshoes|olx|ravvisa)\b/i.test(
+    /\b(loja|lojas|produto|produtos|mercadolivre|amazon|shopee|aliexpress|kabum|pichau|terabyte|superepi|perfumaria|perfume|fragr[aâ]ncia|comprar|compras|pre[cç]o|promo[cç][aã]o|desconto|cupom|pelando|promobit|carrinho|pedido|correios|inktec|casas\s?bahia|zoom|netshoes|olx|ravvisa|chanel|eau\s?de|chinelo|rider|t[eê]nis|sapato|calçado|vestu[aá]rio|moda|estilo|haircuts?|cortes?\s?de\s?cabelo|cabelos?|penteados?|barba|rel[oó]gio|p[eé]rola|belezanaweb|cofermeta|metaverso|dafiti|creativefabrica|creative\s?fabrica)\b/i.test(
       fullText
     );
 
   if (isShop) {
-    if (/\b(perfumaria|perfume|fragr[aâ]ncia|eau\s?de|col[oô]nia|cosm[eé]tico)\b/i.test(fullText)) {
+    if (/\b(perfumaria|perfume|fragr[aâ]ncia|eau\s?de|col[oô]nia|cosm[eé]tico|chanel|belezanaweb)\b/i.test(fullText)) {
       return 'Compras / Perfumaria';
     }
-    if (/\b(kabum|terabyte|pichau|hardware|computador|eletr[oô]nicos|inktec)\b/i.test(fullText)) {
+    if (/\b(haircut|cabelo|penteado|barba|rel[oó]gio|t[eê]nis|chinelo|rider|vestu[aá]rio|moda|estilo|sapato|calçado|p[eé]rola)\b/i.test(fullText)) {
+      return 'Compras / Moda & Vestuário';
+    }
+    if (/\b(kabum|terabyte|pichau|hardware|computador|eletr[oô]nicos|inktec|cofermeta|metaverso)\b/i.test(fullText)) {
       return 'Compras / Hardware & Informática';
     }
-    if (/\b(pelando|promobit|cupom|cupons|desconto|oferta|zoom)\b/i.test(fullText)) {
+    if (/\b(pelando|promobit|cupom|cupons|desconto|oferta|zoom|shellbox)\b/i.test(fullText)) {
       return 'Compras / Cupons & Comparadores';
     }
     return 'Compras / Marketplaces';
@@ -1123,16 +1311,19 @@ export function classifyBookmarkIntelligently(
 
   // 16. PRODUTIVIDADE
   if (
-    /\b(conversor|calculadora|tradutor|translate|speedtest|teste\s?de\s?velocidade|encurtador|gerador|takeout|drive\.google|onedrive|dropbox|mega\.nz|ilovepdf|iloveimg|smallpdf|miniwebtool|typeform|aspose|drivedepobre|keep\.google|forms|spreadsheets|planilha)\b/i.test(
+    /\b(conversor|calculadora|tradutor|translate|speedtest|teste\s?de\s?velocidade|encurtador|gerador|takeout|drive\.google|onedrive|dropbox|mega\.nz|ilovepdf|iloveimg|smallpdf|miniwebtool|typeform|aspose|drivedepobre|keep\.google|forms|spreadsheets|planilha|docusign|checklist|assinatura\s?legal|obs|obsproject|grava[cç][aã]o\s?de\s?tela|bing.*creator|bing.*images|chat\.google)\b/i.test(
       fullText
     )
   ) {
+    if (/\b(obs|obsproject|grava[cç][aã]o)\b/i.test(fullText)) {
+      return 'Produtividade / Gravação & Edição';
+    }
     return 'Produtividade / Nuvem & Arquivos';
   }
 
   // 17. VIAGENS & TURISMO
   if (
-    /\b(viagem|viagens|turismo|hotel|hot[eé]is|pousada|voo|voos|a[eé]reo|passagem|booking|airbnb|decolar|skyscanner|tripadvisor|praia|milhas|assistentedeviagem|rentalcars|expominas|museudecongonhas|eventim|ingressos)\b/i.test(
+    /\b(viagem|viagens|turismo|hotel|hot[eé]is|pousada|voo|voos|a[eé]reo|passagem|booking|airbnb|decolar|skyscanner|tripadvisor|praia|milhas|assistentedeviagem|rentalcars|expominas|museudecongonhas|eventim|ingressos|balne[aá]rio\s?cambori[uú]|capit[oó]lio|apureguria|destinos|o\s?que\s?fazer\s?em|onde\s?ficar|roteiro)\b/i.test(
       fullText
     )
   ) {

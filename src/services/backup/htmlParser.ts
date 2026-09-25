@@ -18,12 +18,120 @@ export interface ParseHtmlResult {
 }
 
 /**
- * Escapes or unescapes common HTML entities
+ * Escapes or unescapes common HTML entities in both browser and headless/service-worker environments
  */
 function decodeHtmlEntities(str: string): string {
-  const txt = document.createElement('textarea');
-  txt.innerHTML = str;
-  return txt.value;
+  if (typeof document !== 'undefined') {
+    const txt = document.createElement('textarea');
+    txt.innerHTML = str;
+    return txt.value;
+  }
+  return str
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(parseInt(dec, 10)));
+}
+
+/**
+ * Universal streaming parser for Netscape bookmark files (works in browser, Service Worker, and Node).
+ */
+function parseNetscapeStreaming(htmlContent: string): ParseHtmlResult {
+  let totalBookmarks = 0;
+  let totalFolders = 0;
+  const flatBookmarks: { title: string; url: string; path: string; icon?: string; dateAdded?: number }[] = [];
+  const rootNodes: ParsedBookmarkItem[] = [];
+
+  const folderStack: ParsedBookmarkItem[] = [];
+  let idCounter = 1;
+
+  const lines = htmlContent.split('\n');
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    // Check for folder: <H3 ...>FolderName</H3>
+    const h3Match = /<H3[^>]*>([^<]+)<\/H3>/i.exec(trimmed);
+    if (h3Match) {
+      totalFolders++;
+      const folderTitle = decodeHtmlEntities(h3Match[1]).trim();
+      const currentParent = folderStack[folderStack.length - 1];
+      const nextPath = currentParent
+        ? (currentParent.path ? `${currentParent.path} / ${folderTitle}` : folderTitle)
+        : folderTitle;
+
+      const folderItem: ParsedBookmarkItem = {
+        id: `parsed_folder_${idCounter++}`,
+        title: folderTitle,
+        path: nextPath,
+        children: [],
+      };
+
+      if (currentParent && currentParent.children) {
+        currentParent.children.push(folderItem);
+      } else {
+        rootNodes.push(folderItem);
+      }
+
+      folderStack.push(folderItem);
+    }
+
+    // Check for closing DL (folder end)
+    if (/<\/DL>/i.test(trimmed)) {
+      if (folderStack.length > 0) {
+        folderStack.pop();
+      }
+    }
+
+    // Check for bookmark link: <A HREF="..." ...>Title</A>
+    const aMatch = /<A\s+[^>]*HREF="([^"]+)"[^>]*>([^<]*)<\/A>/i.exec(trimmed);
+    if (aMatch) {
+      totalBookmarks++;
+      const url = aMatch[1];
+      const title = decodeHtmlEntities(aMatch[2] || url).trim();
+
+      const addDateMatch = /ADD_DATE="(\d+)"/i.exec(trimmed);
+      const dateAdded = addDateMatch ? parseInt(addDateMatch[1], 10) * 1000 : Date.now();
+
+      const iconMatch = /ICON="([^"]+)"/i.exec(trimmed);
+      const icon = iconMatch ? iconMatch[1] : undefined;
+
+      const currentParent = folderStack[folderStack.length - 1];
+      const path = currentParent ? (currentParent.path || '') : '';
+
+      const bmItem: ParsedBookmarkItem = {
+        id: `parsed_bm_${idCounter++}`,
+        title,
+        url,
+        dateAdded,
+        icon,
+        path,
+      };
+
+      if (currentParent && currentParent.children) {
+        currentParent.children.push(bmItem);
+      } else {
+        rootNodes.push(bmItem);
+      }
+
+      flatBookmarks.push({
+        title,
+        url,
+        path,
+        icon,
+        dateAdded,
+      });
+    }
+  }
+
+  return {
+    totalBookmarks,
+    totalFolders,
+    rootNodes,
+    flatBookmarks,
+  };
 }
 
 /**
@@ -32,6 +140,10 @@ function decodeHtmlEntities(str: string): string {
  * into a structured BookmarkNode hierarchy with live metrics.
  */
 export function parseNetscapeHtml(htmlContent: string): ParseHtmlResult {
+  if (typeof DOMParser === 'undefined') {
+    return parseNetscapeStreaming(htmlContent);
+  }
+
   let totalBookmarks = 0;
   let totalFolders = 0;
   const flatBookmarks: { title: string; url: string; path: string; icon?: string; dateAdded?: number }[] = [];

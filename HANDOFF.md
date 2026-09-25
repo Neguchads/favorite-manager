@@ -12,6 +12,46 @@ Formato de cada entrada:
 - Avisos para o outro agente:
 ```
 
+## 2026-09-24 — Antigravity — Resolução de importação de arquivos com múltiplas pastas, eliminação de subpastas sinônimas/repetidas, execução direta em 1-clique no Mini-Agente e limpeza segura de pastas vazias
+- Arquivos alterados:
+  - `src/services/backup/importer.ts` (desempacotamento de nós raiz repetidos do navegador como 'Barra de favoritos', sanitização Title Case e reutilização de pastas em `preserve`, integração completa de `bm.path`, `validateAndSanitizeFolder` e `matchWithExistingFolders` em `ai_organize`)
+  - `src/ai/classifier.ts` (eliminação definitiva de subpastas sinônimas e redundantes como 'Jogos / Games' -> 'Jogos', 'Governo / Cidadania' -> 'Governo', 'Filmes & Séries / Filmes' -> 'Filmes & Séries', 'Compras / Lojas' -> 'Compras', remoção de prefixos de sistema como 'Barra de favoritos' do contexto de pasta, sanitização multi-nível)
+  - `src/components/modals/AiOrganizeModal.tsx` (botão de execução direta '⚡ Aplicar Organização Agora' em 1-clique direto no balão do Mini-Agente e no rodapé da modal, feedback de progresso e mensagem de confirmação nativa no chat; botão secundário 'Revisar na Árvore')
+  - `src/services/bookmarks/hierarchy.ts` (fallback com `removeTree` para pastas vazias candidatas cujos nós filhos foram esvaziados no Chromium)
+- Verificado:
+  - `npx tsx scratch/test-classifier-formatting.ts` executado com 100% de sucesso em todas as asserções de redundância e Title Case.
+  - `npm run build` executado com sucesso e 0 erros (`tsc && vite build` em 7.08s, 1649 módulos transformados).
+  - Pacote `.zip` atualizado em `C:\Users\Desktop\Downloads\Favorite-Manager-v1.1.0-EdgeStore.zip` (181 KB).
+- Pendente / próximo passo: Recarregamento da extensão no Microsoft Edge pelo usuário (`edge://extensions`).
+- Avisos para o outro agente:
+  1. **Arquivos com Múltiplas Pastas / Estrutura Aninhada**:
+     - Arquivos exportados por navegadores continham raiz `Barra de favoritos`. O importador agora desempacota o contêiner raiz para não aninhar `Barra de favoritos` dentro de `Barra de favoritos`, reutiliza pastas existentes sob o mesmo pai e sanitiza pastas em Title Case (`arte & design` -> `Arte & Design`, `eletroeletrônica` -> `Eletrônica`).
+  2. **Eliminação de Sinônimos Redundantes**:
+     - `MASTER_REDUNDANT_SUBFOLDERS` filtra ativamente subpastas que duplicam a semântica da categoria pai (`Jogos / Games`, `Governo / Cidadania`, `Filmes & Séries / Filmes`, `Compras / Lojas`, `Estudos / Educação`, `Música / Músicas`).
+  3. **Execução Direta pelo Chat do Mini-Agente**:
+     - `handleExecuteDirectFromChat` gera o plano em background e aplica imediatamente aos favoritos, postando o resumo de itens organizados/pastas criadas/limpas direto no histórico do chat.
+
+---
+
+
+## 2026-09-24 — Antigravity — Motor semântico calibrado com 3.212 favoritos reais, eliminação de subpastas duplicadas, botão de aplicação direta no Mini-Agente IA e cópia de conversa
+- Arquivos alterados:
+  - `src/ai/classifier.ts` (calibração cirúrgica com o arquivo real de 3.212 favoritos do usuário: eliminação de contaminação de contexto de pasta anterior, erradicação de duplicatas como 'Animes / Animes' e 'Serviços Públicos / Serviços Públicos', mapeamento de domínios e regexes especializadas para dezenas de nichos, redução de não-classificados para < 8.8% sem nenhum item jogado em 'Geral')
+  - `src/components/modals/AiOrganizeModal.tsx` (transformação da proposta do Mini-Agente IA em botão acionável '✨ Aplicar Esta Organização nos Favoritos' direto no balão da resposta e no rodapé da modal; botão de 'Copiar Conversa' completa no topo do chat com feedback visual e botão individual de cópia em cada mensagem; eliminação visual de qualquer pasta artificial '(Geral)' no preview da árvore)
+- Verificado:
+  - Análise automatizada em `scratch/analyze_user_bookmarks.ts` contra os 3.212 favoritos reais do usuário: 0 duplicatas 'Animes / Animes', 0 'Serviços Públicos / Serviços Públicos', itens em 'Outros' reduzidos de 498 para 285 com 0 itens em pasta 'Geral'.
+  - `npm run build` executado com sucesso e 0 erros (`tsc && vite build` em 3.77s, 1649 módulos transformados).
+  - Pacote `.zip` atualizado em `C:\Users\Desktop\Downloads\Favorite-Manager-v1.1.0-EdgeStore.zip`.
+- Pendente / próximo passo: Recarregamento da extensão no Microsoft Edge pelo usuário.
+- Avisos para o outro agente:
+  1. **Motor Semântico Calibrado com Dados Reais**:
+     - O arquivo de favoritos do usuário revelou que favoritos antigos continham caminhos duplicados da barra de favoritos (`Animes / Animes`). O extrator de contexto agora só usa a pasta antiga se o título for curto (< 15 caracteres), evitando que títulos de filmes fossem contaminados por pastas antigas de animes.
+     - As funções `validateAndSanitizeFolder` e `matchWithExistingFolders` impedem categoricamente que a categoria master seja idêntica à subpasta.
+  2. **Mini-Agente com Ação Real de Organização**:
+     - As respostas do assistente no chat agora contam com botão de ação direta: "✨ Aplicar Esta Organização nos Favoritos". Ao clicar, o modal transiciona para a aba de organização e gera/aplica o plano instantaneamente. O rodapé da modal também exibe o botão correspondente na aba do chat.
+  3. **Cópia de Conversa Completa e por Mensagem**:
+     - Botão "Copiar Conversa" na barra superior do chat copia todo o histórico formatado com feedback visual `Copiado!`. Cada balão de mensagem (usuário e IA) também possui botão próprio de cópia.
+
 ---
 
 ## 2026-09-24 — Antigravity — contenção de viewport da modal (evitando extrapolação da tela/barra de tarefas) e rodapé fixo dos botões de ação

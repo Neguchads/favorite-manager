@@ -118,8 +118,14 @@ export async function pruneEmptyFolders(
         prunedCount++;
         return true;
       } catch (err) {
-        console.warn(`Não foi possível remover pasta [${node.id}] ${node.title}:`, err);
-        return false;
+        try {
+          await bookmarksService.removeTree(node.id);
+          prunedCount++;
+          return true;
+        } catch (treeErr) {
+          console.warn(`Não foi possível remover pasta [${node.id}] ${node.title}:`, treeErr);
+          return false;
+        }
       }
     }
 

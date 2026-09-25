@@ -1,6 +1,11 @@
 import { BookmarkNode } from '../../types/bookmarks';
 import { bookmarksService } from '../bookmarks';
-import { classifyBookmarkIntelligently } from '../../ai/classifier';
+import {
+  classifyBookmarkIntelligently,
+  validateAndSanitizeFolder,
+  matchWithExistingFolders,
+  capitalizeFolderWords,
+} from '../../ai/classifier';
 import { ensureHierarchicalFolder, buildExistingFolderMap } from '../bookmarks/hierarchy';
 import { createLocalSnapshot } from './index';
 import { parseNetscapeHtml, ParsedBookmarkItem } from './htmlParser';
@@ -108,8 +113,15 @@ export async function importBookmarks(options: ImportOptions): Promise<ImportRes
     // Load current tree for folder mapping and URL deduplication
     const currentTree = await bookmarksService.getTree();
     const existingFolderMap = buildExistingFolderMap(currentTree);
-    const existingUrlsSet = new Set<string>();
+    const existingFolderNamesSet = new Set<string>();
+    for (const key of existingFolderMap.keys()) {
+      const idx = key.indexOf(':');
+      if (idx !== -1) {
+        existingFolderNamesSet.add(key.slice(idx + 1));
+      }
+    }
 
+    const existingUrlsSet = new Set<string>();
     function extractExistingUrls(nodes: BookmarkNode[]) {
       for (const n of nodes) {
         if (n.url) {
@@ -139,9 +151,10 @@ export async function importBookmarks(options: ImportOptions): Promise<ImportRes
           continue;
         }
 
-        // Semantic AI classification with clean taxonomy
-        const category = classifyBookmarkIntelligently(bm.title, bm.url);
-        const targetCategory = category || 'Outros';
+        // Semantic AI classification with clean taxonomy & folder context from file
+        const rawCategory = classifyBookmarkIntelligently(bm.title, bm.url, bm.path);
+        const sanitized = validateAndSanitizeFolder(rawCategory);
+        const targetCategory = matchWithExistingFolders(sanitized, existingFolderNamesSet);
 
         // Ensure hierarchical destination folder exists
         const folderId = await ensureHierarchicalFolder(
@@ -179,6 +192,28 @@ export async function importBookmarks(options: ImportOptions): Promise<ImportRes
         totalFoldersCreated++;
       }
 
+      // Unwrap redundant browser system roots (e.g. "Barra de favoritos" / "Bookmarks bar")
+      const SYSTEM_ROOT_NAMES = new Set([
+        'barra de favoritos',
+        'outros favoritos',
+        'favoritos móveis',
+        'favoritos moveis',
+        'bookmarks bar',
+        'other bookmarks',
+        'mobile bookmarks',
+        'bookmarks toolbar',
+      ]);
+
+      let itemsToImport = parsedRootNodes;
+      if (
+        parsedRootNodes.length === 1 &&
+        !parsedRootNodes[0].url &&
+        SYSTEM_ROOT_NAMES.has(parsedRootNodes[0].title.toLowerCase().trim()) &&
+        parsedRootNodes[0].children
+      ) {
+        itemsToImport = parsedRootNodes[0].children;
+      }
+
       let processedCount = 0;
 
       async function importRecursive(items: ParsedBookmarkItem[], targetParent: string) {
@@ -210,21 +245,31 @@ export async function importBookmarks(options: ImportOptions): Promise<ImportRes
               onProgress(processedCount, totalToProcess, item.title);
             }
           } else {
-            // Folder
-            const created = await bookmarksService.create({
-              parentId: targetParent,
-              title: item.title,
-            });
-            totalFoldersCreated++;
+            // Folder title sanitization and Title Case
+            const cleanFolderTitle = capitalizeFolderWords(item.title);
+            const folderKey = `${targetParent}:${cleanFolderTitle.toLowerCase()}`;
+            let folderId: string;
+
+            if (existingFolderMap.has(folderKey)) {
+              folderId = existingFolderMap.get(folderKey)!;
+            } else {
+              const created = await bookmarksService.create({
+                parentId: targetParent,
+                title: cleanFolderTitle,
+              });
+              folderId = created.id;
+              existingFolderMap.set(folderKey, folderId);
+              totalFoldersCreated++;
+            }
 
             if (item.children && item.children.length > 0) {
-              await importRecursive(item.children, created.id);
+              await importRecursive(item.children, folderId);
             }
           }
         }
       }
 
-      await importRecursive(parsedRootNodes, baseTargetParentId);
+      await importRecursive(itemsToImport, baseTargetParentId);
     }
 
     return {

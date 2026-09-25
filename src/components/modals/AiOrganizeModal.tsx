@@ -19,6 +19,7 @@ import {
   Terminal,
   AlertCircle,
   XOctagon,
+  FolderTree,
 } from 'lucide-react';
 import { Modal } from '../common/Modal';
 import { BookmarkNode } from '../../types/bookmarks';
@@ -123,6 +124,10 @@ export const AiOrganizeModal: React.FC<AiOrganizeModalProps> = ({
 
   // Track collapsed master categories in preview
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
+
+  // Copy feedback state for chat
+  const [copiedChat, setCopiedChat] = useState(false);
+  const [copiedMsgIndex, setCopiedMsgIndex] = useState<number | null>(null);
 
   const toggleCategoryCollapse = (category: string) => {
     setCollapsedCategories((prev) => {
@@ -427,6 +432,102 @@ Você pode clicar na aba **"Organizar Favoritos"** a qualquer momento para gerar
     }
   };
 
+  const handleCopyEntireChat = async () => {
+    try {
+      const formatted = chatMessages
+        .map(
+          (m) =>
+            `${m.role === 'user' ? 'Você' : `Mini-Agente IA (${ollamaStatus.connected ? ollamaConfig.model : 'Heurístico'})`}:\n${m.content}`
+        )
+        .join('\n\n---\n\n');
+      await navigator.clipboard.writeText(formatted);
+      setCopiedChat(true);
+      setTimeout(() => setCopiedChat(false), 2000);
+    } catch {
+      // Fallback
+    }
+  };
+
+  const handleCopyMessage = async (content: string, index: number) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedMsgIndex(index);
+      setTimeout(() => setCopiedMsgIndex(null), 2000);
+    } catch {
+      // Fallback
+    }
+  };
+
+  const handleExecuteDirectFromChat = async () => {
+    if (applying || analyzing) return;
+    try {
+      setApplying(true);
+      setError(null);
+
+      // 1. Generate plan if not already present
+      let activePlan = plan;
+      if (!activePlan) {
+        setAnalyzing(true);
+        const existingNames = new Set(allFolders.map((f) => f.title.toLowerCase()));
+        const itemsPayload = itemsToOrganize.map((item) => ({
+          id: item.id,
+          title: item.title,
+          url: item.url || '',
+          folderPath: item.parentId && parentPathMap ? parentPathMap.get(item.parentId) : undefined,
+        }));
+
+        const result = await generateAiPlan(
+          itemsPayload,
+          existingNames,
+          selectedEngine === 'ollama' && ollamaStatus.connected ? ollamaConfig : undefined,
+          selectedEngine
+        );
+        activePlan = result.plan;
+        setPlan(activePlan);
+        setAnalyzing(false);
+      }
+
+      if (activePlan) {
+        setApplyProgress({ current: 0, total: activePlan.moves.length, percent: 0 });
+        await createLocalSnapshot('Snapshot prévio à Organização via Mini-Agente');
+
+        const res = await onApplyPlan(
+          activePlan,
+          (current, total, percentage) => {
+            setApplyProgress({ current, total, percent: percentage });
+          },
+          cleanEmptyFolders,
+          sortAlphabetical
+        );
+
+        if (res) {
+          const successMsg: ChatMessage = {
+            role: 'assistant',
+            content: `✅ **Organização aplicada com sucesso nos favoritos!**\n\n- **${res.movedCount}** favoritos organizados e movidos\n- **${res.createdFoldersCount}** pastas e subpastas criadas/reutilizadas\n- **${res.prunedFoldersCount}** pastas vazias limpas\n\nSeus favoritos no Microsoft Edge já estão organizados e sincronizados! 🎉`,
+            timestamp: Date.now(),
+          };
+          setChatMessages((prev) => [...prev, successMsg]);
+          setCompletedResult({
+            movedCount: res.movedCount,
+            prunedFoldersCount: res.prunedFoldersCount,
+          });
+        }
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Falha ao aplicar organização diretamente do chat');
+    } finally {
+      setApplying(false);
+      setAnalyzing(false);
+    }
+  };
+
+  const handleApplyFromChat = () => {
+    setActiveTab('organize');
+    if (!plan && !analyzing) {
+      handleAnalyze();
+    }
+  };
+
   useEffect(() => {
     chatMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages, isChatting]);
@@ -447,7 +548,7 @@ Você pode clicar na aba **"Organizar Favoritos"** a qualquer momento para gerar
         masterMap.set(master, new Map());
       }
       const subMap = masterMap.get(master)!;
-      const subKey = sub || '(Geral)';
+      const subKey = sub || '(Pasta Principal)';
       if (!subMap.has(subKey)) {
         subMap.set(subKey, []);
       }
@@ -462,7 +563,10 @@ Você pode clicar na aba **"Organizar Favoritos"** a qualquer momento para gerar
           .sort(([a], [b]) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }))
           .map(([subfolderName, items]) => {
             totalItems += items.length;
-            const fullPath = subfolderName === '(Geral)' ? masterCategory : `${masterCategory} / ${subfolderName}`;
+            const fullPath =
+              subfolderName === '(Pasta Principal)'
+                ? masterCategory
+                : `${masterCategory} / ${subfolderName}`;
             return { subfolderName, fullPath, items };
           });
 
@@ -635,6 +739,39 @@ Você pode clicar na aba **"Organizar Favoritos"** a qualquer momento para gerar
               )}
             </button>
           )}
+        </div>
+      )}
+
+      {activeTab === 'chat_agent' && (
+        <div className="flex items-center space-x-2">
+          <button
+            type="button"
+            onClick={handleCopyEntireChat}
+            className="px-3 py-2 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition-colors cursor-pointer text-xs font-medium flex items-center space-x-1.5"
+            title="Copiar toda a conversa"
+          >
+            {copiedChat ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+            <span>{copiedChat ? 'Copiado!' : 'Copiar Conversa'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleExecuteDirectFromChat}
+            disabled={analyzing || applying}
+            className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold rounded-lg transition-all shadow-md hover:shadow-lg disabled:opacity-50 cursor-pointer flex items-center space-x-2 text-xs"
+          >
+            {applying ? (
+              <>
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                <span>Aplicando... {applyProgress ? `${applyProgress.percent}%` : ''}</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>⚡ Aplicar Organização Agora</span>
+              </>
+            )}
+          </button>
         </div>
       )}
     </div>
@@ -920,7 +1057,11 @@ Você pode clicar na aba **"Organizar Favoritos"** a qualquer momento para gerar
                               <div key={subgroup.fullPath} className="pl-3 border-l-2 border-indigo-200 dark:border-indigo-900/60">
                                 <div className="flex items-center space-x-1.5 font-semibold text-slate-700 dark:text-slate-200 mb-1">
                                   <FolderOpen className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                                  <span className="text-[11px]">{capitalizeFolderWords(subgroup.subfolderName)}</span>
+                                  <span className="text-[11px]">
+                                    {subgroup.subfolderName === '(Pasta Principal)'
+                                      ? `(Raiz de ${capitalizeFolderWords(masterGroup.masterCategory)})`
+                                      : capitalizeFolderWords(subgroup.subfolderName)}
+                                  </span>
                                   <span className="text-[10px] text-slate-400 font-normal">
                                     ({subgroup.items.length})
                                   </span>
@@ -1026,20 +1167,41 @@ Você pode clicar na aba **"Organizar Favoritos"** a qualquer momento para gerar
           <div className="space-y-3">
             {renderOllamaBar()}
 
-            {/* Quick prompts chips */}
-            <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 text-[11px] no-scrollbar">
-              <span className="text-slate-400 shrink-0 font-medium">Perguntas rápidas:</span>
-              {MINI_AGENT_QUICK_CHIPS.map((chip, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => handleSendChatMessage(chip)}
-                  disabled={isChatting}
-                  className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-violet-100 dark:hover:bg-violet-950/60 text-slate-700 dark:text-slate-300 hover:text-violet-700 dark:hover:text-violet-300 rounded-full transition-colors shrink-0 border border-slate-200 dark:border-slate-700 cursor-pointer"
-                >
-                  {chip}
-                </button>
-              ))}
+            {/* Quick prompts & Copy Entire Chat */}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 text-[11px] no-scrollbar flex-1 min-w-[200px]">
+                <span className="text-slate-400 shrink-0 font-medium">Perguntas rápidas:</span>
+                {MINI_AGENT_QUICK_CHIPS.map((chip, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => handleSendChatMessage(chip)}
+                    disabled={isChatting}
+                    className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-violet-100 dark:hover:bg-violet-950/60 text-slate-700 dark:text-slate-300 hover:text-violet-700 dark:hover:text-violet-300 rounded-full transition-colors shrink-0 border border-slate-200 dark:border-slate-700 cursor-pointer"
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={handleCopyEntireChat}
+                className="px-2.5 py-1 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold transition-all flex items-center space-x-1.5 shrink-0 cursor-pointer shadow-2xs"
+                title="Copiar toda a conversa"
+              >
+                {copiedChat ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-500" />
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">Copiado!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Copiar Conversa</span>
+                  </>
+                )}
+              </button>
             </div>
 
             {/* Chat Box */}
@@ -1056,17 +1218,82 @@ Você pode clicar na aba **"Organizar Favoritos"** a qualquer momento para gerar
                         : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 shadow-2xs'
                     }`}
                   >
-                    <div className="flex items-center space-x-1.5 font-bold mb-1 opacity-80 text-[10px]">
-                      {msg.role === 'user' ? (
-                        <span>Você</span>
-                      ) : (
-                        <>
-                          <Bot className="w-3 h-3 text-violet-500" />
-                          <span>Mini-Agente IA ({ollamaStatus.connected ? ollamaConfig.model : 'Heurístico'})</span>
-                        </>
-                      )}
+                    <div className="flex items-center justify-between font-bold mb-1 opacity-80 text-[10px]">
+                      <div className="flex items-center space-x-1.5">
+                        {msg.role === 'user' ? (
+                          <span>Você</span>
+                        ) : (
+                          <>
+                            <Bot className="w-3 h-3 text-violet-500" />
+                            <span>Mini-Agente IA ({ollamaStatus.connected ? ollamaConfig.model : 'Heurístico'})</span>
+                          </>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyMessage(msg.content, index)}
+                        className={`text-[10px] flex items-center space-x-1 transition-colors cursor-pointer ${
+                          msg.role === 'user'
+                            ? 'text-sky-200 hover:text-white'
+                            : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                        }`}
+                        title="Copiar mensagem"
+                      >
+                        {copiedMsgIndex === index ? (
+                          <>
+                            <Check className="w-3 h-3 text-emerald-400" />
+                            <span className="text-emerald-400 font-bold">Copiado</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3" />
+                            <span>Copiar</span>
+                          </>
+                        )}
+                      </button>
                     </div>
+
                     <div className="whitespace-pre-wrap">{msg.content}</div>
+
+                    {msg.role === 'assistant' && (
+                      <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-700/80 flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={handleExecuteDirectFromChat}
+                            disabled={applying || analyzing}
+                            className="px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-lg font-bold text-[11px] transition-all flex items-center space-x-1.5 shadow-xs cursor-pointer disabled:opacity-50"
+                          >
+                            {applying ? (
+                              <>
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                <span>Aplicando... {applyProgress ? `${applyProgress.percent}%` : ''}</span>
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="w-3.5 h-3.5" />
+                                <span>⚡ Aplicar Organização Agora</span>
+                              </>
+                            )}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={handleApplyFromChat}
+                            className="px-2.5 py-1.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-650 text-slate-700 dark:text-slate-200 rounded-lg font-medium text-[11px] transition-all flex items-center space-x-1 cursor-pointer"
+                          >
+                            <FolderTree className="w-3.5 h-3.5 text-sky-500" />
+                            <span>Revisar na Árvore</span>
+                          </button>
+                        </div>
+
+                        <span className="text-[10px] text-slate-400">
+                          {applying
+                            ? `Movendo ${applyProgress?.current || 0}/${applyProgress?.total || 0}...`
+                            : 'Aplica as subpastas nos seus favoritos'}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
