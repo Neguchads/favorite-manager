@@ -22,7 +22,7 @@ import { downloadJsonFile, exportBookmarksToJson } from './services/backup';
 import { downloadMarkdownAwesomeList } from './services/backup/markdownExporter';
 import { AiProposedPlan } from './ai/types';
 import { executeAiPlanWithHierarchy } from './services/bookmarks';
-import { openUrlsInNewWindow, openUrlsInIncognitoWindow } from './services/tabs/workspaceTabs';
+import { openUrlInNewTab, openUrlsInNewWindow, openUrlsInIncognitoWindow } from './services/tabs/workspaceTabs';
 
 export const App: React.FC = () => {
   const {
@@ -193,6 +193,38 @@ export const App: React.FC = () => {
         } else if (e.key === 'Delete' && selectedIds.size > 0) {
           e.preventDefault();
           handlePromptDeleteMultiple();
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          if (displayedItems.length === 0) return;
+          const currentIndex = selectedItem ? displayedItems.findIndex((i) => i.id === selectedItem.id) : -1;
+          const nextIndex = currentIndex < displayedItems.length - 1 ? currentIndex + 1 : 0;
+          setSelectedItem(displayedItems[nextIndex]);
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (displayedItems.length === 0) return;
+          const currentIndex = selectedItem ? displayedItems.findIndex((i) => i.id === selectedItem.id) : 0;
+          const prevIndex = currentIndex > 0 ? currentIndex - 1 : displayedItems.length - 1;
+          setSelectedItem(displayedItems[prevIndex]);
+        } else if (e.key === 'Enter' && selectedItem?.url) {
+          e.preventDefault();
+          if (e.shiftKey) {
+            openUrlsInNewWindow([selectedItem.url]);
+          } else {
+            openUrlInNewTab(selectedItem.url);
+          }
+        } else if (e.key === ' ' && displayedItems.length > 0) {
+          e.preventDefault();
+          if (!selectedItem) {
+            setSelectedItem(displayedItems[0]);
+          } else {
+            setSelectedItem(null);
+          }
+        } else if (e.key === 'Escape') {
+          if (selectedIds.size > 0 || selectedItem) {
+            e.preventDefault();
+            clearSelection();
+            setSelectedItem(null);
+          }
         }
       }
     };
@@ -203,7 +235,7 @@ export const App: React.FC = () => {
     }
 
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [displayedItems, selectedIds, selectAll]);
+  }, [displayedItems, selectedIds, selectedItem, selectAll, clearSelection, setSelectedItem]);
 
   // Export selected to JSON
   const handleExportSelected = () => {

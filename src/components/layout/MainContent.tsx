@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import {
   Folder,
   Plus,
@@ -241,6 +242,65 @@ export const MainContent: React.FC<MainContentProps> = ({
     allCurrentSelectable.every((i: BookmarkNode) => selectedIds.has(i.id));
   const someSelected = allCurrentSelectable.some((i: BookmarkNode) => selectedIds.has(i.id));
   const allSubfoldersExpanded = subfolders.length > 0 && expandedFolderIds.size === subfolders.length;
+
+  // Scroll container and subfolders measurement for virtualization
+  const parentRef = useRef<HTMLDivElement>(null);
+  const subfoldersRef = useRef<HTMLDivElement>(null);
+  const [subfoldersHeight, setSubfoldersHeight] = useState(0);
+
+  useEffect(() => {
+    if (subfoldersRef.current && subfolders.length > 0) {
+      setSubfoldersHeight(subfoldersRef.current.offsetHeight);
+    } else {
+      setSubfoldersHeight(0);
+    }
+  }, [subfolders.length, viewMode, allSubfoldersExpanded, expandedFolderIds]);
+
+  // Responsive column count for grid virtualization
+  const [gridCols, setGridCols] = useState(3);
+  useEffect(() => {
+    const el = parentRef.current;
+    if (!el) return;
+    const updateCols = () => {
+      const w = el.clientWidth;
+      if (w >= 1024) setGridCols(4);
+      else if (w >= 768) setGridCols(3);
+      else if (w >= 640) setGridCols(2);
+      else setGridCols(1);
+    };
+    updateCols();
+    const ro = new ResizeObserver(updateCols);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // Grid rows chunked by column count
+  const gridRows = useMemo(() => {
+    if (viewMode !== 'cards') return [];
+    const rows: BookmarkNode[][] = [];
+    for (let i = 0; i < items.length; i += gridCols) {
+      rows.push(items.slice(i, i + gridCols));
+    }
+    return rows;
+  }, [items, gridCols, viewMode]);
+
+  // Row virtualizer for list mode (44px estimated row height)
+  const rowVirtualizer = useVirtualizer({
+    count: items.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 44,
+    overscan: 10,
+    scrollMargin: subfoldersHeight,
+  });
+
+  // Row virtualizer for grid mode (140px estimated card row height)
+  const gridVirtualizer = useVirtualizer({
+    count: gridRows.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 140,
+    overscan: 5,
+    scrollMargin: subfoldersHeight,
+  });
 
   // Renders the internal content of any expanded folder (both subfolders and internal bookmarks)
   const renderFolderInternalContent = (folderNode: BookmarkNode) => {
@@ -533,12 +593,13 @@ export const MainContent: React.FC<MainContentProps> = ({
 
       {/* Items Container with Context Menu on background */}
       <div
+        ref={parentRef}
         onContextMenu={handleBackgroundContextMenu}
         className="flex-1 overflow-y-auto"
       >
         {/* Subfolders Section with Expand All toggle (Visualizador de pastas estilo edge://favorites/) */}
         {subfolders.length > 0 && (
-          <div className="p-4 border-b border-slate-100 dark:border-slate-800/80">
+          <div ref={subfoldersRef} className="p-4 border-b border-slate-100 dark:border-slate-800/80">
             <div className="flex items-center justify-between mb-2">
               <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 {t('main.foldersSection')} ({subfolders.length})
@@ -652,48 +713,99 @@ export const MainContent: React.FC<MainContentProps> = ({
             )}
           </div>
         ) : viewMode === 'list' ? (
-          <div className="divide-y divide-slate-100 dark:divide-slate-800/80">
-            {items.map((item) => {
+          <div
+            style={{
+              height: `${rowVirtualizer.getTotalSize()}px`,
+              width: '100%',
+              position: 'relative',
+            }}
+          >
+            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+              const item = items[virtualRow.index];
+              if (!item) return null;
               const folderPath = item.parentId ? parentPathMap.get(item.parentId) : '';
               return (
-                <BookmarkItemRow
+                <div
                   key={item.id}
-                  item={item}
-                  folderPath={folderPath}
-                  isSelected={selectedIds.has(item.id)}
-                  selectedIds={selectedIds}
-                  isInspected={selectedItem?.id === item.id}
-                  onToggleSelect={onToggleSelect}
-                  onInspect={onInspect}
-                  onEdit={onEdit}
-                  onDelete={onDelete}
-                  onMove={onOpenMoveModal}
-                  onMoveToTarget={onMoveToTarget}
-                  onContextMenu={handleBookmarkContextMenu}
-                />
+                  ref={rowVirtualizer.measureElement}
+                  data-index={virtualRow.index}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    transform: `translateY(${virtualRow.start - (rowVirtualizer.options.scrollMargin || 0)}px)`,
+                  }}
+                >
+                  <BookmarkItemRow
+                    item={item}
+                    folderPath={folderPath}
+                    isSelected={selectedIds.has(item.id)}
+                    selectedIds={selectedIds}
+                    isInspected={selectedItem?.id === item.id}
+                    onToggleSelect={onToggleSelect}
+                    onInspect={onInspect}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                    onMove={onOpenMoveModal}
+                    onMoveToTarget={onMoveToTarget}
+                    onContextMenu={handleBookmarkContextMenu}
+                  />
+                </div>
               );
             })}
           </div>
         ) : (
-          <div className="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {items.map((item) => {
-              const folderPath = item.parentId ? parentPathMap.get(item.parentId) : '';
+          <div
+            className="p-4"
+            style={{
+              height: `${gridVirtualizer.getTotalSize()}px`,
+              width: '100%',
+              position: 'relative',
+            }}
+          >
+            {gridVirtualizer.getVirtualItems().map((virtualRow) => {
+              const row = gridRows[virtualRow.index];
+              if (!row) return null;
               return (
-                <BookmarkCard
-                  key={item.id}
-                  item={item}
-                  folderPath={folderPath}
-                  isSelected={selectedIds.has(item.id)}
-                  selectedIds={selectedIds}
-                  isInspected={selectedItem?.id === item.id}
-                  onToggleSelect={onToggleSelect}
-                  onInspect={onInspect}
-                  onEdit={onEdit}
-                  onDelete={onDelete}
-                  onMove={onOpenMoveModal}
-                  onMoveToTarget={onMoveToTarget}
-                  onContextMenu={handleBookmarkContextMenu}
-                />
+                <div
+                  key={virtualRow.index}
+                  ref={gridVirtualizer.measureElement}
+                  data-index={virtualRow.index}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    transform: `translateY(${virtualRow.start - (gridVirtualizer.options.scrollMargin || 0)}px)`,
+                  }}
+                >
+                  <div
+                    className="grid gap-3 pb-3"
+                    style={{ gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` }}
+                  >
+                    {row.map((item) => {
+                      const folderPath = item.parentId ? parentPathMap.get(item.parentId) : '';
+                      return (
+                        <BookmarkCard
+                          key={item.id}
+                          item={item}
+                          folderPath={folderPath}
+                          isSelected={selectedIds.has(item.id)}
+                          selectedIds={selectedIds}
+                          isInspected={selectedItem?.id === item.id}
+                          onToggleSelect={onToggleSelect}
+                          onInspect={onInspect}
+                          onEdit={onEdit}
+                          onDelete={onDelete}
+                          onMove={onOpenMoveModal}
+                          onMoveToTarget={onMoveToTarget}
+                          onContextMenu={handleBookmarkContextMenu}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
               );
             })}
           </div>

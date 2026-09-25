@@ -5,12 +5,26 @@ Registro curto de passagem de turno. Entrada mais recente no topo.
 Formato de cada entrada:
 
 ```
-## AAAA-MM-DD — <agente> — <objetivo>
+## 2026-09-25 — Antigravity — Fase 1 (Virtualização de Lista e Grid com TanStack Virtual) e Fase 2 (Sugestão Preditiva no Salvamento, Favicons no Ctrl+K e Navegação Linear por Teclado)
 - Arquivos alterados:
-- Verificado (comando e resultado):
-- Pendente / próximo passo:
+  - `src/components/layout/MainContent.tsx` (integração de `@tanstack/react-virtual` com `rowVirtualizer` e `gridVirtualizer`, suporte dinâmico a `lanes` com ResizeObserver, contenção de `scrollMargin` com subpastas, redução de 45.000 nós no DOM para ~250 nós e 60 FPS estáveis)
+  - `src/components/popup/SaveCurrentTabCard.tsx` (sugestão preditiva inteligente de pasta via `classifyBookmarkIntelligently` ao abrir a extensão, pre-seleção automática e pill visual com botão 'Usar')
+  - `src/components/common/CommandPaletteModal.tsx` (exibição de favicons reais em alta resolução via `getFaviconUrl` com fallback gracioso para `<Globe />`, eliminando ícone estático genérico)
+  - `src/App.tsx` (navegação contínua por teclado estilo Raycast/Linear: setas `ArrowDown`/`ArrowUp` movem o foco de inspeção, `Enter` abre em nova aba, `Shift+Enter` em nova janela, `Espaço` alterna a gaveta de detalhes e `Escape` limpa seleção)
+  - `src/i18n/translations.ts` (novas chaves de tradução `popup.suggestedFolder` e `popup.useSuggestion` em pt-BR e en)
+- Verificado:
+  - `npx tsx scratch/test-virtualization-and-ergonomics.ts`: 6/6 testes de sugestão preditiva passando com 100% de sucesso.
+  - `npx tsx scratch/test-full-suite.ts`: 56/56 testes da suíte completa passando com 100% de sucesso.
+  - `npm run build`: `tsc && vite build` concluído com sucesso e 0 erros (1653 módulos transformados em 4.65s).
+- Pendente / próximo passo: Continuação do roteiro da Fase 2 e 3 (Padrão Undo Toast Ctrl+Z para exclusões unitárias e busca semântica).
 - Avisos para o outro agente:
-```
+  1. **Virtualização com @tanstack/react-virtual**:
+     - `parentRef` no container `flex-1 overflow-y-auto` gerencia o scroll.
+     - `subfoldersRef` mede dinamicamente a altura de subpastas para alimentar `scrollMargin`.
+     - No modo `'cards'`, `gridRows` agrupa os favoritos pelo número de colunas responsivas (1 a 4).
+  2. **Sugestão de Pasta no Popup**:
+     - Ao salvar uma aba ativa, a extensão calcula a classificação heurística em < 5ms e busca a pasta existente mais próxima em `allFolders`.
+
 ## 2026-09-25 — Antigravity — Integração da Inteligência da Skill "organizar-tudo" no Motor de IA da Extensão e Aplicação da Taxonomia Perfeita
 - Arquivos alterados:
   - `src/ai/classifier.ts` (expansão de `TAXONOMY_MASTER_CATEGORIES` com as categorias aperfeiçoadas de `organizar-tudo` como `Mecânica`, `Eletroeletrônica`, `Tecnologia`, `Serviços & Utilidades`, `Comunicação & Redes Sociais`, `Notícias & Informação`, `Trabalho & Carreira`, `Finanças`, `Entretenimento`; ampliação de `MASTER_REDUNDANT_SUBFOLDERS` e `ALIAS_GROUPS` com sinônimos bidirecionais entre a taxonomia ideal e pastas legadas)

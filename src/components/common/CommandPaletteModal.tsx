@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Search,
-  Bookmark,
   Sparkles,
   Trash2,
   FileText,
@@ -10,9 +9,29 @@ import {
   ArrowRight,
   ExternalLink,
   ShieldAlert,
+  Globe,
 } from 'lucide-react';
 import { BookmarkNode } from '../../types/bookmarks';
 import { fuzzyContains } from '../../utils/search';
+import { getFaviconUrl } from '../../utils/url';
+
+const BookmarkFavicon: React.FC<{ url?: string }> = ({ url }) => {
+  const [error, setError] = useState(false);
+  const favicon = url ? getFaviconUrl(url) : null;
+
+  if (favicon && !error) {
+    return (
+      <img
+        src={favicon}
+        alt=""
+        onError={() => setError(true)}
+        className="w-4 h-4 rounded-xs object-contain"
+        loading="lazy"
+      />
+    );
+  }
+  return <Globe className="w-3.5 h-3.5 text-slate-400" />;
+};
 
 interface CommandPaletteModalProps {
   isOpen: boolean;
@@ -299,8 +318,8 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                     }`}
                   >
                     <div className="flex items-center space-x-3 min-w-0">
-                      <div className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 shrink-0 text-slate-500">
-                        <Bookmark className="w-4 h-4" />
+                      <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 shrink-0 flex items-center justify-center shadow-xs">
+                        <BookmarkFavicon url={bmRes.item.url} />
                       </div>
                       <div className="truncate">
                         <p className="font-semibold text-slate-800 dark:text-slate-100 truncate">

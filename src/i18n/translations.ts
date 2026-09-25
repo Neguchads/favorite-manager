@@ -150,6 +150,8 @@ export const translations = {
     'popup.saving': 'Salvando...',
     'popup.saved': 'Salvo!',
     'popup.save': 'Salvar',
+    'popup.suggestedFolder': 'Sugerido:',
+    'popup.useSuggestion': 'Usar',
 
     // Side Panel
     'sidepanel.title': 'Favoritos Edge',
@@ -372,6 +374,8 @@ export const translations = {
     'popup.saving': 'Saving...',
     'popup.saved': 'Saved!',
     'popup.save': 'Save',
+    'popup.suggestedFolder': 'Suggested:',
+    'popup.useSuggestion': 'Use',
 
     // Side Panel
     'sidepanel.title': 'Edge Favorites',

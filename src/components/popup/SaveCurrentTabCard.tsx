@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Star, Check, Folder, Trash2, ExternalLink } from 'lucide-react';
+import { Star, Check, Folder, Trash2, ExternalLink, Sparkles } from 'lucide-react';
 import { BookmarkNode } from '../../types/bookmarks';
 import { FolderOption } from '../../hooks/useBookmarks';
 import { extractDomain, getFaviconUrl } from '../../utils/url';
+import { classifyBookmarkIntelligently } from '../../ai/classifier';
 import { useTranslation } from '../../i18n';
 
 interface SaveCurrentTabCardProps {
@@ -36,6 +37,7 @@ export const SaveCurrentTabCard: React.FC<SaveCurrentTabCardProps> = ({
   const [loadingTab, setLoadingTab] = useState(true);
   const [customTitle, setCustomTitle] = useState('');
   const [selectedFolderId, setSelectedFolderId] = useState<string>('1');
+  const [suggestedFolder, setSuggestedFolder] = useState<{ id?: string; path: string } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
   const [isChangingFolder, setIsChangingFolder] = useState(false);
@@ -85,6 +87,41 @@ export const SaveCurrentTabCard: React.FC<SaveCurrentTabCardProps> = ({
       }
     }
   }, [activeSection]);
+
+  // Predictive Folder Recommendation: classify tab intelligently and match with user's folders
+  useEffect(() => {
+    if (!tabInfo?.url) return;
+    const rawSuggested = classifyBookmarkIntelligently(tabInfo.title || '', tabInfo.url);
+    if (!rawSuggested || rawSuggested === 'Outros') return;
+
+    const parts = rawSuggested.split(' / ').map((p) => p.trim().toLowerCase());
+    const master = parts[0];
+    const sub = parts.length > 1 ? parts[parts.length - 1] : '';
+
+    let matchedFolder = allFolders.find(
+      (f) => f.path?.toLowerCase() === rawSuggested.toLowerCase()
+    );
+    if (!matchedFolder && sub) {
+      matchedFolder = allFolders.find(
+        (f) => f.title.toLowerCase() === sub || f.path?.toLowerCase().endsWith(`/${sub}`)
+      );
+    }
+    if (!matchedFolder && master) {
+      matchedFolder = allFolders.find(
+        (f) => f.title.toLowerCase() === master || f.path?.toLowerCase().startsWith(master)
+      );
+    }
+
+    setSuggestedFolder({
+      id: matchedFolder?.id,
+      path: matchedFolder ? (matchedFolder.path || matchedFolder.title) : rawSuggested,
+    });
+
+    // Auto pre-select predicted folder when in root/virtual views
+    if (matchedFolder?.id && (!activeSection || ['all', 'recent'].includes(activeSection))) {
+      setSelectedFolderId(matchedFolder.id);
+    }
+  }, [tabInfo, allFolders, activeSection]);
 
   if (loadingTab || !tabInfo) {
     return null;
@@ -261,6 +298,27 @@ export const SaveCurrentTabCard: React.FC<SaveCurrentTabCardProps> = ({
             className="flex-1 px-2 py-1 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md text-slate-800 dark:text-slate-100 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
           />
         </div>
+
+        {/* Predictive AI Folder Recommendation Pill */}
+        {suggestedFolder && (
+          <div className="flex items-center justify-between px-2 py-1 bg-sky-50/90 dark:bg-sky-950/40 border border-sky-200/80 dark:border-sky-800/60 rounded-md text-[10px] text-sky-800 dark:text-sky-300 transition-all">
+            <div className="flex items-center space-x-1.5 truncate">
+              <Sparkles className="w-3 h-3 text-sky-500 shrink-0" />
+              <span className="font-medium text-slate-500 dark:text-slate-400 shrink-0">{t('popup.suggestedFolder') || 'Sugerido:'}</span>
+              <span className="font-semibold text-sky-700 dark:text-sky-200 truncate">{suggestedFolder.path}</span>
+            </div>
+            {suggestedFolder.id && selectedFolderId !== suggestedFolder.id && (
+              <button
+                type="button"
+                onClick={() => setSelectedFolderId(suggestedFolder.id!)}
+                className="ml-1.5 px-1.5 py-0.5 bg-sky-600 hover:bg-sky-500 text-white rounded font-medium shrink-0 transition-colors cursor-pointer"
+                title="Aplicar pasta sugerida"
+              >
+                {t('popup.useSuggestion') || 'Usar'}
+              </button>
+            )}
+          </div>
+        )}
 
         <div className="flex items-center space-x-1.5 pt-0.5">
           <div className="relative flex-1 min-w-0">
