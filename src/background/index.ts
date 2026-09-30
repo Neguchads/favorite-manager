@@ -52,7 +52,7 @@ async function setupOllamaOriginRule() {
 setupOllamaOriginRule();
 
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('Edge Favorite Manager installed successfully');
+  console.log('Favorite Manager installed successfully');
   setupOllamaOriginRule();
 
   // Configure side panel behavior if API is present
@@ -141,7 +141,7 @@ chrome.bookmarks.onCreated.addListener(async (id, bookmark) => {
         chrome.notifications.create({
           type: 'basic',
           iconUrl: 'icons/icon48.png',
-          title: '⚡ Edge Favorite Manager',
+          title: '⚡ Favorite Manager',
           message: `Favorito salvo e organizado em:\n📁 ${targetCategory}`,
           priority: 1,
         });

@@ -2,6 +2,12 @@
 
 Registro curto de passagem de turno. Entrada mais recente no topo.
 
+## 2026-09-30 — Claude Code — CI, versão única, ficha da loja e novo nome
+- Arquivos alterados: `.github/workflows/ci.yml` (testes + build em PR e push na `main`), `scripts/manifestVersion.ts` (versão do `package.json` gravada no `dist/manifest.json`; `public/manifest.json` fica `0.0.0`), `docs/LOJA.md` (ficha da loja + URL da política no gist), `public/rules/ollama_cors.json` (apagado). Nome da extensão trocado para **Favorite Manager** no manifest, HTMLs, textos da UI, exportador Markdown e docs.
+- Verificado: `npm test` 40/40, `npm run build`, CI verde nos PRs #2–#4 (mesclados).
+- Pendente: teste manual no Edge (Tarefa E5 do `ROADMAP.md`) e primeiro envio no Partner Center. Política de privacidade publicada em https://gist.github.com/Neguchads/c5a554a1d03ea38f4840eb0a9d331521 — ao mudar `docs/PRIVACIDADE.md`, atualizar o gist.
+- Avisos: o usuário autorizou entrega automática (commit, push, PR, merge após CI verde, pull na pasta principal).
+
 ## 2026-09-30 — Claude Code — Fase 0 implementada (sem commit)
 - Arquivos alterados:
   - Testes (novo): `tests/` com 11 arquivos, Vitest. Configuração em `package.json` (`npm test`, `npm run package`), `vite.config.ts` e `tsconfig.json`.

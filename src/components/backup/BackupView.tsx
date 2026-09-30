@@ -126,7 +126,7 @@ export const BackupView: React.FC<BackupViewProps> = ({ tree, onRefresh, folders
             Segurança, Backup e Importação de Favoritos
           </h3>
           <p className="text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
-            O Edge Favorite Manager gera automaticamente snapshots antes de qualquer operação em massa.
+            O Favorite Manager gera automaticamente snapshots antes de qualquer operação em massa.
             Você pode importar arquivos HTML de favoritos de qualquer navegador, exportar em múltiplos formatos e restaurar snapshots instantaneamente.
           </p>
         </div>

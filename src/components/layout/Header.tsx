@@ -118,7 +118,7 @@ export const Header: React.FC<HeaderProps> = ({
             <div>
               <div className="flex items-center space-x-2">
                 <span className="font-bold text-slate-800 dark:text-slate-100 text-sm tracking-tight">
-                  Edge Favorite Manager
+                  Favorite Manager
                 </span>
                 <span
                   className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${

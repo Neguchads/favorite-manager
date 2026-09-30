@@ -1,4 +1,4 @@
-# 🌟 Edge Favorite Manager
+# 🌟 Favorite Manager
 
 > **Gerenciador profissional, ultrarrápido e inteligente de favoritos para Microsoft Edge (Manifest V3 + React 18 + TypeScript + Tailwind CSS)**
 > 
@@ -8,11 +8,11 @@
 
 ## 🚀 Visão Geral
 
-O **Edge Favorite Manager** substitui e expande o gerenciador nativo do Microsoft Edge, trazendo uma experiência de nível desktop projetada para suportar grandes volumes de dados (**mais de 3.500 favoritos**) com máxima fluidez, privacidade absoluta e ferramentas avançadas de inteligência semântica e manutenção.
+O **Favorite Manager** substitui e expande o gerenciador nativo do Microsoft Edge, trazendo uma experiência de nível desktop projetada para suportar grandes volumes de dados (**mais de 3.500 favoritos**) com máxima fluidez, privacidade absoluta e ferramentas avançadas de inteligência semântica e manutenção.
 
 ```mermaid
 graph LR
-  Edge["Microsoft Edge"] --> EFM["Edge Favorite Manager"]
+  Edge["Microsoft Edge"] --> EFM["Favorite Manager"]
   EFM --> UI["Dashboard Desktop / Side Panel / Pop-up"]
   EFM --> AI["Motor Semântico (99ms) & Ollama Local"]
   EFM --> Clean["Limpeza: Pastas Vazias, 404 & UTM"]
@@ -88,7 +88,7 @@ A pasta pré-compilada `dist/` já está inclusa no projeto e pronta para execu�
 2. No menu lateral esquerdo, ative a chave **"Modo de desenvolvedor"** (*Developer mode*).
 3. Clique em **"Carregar sem compactação"** (*Load unpacked*).
 4. Selecione a pasta **`dist`** deste projeto.
-5. Pronto! O **Edge Favorite Manager** estará ativo na barra de ferramentas.
+5. Pronto! O **Favorite Manager** estará ativo na barra de ferramentas.
 
 ---
 
@@ -137,4 +137,4 @@ edge-favorite-manager/
 
 ---
 
-*Edge Favorite Manager — Organização profissional, privacidade absoluta e máxima performance para os seus favoritos.*
+*Favorite Manager — Organização profissional, privacidade absoluta e máxima performance para os seus favoritos.*

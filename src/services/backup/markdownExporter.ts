@@ -29,7 +29,7 @@ export function generateAwesomeListMarkdown(tree: BookmarkNode[]): string {
   const lines: string[] = [];
   lines.push('# 📚 Meus Favoritos — Coleção Awesome List');
   lines.push('');
-  lines.push(`> Exportado em **${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}** via **Edge Favorite Manager**.`);
+  lines.push(`> Exportado em **${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}** via **Favorite Manager**.`);
   lines.push(`> Total de links: **${totalBookmarks}** | Pastas: **${totalFolders}**`);
   lines.push('');
 
@@ -83,7 +83,7 @@ export function generateAwesomeListMarkdown(tree: BookmarkNode[]): string {
   }
 
   lines.push('---');
-  lines.push('*Gerado com orgulho pelo Edge Favorite Manager.*');
+  lines.push('*Gerado com orgulho pelo Favorite Manager.*');
 
   return lines.join('\n');
 }
