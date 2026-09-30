@@ -10,6 +10,7 @@ vi.mock('../src/services/backup', async (importOriginal) => ({
 }));
 
 import { crossBrowserSyncService } from '../src/services/sync/syncService';
+import { isLegacySyncKey, generateSyncKey } from '../src/services/sync/browserDetect';
 import { deriveSyncMaterial, sealMessage, chunk } from '../src/services/sync/crypto';
 import { bookmarksService } from '../src/services/bookmarks';
 import { BookmarkNode } from '../src/types/bookmarks';
@@ -106,5 +107,52 @@ describe('recebimento de mensagens de sync', () => {
     svc.receive(raw);
     await svc.inbox;
     expect(await findByUrl('https://velha.example/')).toBeNull();
+  });
+});
+
+describe('replay após reconexão', () => {
+  it('payload capturado não recria favorito depois de disconnect + reconexão com a mesma chave', async () => {
+    const raw = await sealMessage(
+      svc.material.key,
+      message('BOOKMARK_CREATED', { title: 'Reconexão', url: 'https://reconexao.example/', folderPath: '' })
+    );
+    svc.receive(raw);
+    await svc.inbox;
+    const created = await findByUrl('https://reconexao.example/');
+    expect(created).not.toBeNull();
+    await bookmarksService.remove(created!.id);
+
+    svc.disconnect();
+    // Reconexão com a mesma chave restaura chave e material
+    svc.syncKey = KEY;
+    svc.material = await deriveSyncMaterial(KEY);
+
+    svc.receive(raw);
+    await svc.inbox;
+    expect(await findByUrl('https://reconexao.example/')).toBeNull();
+  });
+});
+
+describe('chaves legadas (formato curto)', () => {
+  it('isLegacySyncKey reconhece só o formato antigo FAV-0000-XXXX', () => {
+    expect(isLegacySyncKey('FAV-1234-AB12')).toBe(true);
+    expect(isLegacySyncKey(' fav-1234-ab12 ')).toBe(true);
+    expect(isLegacySyncKey(KEY)).toBe(false);
+    expect(isLegacySyncKey(generateSyncKey())).toBe(false);
+    expect(isLegacySyncKey('FAV-ABCD-AB12')).toBe(false);
+    expect(isLegacySyncKey('')).toBe(false);
+  });
+
+  it('connect() recusa chave legada: status error, sem derivar nem conectar', async () => {
+    const Paho = (await import('paho-mqtt')).default as any;
+    Paho.Client.mockClear();
+    const listener = vi.fn();
+    const unsubscribe = svc.subscribe(listener);
+    await svc.connect('FAV-1234-AB12');
+    unsubscribe();
+    expect(svc.getStatus()).toBe('error');
+    expect(listener).toHaveBeenCalled();
+    expect(Paho.Client).not.toHaveBeenCalled();
+    expect(svc.getSyncKey()).not.toBe('FAV-1234-AB12');
   });
 });

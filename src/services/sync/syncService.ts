@@ -1,7 +1,7 @@
 import Paho from 'paho-mqtt';
 import { BookmarkNode } from '../../types/bookmarks';
 import { bookmarksService } from '../bookmarks';
-import { detectBrowserName, getOrCreateInstallationId } from './browserDetect';
+import { detectBrowserName, getOrCreateInstallationId, isLegacySyncKey } from './browserDetect';
 import {
   SyncStatus,
   SyncPeer,
@@ -49,7 +49,9 @@ class CrossBrowserSyncService {
           if (res[STORAGE_SYNC_KEY]) {
             this.syncKey = res[STORAGE_SYNC_KEY];
             this.autoSync = res[STORAGE_AUTO_SYNC] !== false;
-            this.connect(this.syncKey!);
+            // Chave legada fica visível para o aviso na UI, mas não conecta
+            if (!isLegacySyncKey(this.syncKey!)) this.connect(this.syncKey!);
+            this.notify();
           }
         });
       } else {
@@ -58,7 +60,7 @@ class CrossBrowserSyncService {
         if (savedKey) {
           this.syncKey = savedKey;
           this.autoSync = savedAuto !== 'false';
-          this.connect(savedKey);
+          if (!isLegacySyncKey(savedKey)) this.connect(savedKey);
         }
       }
     } catch {}
@@ -106,6 +108,14 @@ class CrossBrowserSyncService {
     const cleanKey = key.trim().toUpperCase();
     if (!cleanKey) return;
 
+    // Chave antiga e curta: recusada sem derivar nem abrir conexão
+    if (isLegacySyncKey(cleanKey)) {
+      console.warn('Sync key in legacy format rejected');
+      this.status = 'error';
+      this.notify();
+      return;
+    }
+
     if (this.client) {
       if (this.client.isConnected() && this.syncKey === cleanKey) return;
       // Cliente antigo (outra chave ou conexão caída): descarta antes de criar outro
@@ -113,6 +123,8 @@ class CrossBrowserSyncService {
     }
     const attempt = ++this.connectAttempt;
 
+    // Histórico anti-replay só vale para a mesma chave: sobrevive a reconexões
+    if (this.syncKey !== cleanKey) this.seenPayloads.clear();
     this.syncKey = cleanKey;
     this.material = null;
     this.status = 'connecting';
@@ -218,7 +230,7 @@ class CrossBrowserSyncService {
       this.client = null;
     }
     this.material = null;
-    this.seenPayloads.clear();
+    // seenPayloads fica: limpar aqui permitiria replay logo após reconectar
     this.status = 'disconnected';
     this.peers.clear();
     this.notify();
@@ -227,6 +239,7 @@ class CrossBrowserSyncService {
   public clearSyncKey() {
     this.disconnect();
     this.syncKey = null;
+    this.seenPayloads.clear();
     try {
       localStorage.removeItem(STORAGE_SYNC_KEY);
       if (typeof chrome !== 'undefined' && chrome.storage?.local) {

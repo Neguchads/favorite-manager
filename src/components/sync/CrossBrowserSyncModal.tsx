@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Modal } from '../common/Modal';
 import { useSync } from '../../hooks/useSync';
+import { isLegacySyncKey } from '../../services/sync';
 
 interface CrossBrowserSyncModalProps {
   isOpen: boolean;
@@ -35,6 +36,7 @@ export const CrossBrowserSyncModal: React.FC<CrossBrowserSyncModalProps> = ({
   } = useSync();
 
   const [inputKey, setInputKey] = useState('');
+  const [inputError, setInputError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [merging, setMerging] = useState(false);
   const [mergeFeedback, setMergeFeedback] = useState<string | null>(null);
@@ -49,7 +51,13 @@ export const CrossBrowserSyncModal: React.FC<CrossBrowserSyncModalProps> = ({
   const handleConnectInput = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputKey.trim()) return;
-    connect(inputKey.trim());
+    if (!connect(inputKey.trim())) {
+      setInputError(
+        'Esta chave é do formato antigo e não é mais aceita. No outro navegador, clique em "Gerar Nova" e cole aqui a nova chave.'
+      );
+      return;
+    }
+    setInputError(null);
     setInputKey('');
   };
 
@@ -206,9 +214,12 @@ export const CrossBrowserSyncModal: React.FC<CrossBrowserSyncModalProps> = ({
             </div>
           ) : null}
 
-          {syncKey && /^FAV-\d{4}-[A-Z0-9]{4}$/.test(syncKey) && (
-            <p className="text-xs text-amber-700 dark:text-amber-400">
-              Esta chave é do formato antigo e curto, mais fácil de adivinhar. Clique em <strong>Gerar Nova</strong> e use a nova chave em todos os navegadores.
+          {syncKey && isLegacySyncKey(syncKey) && (
+            <p
+              role="alert"
+              className="p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-300"
+            >
+              Esta chave é do formato antigo e <strong>não é mais aceita</strong>: a sincronização fica desligada até você trocá-la. Clique em <strong>Gerar Nova</strong> e use a nova chave em todos os navegadores.
             </p>
           )}
 
@@ -231,7 +242,10 @@ export const CrossBrowserSyncModal: React.FC<CrossBrowserSyncModalProps> = ({
               type="text"
               placeholder="Ou cole uma chave existente (ex: FAV-X7K1-M2QP-8ZRT-HN4W-C9DE)"
               value={inputKey}
-              onChange={(e) => setInputKey(e.target.value.toUpperCase())}
+              onChange={(e) => {
+                setInputKey(e.target.value.toUpperCase());
+                setInputError(null);
+              }}
               className="flex-1 px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 font-mono text-xs focus:outline-none focus:border-sky-500"
             />
             <button
@@ -242,6 +256,11 @@ export const CrossBrowserSyncModal: React.FC<CrossBrowserSyncModalProps> = ({
               Conectar
             </button>
           </form>
+          {inputError && (
+            <p role="alert" className="text-xs text-rose-600 dark:text-rose-400">
+              {inputError}
+            </p>
+          )}
         </div>
 
         {/* Real-time Automation and Two-Way Merge */}

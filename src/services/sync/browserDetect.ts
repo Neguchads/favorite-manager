@@ -63,6 +63,13 @@ export function getOrCreateInstallationId(): string {
 }
 
 /**
+ * Chave do formato antigo "FAV-1234-AB12" (~34 bits): fácil de adivinhar, não é mais aceita
+ */
+export function isLegacySyncKey(key: string): boolean {
+  return /^FAV-\d{4}-[A-Z0-9]{4}$/.test(key.trim().toUpperCase());
+}
+
+/**
  * Generates a Sync Key like "FAV-X7K1-M2QP-8ZRT-HN4W-C9DE" (20 random symbols = 100 bits)
  */
 export function generateSyncKey(): string {
