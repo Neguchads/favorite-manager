@@ -2,6 +2,18 @@
 
 Registro curto de passagem de turno. Entrada mais recente no topo.
 
+## 2026-09-30 — Claude Code — Pendências menores fechadas + snapshots em chaves separadas
+- Arquivos alterados:
+  - Sync: `syncService.ts` (proteção contra replay mantida após reconectar; chave antiga `FAV-####-XXXX` recusada), `browserDetect.ts` (`isLegacySyncKey`), `useSync.ts` (`hasLegacyKey`, `connect` devolve boolean), `CrossBrowserSyncModal.tsx`, `Header.tsx`, `Sidebar.tsx`, `translations.ts` (aviso "Chave antiga — gere uma nova").
+  - Teclado: `src/utils/keyboard.ts` (novo: `shouldHandleListShortcut`, `parseSearchHash`), `App.tsx` (menu de contexto bloqueia atalhos, Enter/Espaço em botão não abrem favorito, Esc de overlay usa `preventDefault`, `#search=` reage a `hashchange`), `ContextMenu.tsx` (`role="menu"`), `Modal.tsx`, `CommandPaletteModal.tsx`.
+  - Ollama: `src/background/ollamaRule.ts` (novo, `regexFilter` só porta 11434, inclui `[::1]`), manifest com `http://[::1]:11434/*`.
+  - Importação: `htmlParser.ts` (`isToolbar` via `PERSONAL_TOOLBAR_FOLDER`), `importer.ts` (barra em qualquer idioma).
+  - Snapshots: `backup/index.ts` — cada árvore em `efm_snapshot_<id>`, índice em `efm_snapshots_index`, migração do formato antigo sem perda, `navigator.locks` entre contextos, limpeza de árvores órfãs, falta de espaço sem apagar os snapshots existentes.
+  - Docs: `README.md`, `EXPLICACAO_DO_PROJETO.md`, título do painel lateral.
+- Verificado: `npm test` 72/72, `npm run build`. Trabalho feito em paralelo por 7 subagentes em worktrees e revisado por um revisor separado; os achados Important foram corrigidos.
+- Pendente: teste manual no Edge (inclui migração de snapshots de uma instalação 1.2.0 anterior e o aviso de chave antiga), capturas de tela, logo 300×300, envio no Partner Center.
+- Avisos: snapshots do formato antigo migram na primeira leitura; a chave `efm_snapshots` antiga some só depois que todas as árvores estiverem salvas.
+
 ## 2026-09-30 — Claude Code — CI, versão única, ficha da loja e novo nome
 - Arquivos alterados: `.github/workflows/ci.yml` (testes + build em PR e push na `main`), `scripts/manifestVersion.ts` (versão do `package.json` gravada no `dist/manifest.json`; `public/manifest.json` fica `0.0.0`), `docs/LOJA.md` (ficha da loja + URL da política no gist), `public/rules/ollama_cors.json` (apagado). Nome da extensão trocado para **Favorite Manager** no manifest, HTMLs, textos da UI, exportador Markdown e docs.
 - Verificado: `npm test` 40/40, `npm run build`, CI verde nos PRs #2–#4 (mesclados).
