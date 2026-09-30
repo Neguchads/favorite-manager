@@ -2,6 +2,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
+import { manifestVersionPlugin } from './scripts/manifestVersion';
 
 export default defineConfig({
   base: './',
@@ -9,7 +10,11 @@ export default defineConfig({
     environment: 'node',
     include: ['tests/**/*.test.ts'],
   },
-  plugins: [react()],
+  plugins: [
+    react(),
+    // Versão única: dist/manifest.json recebe a versão do package.json
+    manifestVersionPlugin(resolve(__dirname, 'package.json'), resolve(__dirname, 'dist/manifest.json')),
+  ],
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),

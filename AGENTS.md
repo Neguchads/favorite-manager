@@ -18,6 +18,8 @@ Este arquivo vale para qualquer agente de IA que trabalhe neste projeto.
 - Testes: `npm test` (Vitest, pasta `tests/`, roda contra o `MockBookmarksService`, sem dados pessoais).
 - Pacote para a loja: `npm run package` (gera `Favorite-Manager.zip`, ignorado pelo git).
 - Sem lint: o `tsc` strict do build cobre o essencial.
+- Versão: só no `package.json`. O build grava essa versão em `dist/manifest.json` (`scripts/manifestVersion.ts`); o `0.0.0` de `public/manifest.json` é ignorado.
+- CI: `.github/workflows/ci.yml` roda `npm test` e `npm run build` em todo PR e push na `main`.
 
 ## Estrutura
 
