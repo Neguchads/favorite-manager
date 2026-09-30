@@ -81,12 +81,13 @@ graph LR
 ### 11. 🔄 Sincronização entre Navegadores (Cifrada Ponta a Ponta)
 - Sincroniza favoritos entre Edge, Chrome e Brave com uma chave `FAV-XXXX-XXXX-XXXX-XXXX-XXXX` (20 símbolos aleatórios). Desligada até você gerar ou colar uma chave.
 - Mensagens cifradas com **AES-GCM**; chave de cifra e tópico MQTT derivados da chave de sincronização via **HKDF**. O servidor MQTT público só vê bytes ilegíveis.
-- Catálogo enviado em lotes de 200 itens, com descarte de mensagens antigas (mais de 5 minutos) e de reenvios idênticos (*replay*).
+- Catálogo enviado em lotes de 200 itens, com descarte de mensagens antigas (mais de 5 minutos) e de reenvios idênticos (*replay*), inclusive depois de reconectar.
+- Chaves do formato antigo e curto (`FAV-1234-AB12`) não são mais aceitas: clique em **Gerar Nova** e use a nova chave em todos os navegadores.
 
 ### 🔐 Permissões
-- Fixas: `bookmarks`, `storage`, `unlimitedStorage`, `sidePanel`, `notifications`, `tabs`, `declarativeNetRequest` e acesso apenas ao Ollama local (`localhost:11434` e `127.0.0.1:11434`).
+- Fixas: `bookmarks`, `storage`, `unlimitedStorage`, `sidePanel`, `notifications`, `tabs`, `declarativeNetRequest` e acesso apenas ao Ollama local (`localhost`, `127.0.0.1` e `[::1]`, porta `11434`).
 - Opcional: `<all_urls>`, pedida no primeiro uso de "Escanear Favoritos" ou "Buscar e Atualizar Títulos".
-- O `declarativeNetRequest` só reescreve o cabeçalho `Origin` das chamadas da própria extensão ao Ollama local (regra de sessão, sem regra global de CORS).
+- O `declarativeNetRequest` só reescreve o cabeçalho `Origin` das chamadas da própria extensão ao Ollama local na porta `11434` (regra de sessão com `regexFilter`, sem regra global de CORS).
 
 ---
 

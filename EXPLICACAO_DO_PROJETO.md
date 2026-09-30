@@ -311,7 +311,9 @@ No menu lateral, selecione **Central de Limpeza**. No topo da tela, você encont
 ### 5.8. Snapshots de Segurança e Recuperação de Acidentes
 - A extensão grava um ponto de restauração automático no armazenamento local antes de qualquer alteração estrutural.
 - Na aba **Snapshots & Backups**, você pode visualizar o histórico de todos os snapshots criados com data e hora.
-- Se você realizar uma exclusão por engano, pode criar um novo snapshot manual ou usar a exportação em **JSON** para backup externo.
+- Se você realizar uma exclusão por engano, clique em **Restaurar** no snapshot anterior à exclusão; antes de restaurar, a extensão grava um snapshot do estado atual.
+- São mantidos os 15 snapshots mais recentes. Cada snapshot fica numa chave própria do `chrome.storage.local` (`efm_snapshot_<id>`), com um índice leve em `efm_snapshots_index`; snapshots do formato antigo são migrados automaticamente.
+- Para backup fora do navegador, use a exportação em **JSON** ou **HTML**.
 
 ---
 
@@ -324,7 +326,7 @@ No menu lateral, selecione **Central de Limpeza**. No topo da tela, você encont
 
 ### 5.10. Sincronização entre Navegadores (Cifrada Ponta a Ponta)
 - No menu lateral, abra **Sincronizar (Edge ⇄ Chrome ⇄ Brave)**. O recurso fica desligado até você gerar ou colar uma chave.
-- Clique em **Gerar Chave de Sincronização** em um navegador e cole a mesma chave nos outros. A chave tem o formato `FAV-XXXX-XXXX-XXXX-XXXX-XXXX` (20 símbolos aleatórios, 100 bits).
+- Clique em **Gerar Chave de Sincronização** em um navegador e cole a mesma chave nos outros. A chave tem o formato `FAV-XXXX-XXXX-XXXX-XXXX-XXXX` (20 símbolos aleatórios, 100 bits). Chaves do formato antigo (`FAV-1234-AB12`) são recusadas: gere uma nova e cole nos outros navegadores.
 - As mensagens passam por um servidor MQTT público (`broker.hivemq.com`, via WebSocket seguro), mas saem **cifradas ponta a ponta**:
   - A chave AES-GCM de 256 bits e o tópico MQTT são derivados da chave de sincronização via **HKDF-SHA-256** (Web Crypto nativa, `src/services/sync/crypto.ts`). A chave de sincronização nunca é enviada, e o tópico não a revela.
   - O catálogo de favoritos é enviado em **lotes de 200 itens**, para não passar do tamanho máximo de mensagem do servidor.
@@ -391,10 +393,10 @@ O verificador de links (`health/index.ts`) opera com um pool de concorrência co
 
 ### 6.6. Service Worker Manifest V3, Permissões e Ollama Local
 Ao testar links ou buscar títulos de páginas diretamente do JavaScript de uma página web comum, as políticas de CORS do navegador bloqueariam a requisição. A extensão resolve isso pedindo o mínimo de permissões:
-- **`host_permissions` fixas**: apenas o Ollama local (`http://localhost:11434/*` e `http://127.0.0.1:11434/*`).
+- **`host_permissions` fixas**: apenas o Ollama local (`http://localhost:11434/*`, `http://127.0.0.1:11434/*` e `http://[::1]:11434/*`).
 - **`optional_host_permissions`: `<all_urls>`**: não é pedida na instalação. `src/services/permissions.ts` (`requestAllSitesAccess`) solicita o acesso no primeiro clique em **Escanear Favoritos** (links quebrados) ou **Buscar e Atualizar Títulos** (`src/components/cleanup/CleanupView.tsx`). Se o usuário negar, a ação é cancelada com uma mensagem explicando o motivo.
 - Com a permissão concedida, as requisições são delegadas via `chrome.runtime.sendMessage` para o Service Worker (`background.js`), que executa a checagem sem restrição de CORS e retorna apenas o status ou o `<title>` higienizado para a interface visual.
-- **Ollama**: o Ollama rejeita o `Origin` `chrome-extension://`. Em vez de uma regra global de CORS, `setupOllamaOriginRule()` (`src/background/index.ts`) registra uma regra de sessão do `declarativeNetRequest` que reescreve o cabeçalho `Origin` para `http://localhost` **somente** nas requisições iniciadas pela própria extensão para `localhost`/`127.0.0.1`. As regras dinâmicas antigas, que valiam para qualquer site, são removidas.
+- **Ollama**: o Ollama rejeita o `Origin` `chrome-extension://`. Em vez de uma regra global de CORS, `setupOllamaOriginRule()` (`src/background/index.ts`) registra uma regra de sessão do `declarativeNetRequest` que reescreve o cabeçalho `Origin` para `http://localhost` **somente** nas requisições iniciadas pela própria extensão para `localhost`, `127.0.0.1` ou `[::1]` na porta `11434` (`regexFilter` montado em `src/background/ollamaRule.ts`). As regras dinâmicas antigas, que valiam para qualquer site, são removidas.
 
 ---
 
