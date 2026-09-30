@@ -12,12 +12,13 @@ O **Favorite Manager** substitui e expande o gerenciador nativo do Microsoft Edg
 
 ```mermaid
 graph LR
-  Edge["Microsoft Edge"] --> EFM["Favorite Manager"]
-  EFM --> UI["Dashboard Desktop / Side Panel / Pop-up"]
-  EFM --> AI["Motor Semântico (99ms) & Ollama Local"]
-  EFM --> Clean["Limpeza: Pastas Vazias, 404 & UTM"]
-  EFM --> Quick["Omnibox ('fav') & Paleta (Ctrl+K)"]
-  EFM --> Safe["Snapshots Atômicos Locais"]
+  Edge["Microsoft Edge"] --> FM["Favorite Manager"]
+  FM --> UI["Dashboard Desktop / Side Panel / Pop-up"]
+  FM --> AI["Motor Semântico (99ms) & Ollama Local"]
+  FM --> Clean["Limpeza: Pastas Vazias, 404 & UTM"]
+  FM --> Quick["Omnibox ('fav') & Paleta (Ctrl+K)"]
+  FM --> Safe["Snapshots Atômicos Locais"]
+  FM --> Sync["Sync Cifrado entre Navegadores"]
 ```
 
 ---
@@ -45,6 +46,7 @@ graph LR
 - Identifica páginas fora do ar (`404 Não Encontrado`, `Erro 500+`, falhas de DNS e timeout).
 - Para cada link caído, fornece um atalho direto para o **Wayback Machine (Archive.org)** para recuperar o conteúdo salvo no passado.
 - Exclusão seletiva ou remoção em massa de links mortos.
+- Pede a permissão opcional de acesso a todos os sites só no primeiro uso; a instalação não pede.
 
 ### 4. ⚡ Auto-Organização em Tempo Real (`Ctrl + D`)
 - Listener no Service Worker (`chrome.bookmarks.onCreated`): ao salvar qualquer página pelo navegador (`Ctrl+D` ou estrela), a extensão categoriza e move o link automaticamente para a subpasta correta.
@@ -59,9 +61,10 @@ graph LR
 ### 6. 🏷️ Enriquecedor de Títulos Genéricos
 - Detecta links salvos com nomes como *"Nova guia"*, *"Home"*, *"Início"*, ou que repetem a URL crua.
 - Faz a leitura invisível da tag `<title>` real da página em segundo plano e renomeia o favorito.
+- Usa a mesma permissão opcional de acesso a todos os sites, pedida no primeiro uso.
 
 ### 7. ⌨️ Omnibox do Edge (`fav <termo>`) e Paleta de Comandos (`Ctrl + K`)
-- **Omnibox na barra do Edge**: digite `fav`, aperte `Espaço` e busque favoritos em tempo real direto na barra de navegação.
+- **Omnibox na barra do Edge**: digite `fav`, aperte `Espaço` e busque favoritos em tempo real direto na barra de navegação. As sugestões vêm dos seus favoritos; `Enter` no texto digitado abre a busca da própria extensão (`index.html#search=<termo>`).
 - **Paleta de Comandos (Ctrl+K / Ctrl+Shift+F)**: busca instantânea estilo Spotlight/Raycast com atalhos de teclado (`↑`, `↓`, `Enter`).
 
 ### 8. 📄 Exportador para Markdown (Awesome List `README.md`)
@@ -74,6 +77,16 @@ graph LR
 
 ### 10. 📱 Suporte Completo ao Edge Side Panel
 - Interface responsiva com layout adaptado para a barra lateral do Microsoft Edge, permitindo consultar links sem sair da página de navegação atual.
+
+### 11. 🔄 Sincronização entre Navegadores (Cifrada Ponta a Ponta)
+- Sincroniza favoritos entre Edge, Chrome e Brave com uma chave `FAV-XXXX-XXXX-XXXX-XXXX-XXXX` (20 símbolos aleatórios). Desligada até você gerar ou colar uma chave.
+- Mensagens cifradas com **AES-GCM**; chave de cifra e tópico MQTT derivados da chave de sincronização via **HKDF**. O servidor MQTT público só vê bytes ilegíveis.
+- Catálogo enviado em lotes de 200 itens, com descarte de mensagens antigas (mais de 5 minutos) e de reenvios idênticos (*replay*).
+
+### 🔐 Permissões
+- Fixas: `bookmarks`, `storage`, `unlimitedStorage`, `sidePanel`, `notifications`, `tabs`, `declarativeNetRequest` e acesso apenas ao Ollama local (`localhost:11434` e `127.0.0.1:11434`).
+- Opcional: `<all_urls>`, pedida no primeiro uso de "Escanear Favoritos" ou "Buscar e Atualizar Títulos".
+- O `declarativeNetRequest` só reescreve o cabeçalho `Origin` das chamadas da própria extensão ao Ollama local (regra de sessão, sem regra global de CORS).
 
 ---
 
@@ -113,7 +126,10 @@ npm test
 npm run package
 ```
 
-Política de privacidade: [docs/PRIVACIDADE.md](docs/PRIVACIDADE.md).
+- A versão fica só no `package.json`: o build grava esse número em `dist/manifest.json` (`scripts/manifestVersion.ts`).
+- O CI (`.github/workflows/ci.yml`) roda `npm test` e `npm run build` em todo push na `main` e em todo PR.
+
+Política de privacidade: [docs/PRIVACIDADE.md](docs/PRIVACIDADE.md) (versão pública: https://gist.github.com/Neguchads/c5a554a1d03ea38f4840eb0a9d331521).
 
 ---
 
@@ -121,15 +137,19 @@ Política de privacidade: [docs/PRIVACIDADE.md](docs/PRIVACIDADE.md).
 
 ```text
 favorite-manager/
+├── .github/workflows/      # CI: testes e build
+├── docs/                   # Política de privacidade e documentos da loja
 ├── public/                 # Manifest V3 e ícones da extensão
 ├── src/
 │   ├── ai/                 # Motor Semântico Heurístico (99ms) e Ollama
-│   ├── background/         # Service worker: Omnibox, listener Ctrl+D, CORS fetch
+│   ├── background/         # Service worker: Omnibox, listener Ctrl+D, fetch sem CORS, regra do Ollama
 │   ├── components/         # Componentes React (Layout, Modais, Limpeza, Paleta Ctrl+K)
 │   ├── hooks/              # useBookmarks (estado mestre reativo)
-│   ├── services/           # Regras de negócio: bookmarks, health, cleanup, backup
+│   ├── services/           # Regras de negócio: bookmarks, health, cleanup, backup, sync, permissões
 │   ├── types/              # Interfaces TypeScript
 │   └── utils/              # Utilitários de data, URL e busca difusa
+├── scripts/                # Plugin do Vite que grava a versão no manifest
+├── tests/                  # Testes automatizados (Vitest)
 ├── dist/                   # Build compilado de produção pronto para o Edge
 ├── EXPLICACAO_DO_PROJETO.md# Documentação detalhada da arquitetura e recursos
 └── README.md               # Este arquivo de referência

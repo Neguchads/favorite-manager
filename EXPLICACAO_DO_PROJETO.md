@@ -20,13 +20,14 @@
    - 5.7. [Exportação em Markdown Awesome List (`README.md`)](#57-exportação-em-markdown-awesome-list-readmemd)
    - 5.8. [Snapshots de Segurança e Recuperação de Acidentes](#58-snapshots-de-segurança-e-recuperação-de-acidentes)
    - 5.9. [Uso no Edge Side Panel (Painel Lateral)](#59-uso-no-edge-side-panel-painel-lateral)
+   - 5.10. [Sincronização entre Navegadores (Cifrada Ponta a Ponta)](#510-sincronização-entre-navegadores-cifrada-ponta-a-ponta)
 6. [Como Funciona: Arquitetura, Engenharia e Algoritmos](#-6-como-funciona-arquitetura-engenharia-e-algoritmos)
    - 6.1. [Por que o sistema é ultrarrápido (99ms)?](#61-por-que-o-sistema-é-ultrarrápido-99ms)
    - 6.2. [Movimentação Paralela em Lotes de 25 Operações](#62-movimentação-paralela-em-lotes-de-25-operações)
    - 6.3. [Algoritmo de Pruning Pós-Ordem (Bottom-Up) de Pastas Vazias](#63-algoritmo-de-pruning-pós-ordem-bottom-up-de-pastas-vazias)
    - 6.4. [Sanitização e Higienização de Rastreadores (Regex Engine)](#64-sanitização-e-higienização-de-rastreadores-regex-engine)
    - 6.5. [Scanner Concorrente de Integridade HTTP & Wayback Machine](#65-scanner-concorrente-de-integridade-http--wayback-machine)
-   - 6.6. [Service Worker Manifest V3 e Bypass Seguro de CORS](#66-service-worker-manifest-v3-e-bypass-seguro-de-cors)
+   - 6.6. [Service Worker Manifest V3, Permissões e Ollama Local](#66-service-worker-manifest-v3-permissões-e-ollama-local)
 7. [Como Foi Construído: Stack Tecnológico e Estrutura de Código](#-7-como-foi-construído-stack-tecnológico-e-estrutura-de-código)
 8. [Perguntas Frequentes & Solução de Problemas (FAQ)](#-8-perguntas-frequentes--solução-de-problemas-faq)
 
@@ -76,7 +77,7 @@ O **Favorite Manager** foi concebido a partir da análise exaustiva de um arquiv
 | **Links novos desorganizados** ao salvar | **Auto-Organizador em Tempo Real (`Ctrl + D`)** com notificação nativa |
 | **Medo de perder favoritos** ao fazer mudanças | **Snapshots Atômicos Locais** gravados antes de qualquer operação em massa |
 | **Exportação rudimentar** em HTML obsoleto | **Exportador Awesome List Markdown (`README.md`)** pronto para GitHub/Notion |
-| **Privacidade** comprometida por extensões comerciais | **Arquitetura 100% Local-First**: nenhum dado trafega na internet |
+| **Privacidade** comprometida por extensões comerciais | **Arquitetura Local-First**: sem conta, servidor próprio ou analytics; a sincronização opcional é cifrada ponta a ponta |
 
 ---
 
@@ -246,7 +247,8 @@ Você pode acessar qualquer favorito sem nem mesmo abrir a interface da extensã
    ```
 3. Pressione a tecla **Espaço** ou **Tab**. A barra mudará para o modo `Pesquisar favoritos:`.
 4. Digite qualquer termo (ex: `fav ps3`, `fav scilab`, `fav github`, `fav ccb`).
-5. O Edge exibirá os favoritos correspondentes direto no menu de sugestões. Pressione **Enter** para abrir a página imediatamente!
+5. O Edge exibirá até 6 favoritos correspondentes direto no menu de sugestões. Escolha um e pressione **Enter** para abrir a página imediatamente.
+6. Se você pressionar **Enter** sem escolher uma sugestão, o texto digitado abre a busca da própria extensão (`index.html#search=<termo>`), já preenchida com o termo.
 
 ---
 
@@ -276,9 +278,10 @@ No menu lateral, selecione **Central de Limpeza**. No topo da tela, você encont
 #### Aba 3: Títulos Genéricos
 - Identifica links salvos com nomes como *"Nova guia"*, *"Home"*, *"Início"*, ou links cujo título é a própria URL.
 - Clique em **`[ 🏷️ Buscar e Atualizar Títulos ]`**: o sistema acessa o site em segundo plano, lê o título real da página e atualiza seu favorito automaticamente.
+- No primeiro uso, o Edge pede a permissão opcional de **acesso a todos os sites** (veja a [seção 6.6](#66-service-worker-manifest-v3-permissões-e-ollama-local)). Sem ela, a busca não roda.
 
 #### Aba 4: Links Quebrados & 404 (Wayback Machine)
-- Clique em **`[ Escanear Favoritos ]`**: testa as URLs em paralelo para saber quais páginas continuam no ar.
+- Clique em **`[ Escanear Favoritos ]`**: testa as URLs em paralelo para saber quais páginas continuam no ar. No primeiro uso, o Edge pede a mesma permissão opcional de acesso a todos os sites.
 - Identifica erros de servidor, timeouts e páginas 404 (Não Encontradas).
 - Para cada link caído, fornece o botão **`[ 🏛️ Wayback Machine ]`** para você recuperar com um clique a versão histórica gravada no Archive.org.
 - O botão **`[ Excluir Links Quebrados ]`** permite apagar em massa todos os links mortos detectados.
@@ -316,6 +319,16 @@ No menu lateral, selecione **Central de Limpeza**. No topo da tela, você encont
 - O Favorite Manager foi compilado com suporte nativo ao **Side Panel** do Edge.
 - Ao abrir o painel lateral do Edge, você tem acesso à árvore completa de favoritos, busca e inspetor enquanto continua lendo páginas ou assistindo a vídeos no painel principal.
 - No topo do painel lateral, há um botão com ícone de seta externa para expandir para tela cheia a qualquer momento.
+
+---
+
+### 5.10. Sincronização entre Navegadores (Cifrada Ponta a Ponta)
+- No menu lateral, abra **Sincronizar (Edge ⇄ Chrome ⇄ Brave)**. O recurso fica desligado até você gerar ou colar uma chave.
+- Clique em **Gerar Chave de Sincronização** em um navegador e cole a mesma chave nos outros. A chave tem o formato `FAV-XXXX-XXXX-XXXX-XXXX-XXXX` (20 símbolos aleatórios, 100 bits).
+- As mensagens passam por um servidor MQTT público (`broker.hivemq.com`, via WebSocket seguro), mas saem **cifradas ponta a ponta**:
+  - A chave AES-GCM de 256 bits e o tópico MQTT são derivados da chave de sincronização via **HKDF-SHA-256** (Web Crypto nativa, `src/services/sync/crypto.ts`). A chave de sincronização nunca é enviada, e o tópico não a revela.
+  - O catálogo de favoritos é enviado em **lotes de 200 itens**, para não passar do tamanho máximo de mensagem do servidor.
+  - Mensagens com mais de 5 minutos de diferença de horário são descartadas, e um payload idêntico já recebido é ignorado (proteção contra *replay*).
 
 ---
 
@@ -376,10 +389,12 @@ O verificador de links (`health/index.ts`) opera com um pool de concorrência co
 
 ---
 
-### 6.6. Service Worker Manifest V3 e Bypass Seguro de CORS
-Ao testar links ou buscar títulos de páginas diretamente do JavaScript de uma página web comum, as políticas de CORS do navegador bloqueariam a requisição.
-- O **Favorite Manager** utiliza a permissão `"host_permissions": ["<all_urls>"]` configurada no `manifest.json`.
-- As requisições são delegadas via `chrome.runtime.sendMessage` para o Service Worker (`background.js`), que executa a checagem sem nenhuma restrição de CORS e retorna apenas o status ou o `<title>` higienizado para a interface visual.
+### 6.6. Service Worker Manifest V3, Permissões e Ollama Local
+Ao testar links ou buscar títulos de páginas diretamente do JavaScript de uma página web comum, as políticas de CORS do navegador bloqueariam a requisição. A extensão resolve isso pedindo o mínimo de permissões:
+- **`host_permissions` fixas**: apenas o Ollama local (`http://localhost:11434/*` e `http://127.0.0.1:11434/*`).
+- **`optional_host_permissions`: `<all_urls>`**: não é pedida na instalação. `src/services/permissions.ts` (`requestAllSitesAccess`) solicita o acesso no primeiro clique em **Escanear Favoritos** (links quebrados) ou **Buscar e Atualizar Títulos** (`src/components/cleanup/CleanupView.tsx`). Se o usuário negar, a ação é cancelada com uma mensagem explicando o motivo.
+- Com a permissão concedida, as requisições são delegadas via `chrome.runtime.sendMessage` para o Service Worker (`background.js`), que executa a checagem sem restrição de CORS e retorna apenas o status ou o `<title>` higienizado para a interface visual.
+- **Ollama**: o Ollama rejeita o `Origin` `chrome-extension://`. Em vez de uma regra global de CORS, `setupOllamaOriginRule()` (`src/background/index.ts`) registra uma regra de sessão do `declarativeNetRequest` que reescreve o cabeçalho `Origin` para `http://localhost` **somente** nas requisições iniciadas pela própria extensão para `localhost`/`127.0.0.1`. As regras dinâmicas antigas, que valiam para qualquer site, são removidas.
 
 ---
 
@@ -391,6 +406,8 @@ Ao testar links ou buscar títulos de páginas diretamente do JavaScript de uma 
 - **Tailwind CSS 3**: Interface moderna, limpa, responsiva e com suporte completo a Modo Escuro (*Dark Mode*).
 - **Vite 5**: Bundler de última geração com suporte a múltiplos pontos de entrada HTML e rollup output configurado para Manifest V3.
 - **Lucide React**: Biblioteca de ícones vetoriais leves e consistentes.
+- **Paho MQTT**: Cliente MQTT da sincronização entre navegadores (mensagens cifradas com Web Crypto).
+- **Vitest**: Testes automatizados na pasta `tests/` (`npm test`).
 - **APIs Oficiais do Chromium**:
   - `chrome.bookmarks`: Manipulação direta da base de dados do navegador.
   - `chrome.storage.local`: Snapshots de segurança locais sem limite de cota (`unlimitedStorage`).
@@ -398,14 +415,24 @@ Ao testar links ou buscar títulos de páginas diretamente do JavaScript de uma 
   - `chrome.notifications`: Notificações nativas do sistema operacional no `Ctrl+D`.
   - `chrome.commands`: Atalhos de teclado globais (`Ctrl+Shift+F`).
   - `chrome.sidePanel`: Integração com o painel lateral do Edge.
+  - `chrome.permissions`: Pedido da permissão opcional `<all_urls>` no primeiro uso da verificação de links e da busca de títulos.
+  - `chrome.declarativeNetRequest`: Regra de sessão que ajusta o `Origin` só das chamadas da extensão ao Ollama local.
+
+### Versão, Testes e Integração Contínua:
+- A versão existe **só no `package.json`**. O `public/manifest.json` traz `0.0.0`, e o plugin `scripts/manifestVersion.ts` grava a versão do `package.json` em `dist/manifest.json` ao final do build (aceita apenas números, como `1.2.0`, formato exigido pela loja do Edge).
+- `npm test` roda o Vitest sobre `tests/`; `npm run build` roda `tsc` e `vite build`; `npm run package` faz o build e gera `Favorite-Manager.zip` para a loja.
+- O CI (`.github/workflows/ci.yml`) roda `npm test` e `npm run build` em todo push na `main` e em todo PR.
 
 ### Mapa Detalhado dos Arquivos do Projeto:
 
 ```text
 favorite-manager/
+├── .github/workflows/ci.yml            # CI: testes e build em push na main e em PRs
+├── docs/
+│   └── PRIVACIDADE.md                  # Política de privacidade (pt-BR e inglês)
 ├── public/
 │   ├── icons/                          # Ícones da extensão (16x16, 32x32, 48x48, 128x128 px)
-│   └── manifest.json                   # Manifesto V3 com permissões, omnibox e service worker
+│   └── manifest.json                   # Manifesto V3 (permissões, omnibox, service worker); versão vem do package.json
 ├── src/
 │   ├── ai/                             # Motores de Inteligência e Classificação
 │   │   ├── classifier.ts               # Motor Heurístico Semântico (99ms) com 18 categorias
@@ -413,7 +440,7 @@ favorite-manager/
 │   │   ├── prompts.ts                  # Prompt estruturado para modelos generativos
 │   │   └── types.ts                    # Definições de tipos da taxonomia e do plano proposto
 │   ├── background/
-│   │   └── index.ts                    # Service Worker: Omnibox, listener Ctrl+D, notificações e CORS fetch
+│   │   └── index.ts                    # Service Worker: Omnibox, listener Ctrl+D, notificações, fetch sem CORS e regra do Ollama
 │   ├── components/                     # Componentes React de Interface
 │   │   ├── actionbar/
 │   │   │   └── BatchActionBar.tsx      # Barra flutuante de ações em massa (Mover, Excluir, Exportar)
@@ -462,8 +489,12 @@ favorite-manager/
 │   │   │   └── trackerSanitizer.ts     # Sanitizador de parâmetros de rastreamento (UTM/fbclid)
 │   │   ├── duplicates/
 │   │   │   └── index.ts                # Algoritmo de normalização e clusterização de duplicados
-│   │   └── health/
-│   │       └── index.ts                # Scanner HTTP de links quebrados e integração Archive.org
+│   │   ├── health/
+│   │   │   └── index.ts                # Scanner HTTP de links quebrados e integração Archive.org
+│   │   ├── sync/
+│   │   │   ├── crypto.ts               # Cifra ponta a ponta (AES-GCM + HKDF) e tópico derivado da chave
+│   │   │   └── syncService.ts          # Cliente MQTT: conexão, lotes de 200 e proteção contra replay
+│   │   └── permissions.ts              # Pedido da permissão opcional <all_urls>
 │   ├── types/
 │   │   └── bookmarks.ts                # Interfaces TypeScript centrais do sistema
 │   ├── utils/
@@ -475,6 +506,9 @@ favorite-manager/
 │   ├── main.tsx                        # Ponto de entrada React do dashboard
 │   ├── popup.tsx                       # Ponto de entrada React do popup
 │   └── sidepanel.tsx                   # Ponto de entrada React do painel lateral
+├── scripts/
+│   └── manifestVersion.ts              # Plugin do Vite: grava a versão do package.json em dist/manifest.json
+├── tests/                              # Testes automatizados (Vitest)
 ├── dist/                               # PACOTE FINAL COMPILADO PRONTO PARA O EDGE
 ├── EXPLICACAO_DO_PROJETO.md            # Este manual completo e detalhado
 ├── README.md                           # Documentação resumida do repositório
@@ -500,6 +534,14 @@ favorite-manager/
    npm run build
    ```
 2. Acesse `edge://extensions/` no Edge e clique no botão **Recarregar (seta circular 🔄)** no card da extensão.
+
+Antes de publicar, rode também `npm test`. Para gerar o pacote da loja, use `npm run package` (cria `Favorite-Manager.zip`). Para mudar a versão, edite apenas o campo `version` do `package.json`.
+
+### P: Por que o Edge pede acesso a todos os sites?
+**R**: Só na primeira vez que você usa a verificação de links quebrados (**Escanear Favoritos**) ou a busca de títulos (**Buscar e Atualizar Títulos**). Esses recursos precisam acessar o site de cada favorito. Nada é enviado a terceiros. A instalação em si só pede acesso ao Ollama local (`localhost:11434`).
+
+### P: Onde está a política de privacidade?
+**R**: Em [`docs/PRIVACIDADE.md`](docs/PRIVACIDADE.md), com versão pública em https://gist.github.com/Neguchads/c5a554a1d03ea38f4840eb0a9d331521.
 
 ### P: Preciso do Ollama instalado para a extensão funcionar?
 **R**: **Não.** O **Motor Semântico Ultrarrápido** já vem integrado, não depende de nenhum software externo e organiza toda a sua coleção em milissegundos. O Ollama é apenas uma opção complementar para quem deseja experimentar inteligência generativa local.
