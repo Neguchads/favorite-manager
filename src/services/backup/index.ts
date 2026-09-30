@@ -14,11 +14,271 @@ export interface SnapshotRecord extends SnapshotMetadata {
   data: BookmarkNode[];
 }
 
-const STORAGE_SNAPSHOTS_KEY = 'efm_snapshots';
+// Layout particionado: um índice pequeno só com metadados e uma chave por árvore
+const STORAGE_INDEX_KEY = 'efm_snapshots_index';
+// Formato antigo: um único array com todas as árvores (migrado na primeira leitura)
+const LEGACY_SNAPSHOTS_KEY = 'efm_snapshots';
+const SNAPSHOT_TREE_PREFIX = 'efm_snapshot_';
+const MAX_SNAPSHOTS = 15;
+
+const treeKey = (id: string) => `${SNAPSHOT_TREE_PREFIX}${id}`;
+
+interface SnapshotStorage {
+  get(keys: string[]): Promise<Record<string, any>>;
+  set(items: Record<string, any>): Promise<void>;
+  remove(keys: string[]): Promise<void>;
+  /** Todas as chaves guardadas; usado só na coleta de árvores órfãs. */
+  keys(): Promise<string[]>;
+}
+
+function chromeStorage(): SnapshotStorage {
+  const lastError = () => (typeof chrome !== 'undefined' ? chrome.runtime?.lastError : undefined);
+  return {
+    get: (keys) =>
+      new Promise((resolve) => {
+        chrome.storage.local.get(keys, (res) => resolve(res || {}));
+      }),
+    set: (items) =>
+      new Promise((resolve, reject) => {
+        chrome.storage.local.set(items, () => {
+          const err = lastError();
+          if (err) reject(new Error(err.message));
+          else resolve();
+        });
+      }),
+    remove: (keys) =>
+      new Promise((resolve) => {
+        if (keys.length === 0) return resolve();
+        chrome.storage.local.remove(keys, () => resolve());
+      }),
+    keys: () =>
+      new Promise((resolve) => {
+        const local = chrome.storage.local as any;
+        // getKeys (Chrome 130+) evita carregar todas as árvores só para listar chaves
+        if (typeof local.getKeys === 'function') {
+          local.getKeys((keys: string[] | undefined) => resolve(keys || []));
+        } else {
+          chrome.storage.local.get(null, (res) => resolve(Object.keys(res || {})));
+        }
+      }),
+  };
+}
+
+function webStorage(ls: Storage): SnapshotStorage {
+  return {
+    async get(keys) {
+      const res: Record<string, any> = {};
+      for (const k of keys) {
+        try {
+          const raw = ls.getItem(k);
+          if (raw !== null) res[k] = JSON.parse(raw);
+        } catch {
+          // Valor corrompido é tratado como ausente
+        }
+      }
+      return res;
+    },
+    // Grava na ordem das chaves; QuotaExceededError sobe para o chamador decidir
+    async set(items) {
+      for (const [k, v] of Object.entries(items)) ls.setItem(k, JSON.stringify(v));
+    },
+    async remove(keys) {
+      for (const k of keys) {
+        try {
+          ls.removeItem(k);
+        } catch {
+          // Ignora: remover é melhor esforço
+        }
+      }
+    },
+    async keys() {
+      const res: string[] = [];
+      try {
+        for (let i = 0; i < ls.length; i++) {
+          const k = ls.key(i);
+          if (k !== null) res.push(k);
+        }
+      } catch {
+        // Implementação sem key()/length: sem coleta de órfãs
+      }
+      return res;
+    },
+  };
+}
+
+// Sem chrome.storage nem localStorage (ex.: testes em Node) não há onde guardar
+function getStorage(): SnapshotStorage | null {
+  if (typeof chrome !== 'undefined' && chrome.storage?.local) return chromeStorage();
+  try {
+    if (typeof localStorage !== 'undefined' && localStorage) return webStorage(localStorage);
+  } catch {
+    // Acesso ao localStorage pode lançar (ex.: bloqueado pelo navegador)
+  }
+  return null;
+}
+
+function isQuotaError(e: unknown): boolean {
+  const err = e as { name?: string; code?: number; message?: string } | null;
+  if (!err) return false;
+  return (
+    err.name === 'QuotaExceededError' ||
+    err.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+    err.code === 22 ||
+    err.code === 1014 ||
+    /quota/i.test(err.message ?? '')
+  );
+}
+
+function toMetadata(item: any): SnapshotMetadata {
+  return {
+    id: item.id,
+    timestamp: item.timestamp,
+    label: item.label,
+    totalBookmarks: item.totalBookmarks,
+    totalFolders: item.totalFolders,
+  };
+}
+
+const SNAPSHOT_LOCK_NAME = 'efm_snapshots';
+
+// Popup, side panel e página completa rodam em contextos separados: a Web Locks API
+// serializa entre eles. Sem ela (ex.: Node antigo), vale só a fila em memória.
+function withCrossContextLock<T>(task: () => Promise<T>): Promise<T> {
+  const locks = typeof navigator !== 'undefined' ? navigator?.locks : undefined;
+  if (locks && typeof locks.request === 'function') {
+    return locks.request(SNAPSHOT_LOCK_NAME, task) as Promise<T>;
+  }
+  return task();
+}
+
+// Fila em memória: serializa leitura-modificação-escrita do índice neste contexto
+let indexQueue: Promise<unknown> = Promise.resolve();
+
+function enqueue<T>(task: () => Promise<T>): Promise<T> {
+  const locked = () => withCrossContextLock(task);
+  const run = indexQueue.then(locked, locked);
+  indexQueue = run.catch(() => undefined);
+  return run;
+}
+
+// Coleta de órfãs roda no máximo uma vez por contexto (carregamento de página)
+let orphanCollectionDone = false;
+
+/**
+ * Remove chaves de árvore que nenhum snapshot referencia (ex.: sobra de escrita
+ * concorrente ou de falha no meio). Deve rodar dentro da trava, logo após gravar o índice.
+ */
+async function collectOrphanTrees(storage: SnapshotStorage, index: SnapshotMetadata[]): Promise<void> {
+  if (orphanCollectionDone) return;
+  orphanCollectionDone = true;
+  try {
+    const res = await storage.get([LEGACY_SNAPSHOTS_KEY]);
+    const referenced = new Set(index.map((m) => treeKey(m.id)));
+    // Árvores ainda pendentes de migração continuam protegidas
+    if (Array.isArray(res[LEGACY_SNAPSHOTS_KEY])) {
+      for (const item of res[LEGACY_SNAPSHOTS_KEY]) {
+        if (item && typeof item.id === 'string') referenced.add(treeKey(item.id));
+      }
+    }
+    const orphans = (await storage.keys()).filter(
+      (k) => k.startsWith(SNAPSHOT_TREE_PREFIX) && !referenced.has(k)
+    );
+    await storage.remove(orphans);
+  } catch (e) {
+    console.warn('Não foi possível limpar árvores órfãs de snapshots:', e);
+  }
+}
+
+// Ids únicos mesmo com várias criações no mesmo milissegundo
+let lastIdTimestamp = 0;
+let idSequence = 0;
+
+function nextSnapshotId(now: number): string {
+  if (now === lastIdTimestamp) {
+    idSequence++;
+    return `snapshot_${now}_${idSequence}`;
+  }
+  lastIdTimestamp = now;
+  idSequence = 0;
+  return `snapshot_${now}`;
+}
+
+/** Só para testes: zera a fila, o gerador de ids e a coleta de órfãs. */
+export function __resetSnapshotStateForTests(): void {
+  indexQueue = Promise.resolve();
+  orphanCollectionDone = false;
+  lastIdTimestamp = 0;
+  idSequence = 0;
+}
+
+/**
+ * Lê o índice e, se ainda existir o array legado, divide-o no novo layout.
+ * Deve rodar dentro da fila/trava.
+ *
+ * Regras da migração:
+ * - Só semeia o índice com o legado enquanto a chave do índice não existe. Depois disso,
+ *   item legado fora do índice foi apagado ou descartado pelo limite e não volta.
+ * - O array legado é regravado só com os itens cuja árvore ainda não foi gravada; a chave
+ *   legada só some quando toda árvore referenciada pelo índice existir na própria chave.
+ */
+async function readIndex(storage: SnapshotStorage): Promise<SnapshotMetadata[]> {
+  const res = await storage.get([STORAGE_INDEX_KEY, LEGACY_SNAPSHOTS_KEY]);
+  const hasIndex = Array.isArray(res[STORAGE_INDEX_KEY]);
+  const index: SnapshotMetadata[] = hasIndex ? res[STORAGE_INDEX_KEY] : [];
+  const legacy: any[] | undefined = res[LEGACY_SNAPSHOTS_KEY];
+  if (!Array.isArray(legacy)) return index;
+
+  const merged = [...index];
+  const known = new Set(index.map((m) => m.id));
+  const candidates: any[] = [];
+  const seen = new Set<string>();
+  for (const item of legacy) {
+    if (!item || typeof item.id !== 'string' || seen.has(item.id)) continue;
+    seen.add(item.id);
+    if (known.has(item.id)) {
+      candidates.push(item);
+    } else if (!hasIndex) {
+      // Primeira migração: entra no índice mesmo se a árvore falhar (getSnapshotById recorre ao legado)
+      merged.push(toMetadata(item));
+      known.add(item.id);
+      candidates.push(item);
+    }
+    // Com índice já existente, item fora dele foi apagado/descartado: não reinsere
+  }
+
+  merged.sort((a, b) => b.timestamp - a.timestamp);
+  const dropped = merged.splice(MAX_SNAPSHOTS);
+  const kept = new Set(merged.map((m) => m.id));
+
+  // Confere quais árvores já existem na própria chave e tenta gravar as que faltam
+  const live = candidates.filter((item) => kept.has(item.id));
+  const existing = live.length > 0 ? await storage.get(live.map((item) => treeKey(item.id))) : {};
+  const pending: any[] = [];
+  for (const item of live) {
+    if (existing[treeKey(item.id)] !== undefined) continue;
+    if (!item.data) continue; // Sem árvore no legado: nada a preservar
+    try {
+      await storage.set({ [treeKey(item.id)]: item.data });
+    } catch (e) {
+      pending.push(item);
+      console.warn('Não foi possível migrar o snapshot legado', item.id, e);
+    }
+  }
+
+  try {
+    await storage.set({ [STORAGE_INDEX_KEY]: merged });
+    await storage.remove(dropped.map((m) => treeKey(m.id)));
+    if (pending.length === 0) await storage.remove([LEGACY_SNAPSHOTS_KEY]);
+    else if (pending.length < legacy.length) await storage.set({ [LEGACY_SNAPSHOTS_KEY]: pending });
+  } catch (e) {
+    console.warn('Não foi possível gravar o índice migrado de snapshots:', e);
+  }
+  return merged;
+}
 
 export async function createLocalSnapshot(label: string = 'Snapshot Automático'): Promise<string> {
   const tree = await bookmarksService.getTree();
-  
+
   let bookmarksCount = 0;
   let foldersCount = 0;
 
@@ -29,107 +289,125 @@ export async function createLocalSnapshot(label: string = 'Snapshot Automático'
   }
   tree.forEach(count);
 
-  const snapshotId = `snapshot_${Date.now()}`;
-  const record: SnapshotRecord = {
+  const now = Date.now();
+  const snapshotId = nextSnapshotId(now);
+  const meta: SnapshotMetadata = {
     id: snapshotId,
-    timestamp: Date.now(),
+    timestamp: now,
     label,
     totalBookmarks: bookmarksCount,
     totalFolders: foldersCount,
-    data: tree,
   };
 
-  // Save to chrome.storage.local if available, else localStorage
-  if (typeof chrome !== 'undefined' && chrome.storage?.local) {
-    const existing = await new Promise<Record<string, any>>((resolve) => {
-      chrome.storage.local.get([STORAGE_SNAPSHOTS_KEY], (res) => resolve(res || {}));
-    });
+  const storage = getStorage();
+  if (!storage) return snapshotId;
 
-    const snapshots: any[] = existing[STORAGE_SNAPSHOTS_KEY] || [];
-    snapshots.unshift(record);
-    // Keep max 15 snapshots
-    if (snapshots.length > 15) snapshots.length = 15;
+  try {
+    await enqueue(async () => {
+      const current = await readIndex(storage);
+      const index = [meta, ...current.filter((m) => m.id !== snapshotId)];
+      const trimmed = index.splice(MAX_SNAPSHOTS);
 
-    await new Promise<void>((resolve) => {
-      chrome.storage.local.set({ [STORAGE_SNAPSHOTS_KEY]: snapshots }, () => resolve());
+      // Árvores antigas liberadas para abrir espaço; guardadas em memória para desfazer
+      const evicted: { meta: SnapshotMetadata; tree: unknown }[] = [];
+      let lastError: unknown = null;
+
+      for (;;) {
+        try {
+          // Árvore antes do índice: o índice nunca aponta para uma árvore inexistente
+          await storage.set({ [treeKey(snapshotId)]: tree, [STORAGE_INDEX_KEY]: index });
+          lastError = null;
+          break;
+        } catch (e) {
+          lastError = e;
+          // Só vale descartar antigos por falta de espaço e enquanto houver antigos
+          if (!isQuotaError(e) || index.length <= 1) break;
+          const oldest = index.pop()!;
+          const saved = await storage.get([treeKey(oldest.id)]);
+          evicted.push({ meta: oldest, tree: saved[treeKey(oldest.id)] });
+          await storage.remove([treeKey(oldest.id)]);
+        }
+      }
+
+      if (lastError) {
+        // Falhou: o índice antigo não foi tocado. Remove a árvore nova (sem referência)
+        // e devolve as árvores antigas liberadas durante as tentativas.
+        await storage.remove([treeKey(snapshotId)]);
+        for (const { meta: old, tree: oldTree } of evicted.reverse()) {
+          if (oldTree === undefined) continue;
+          try {
+            await storage.set({ [treeKey(old.id)]: oldTree });
+          } catch (e) {
+            console.warn('Não foi possível devolver a árvore do snapshot', old.id, e);
+          }
+        }
+        if (isQuotaError(lastError)) {
+          console.warn('Snapshot novo não cabe no armazenamento; snapshots existentes mantidos.');
+          return;
+        }
+        throw lastError;
+      }
+
+      // Índice gravado: só agora as árvores excedentes podem sumir
+      await storage.remove(trimmed.map((m) => treeKey(m.id)));
+      await collectOrphanTrees(storage, index);
     });
-  } else {
-    try {
-      const existingStr = localStorage.getItem(STORAGE_SNAPSHOTS_KEY);
-      const snapshots = existingStr ? JSON.parse(existingStr) : [];
-      snapshots.unshift(record);
-      if (snapshots.length > 15) snapshots.length = 15;
-      localStorage.setItem(STORAGE_SNAPSHOTS_KEY, JSON.stringify(snapshots));
-    } catch (e) {
-      console.warn('Could not save snapshot to localStorage:', e);
-    }
+  } catch (e) {
+    // createLocalSnapshot nunca lança: um backup que falha não pode travar a operação que o pediu
+    console.warn('Não foi possível salvar o snapshot:', e);
   }
 
   return snapshotId;
 }
 
 export async function listSnapshots(): Promise<SnapshotMetadata[]> {
-  let list: any[] = [];
-  if (typeof chrome !== 'undefined' && chrome.storage?.local) {
-    const result = await new Promise<Record<string, any>>((resolve) => {
-      chrome.storage.local.get([STORAGE_SNAPSHOTS_KEY], (res) => resolve(res || {}));
-    });
-    list = result[STORAGE_SNAPSHOTS_KEY] || [];
-  } else {
-    try {
-      const str = localStorage.getItem(STORAGE_SNAPSHOTS_KEY);
-      list = str ? JSON.parse(str) : [];
-    } catch {
-      list = [];
-    }
+  const storage = getStorage();
+  if (!storage) return [];
+  try {
+    const index = await enqueue(() => readIndex(storage));
+    return index.map(toMetadata);
+  } catch (e) {
+    console.warn('Não foi possível listar os snapshots:', e);
+    return [];
   }
-
-  return list.map((item) => ({
-    id: item.id,
-    timestamp: item.timestamp,
-    label: item.label,
-    totalBookmarks: item.totalBookmarks,
-    totalFolders: item.totalFolders,
-  }));
 }
 
 export async function getSnapshotById(id: string): Promise<SnapshotRecord | null> {
-  let list: any[] = [];
-  if (typeof chrome !== 'undefined' && chrome.storage?.local) {
-    const result = await new Promise<Record<string, any>>((resolve) => {
-      chrome.storage.local.get([STORAGE_SNAPSHOTS_KEY], (res) => resolve(res || {}));
+  const storage = getStorage();
+  if (!storage) return null;
+  try {
+    return await enqueue(async () => {
+      const meta = (await readIndex(storage)).find((m) => m.id === id);
+      if (!meta) return null;
+      const key = treeKey(id);
+      const res = await storage.get([key, LEGACY_SNAPSHOTS_KEY]);
+      // Se a migração ficou incompleta, a árvore ainda pode estar no array legado
+      const data =
+        res[key] ??
+        (Array.isArray(res[LEGACY_SNAPSHOTS_KEY])
+          ? res[LEGACY_SNAPSHOTS_KEY].find((s: any) => s?.id === id)?.data
+          : undefined);
+      if (!data) return null;
+      return { ...toMetadata(meta), data };
     });
-    list = result[STORAGE_SNAPSHOTS_KEY] || [];
-  } else {
-    try {
-      const str = localStorage.getItem(STORAGE_SNAPSHOTS_KEY);
-      list = str ? JSON.parse(str) : [];
-    } catch {
-      list = [];
-    }
+  } catch (e) {
+    console.warn('Não foi possível ler o snapshot:', e);
+    return null;
   }
-
-  return list.find((item) => item.id === id) || null;
 }
 
 export async function deleteSnapshot(id: string): Promise<void> {
-  if (typeof chrome !== 'undefined' && chrome.storage?.local) {
-    const existing = await new Promise<Record<string, any>>((resolve) => {
-      chrome.storage.local.get([STORAGE_SNAPSHOTS_KEY], (res) => resolve(res || {}));
+  const storage = getStorage();
+  if (!storage) return;
+  try {
+    await enqueue(async () => {
+      const index = (await readIndex(storage)).filter((m) => m.id !== id);
+      await storage.set({ [STORAGE_INDEX_KEY]: index });
+      await storage.remove([treeKey(id)]);
+      await collectOrphanTrees(storage, index);
     });
-    const snapshots: any[] = (existing[STORAGE_SNAPSHOTS_KEY] || []).filter((s: any) => s.id !== id);
-    await new Promise<void>((resolve) => {
-      chrome.storage.local.set({ [STORAGE_SNAPSHOTS_KEY]: snapshots }, () => resolve());
-    });
-  } else {
-    try {
-      const existingStr = localStorage.getItem(STORAGE_SNAPSHOTS_KEY);
-      const snapshots = existingStr ? JSON.parse(existingStr) : [];
-      const filtered = snapshots.filter((s: any) => s.id !== id);
-      localStorage.setItem(STORAGE_SNAPSHOTS_KEY, JSON.stringify(filtered));
-    } catch (e) {
-      console.warn('Could not delete snapshot from localStorage:', e);
-    }
+  } catch (e) {
+    console.warn('Não foi possível apagar o snapshot:', e);
   }
 }
 

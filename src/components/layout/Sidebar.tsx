@@ -48,7 +48,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onMoveToTarget,
 }) => {
   const { t } = useTranslation();
-  const { status: syncStatus, peers: syncPeers } = useSync();
+  const { status: syncStatus, peers: syncPeers, hasLegacyKey: syncLegacyKey } = useSync();
   // Extract top-level root folders (usually Barra de favoritos, Outros favoritos, etc.)
   const rootNode = tree[0];
   const rootFolders = (rootNode?.children || []).filter((child) => !child.url);
@@ -228,7 +228,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         : 'text-sky-500'
                     }`}
                   />
-                  <span>{t('nav.crossBrowserSync')}</span>
+                  <div className="flex flex-col min-w-0">
+                    <span>{t('nav.crossBrowserSync')}</span>
+                    {syncLegacyKey && (
+                      <span className="text-[10px] text-rose-600 dark:text-rose-400">{t('nav.syncLegacyKey')}</span>
+                    )}
+                  </div>
                 </div>
                 {syncStatus === 'connected' && syncPeers.length > 0 && (
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />

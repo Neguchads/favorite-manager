@@ -5,6 +5,7 @@ import {
   SyncPeer,
   generateSyncKey,
   detectBrowserName,
+  isLegacySyncKey,
 } from '../services/sync';
 
 export function useSync() {
@@ -27,8 +28,11 @@ export function useSync() {
     };
   }, []);
 
-  const connect = useCallback((key: string) => {
+  // Devolve false quando a chave é do formato antigo e foi recusada
+  const connect = useCallback((key: string): boolean => {
+    if (isLegacySyncKey(key)) return false;
     crossBrowserSyncService.connect(key);
+    return true;
   }, []);
 
   const disconnect = useCallback(() => {
@@ -53,8 +57,12 @@ export function useSync() {
     await crossBrowserSyncService.triggerTwoWayMerge();
   }, []);
 
+  // Chave salva por versão antiga: não conecta, a UI deve pedir para gerar uma nova
+  const hasLegacyKey = syncKey !== null && isLegacySyncKey(syncKey);
+
   return {
     syncKey,
+    hasLegacyKey,
     status,
     peers,
     autoSync,

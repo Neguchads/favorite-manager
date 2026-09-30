@@ -76,6 +76,8 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        // Marca a tecla como consumida para o atalho global não limpar a seleção
+        e.preventDefault();
         onClose();
       }
     };
@@ -100,6 +102,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   return (
     <div
       ref={menuRef}
+      role="menu"
       style={{ left: `${safeX}px`, top: `${safeY}px` }}
       className="fixed z-50 w-56 bg-white/95 dark:bg-slate-850/95 backdrop-blur-md rounded-xl border border-slate-200 dark:border-slate-700/80 shadow-xl py-1 text-xs select-none transition-opacity animate-in fade-in zoom-in-95 duration-100"
       onClick={(e) => e.stopPropagation()}

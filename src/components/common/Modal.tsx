@@ -21,6 +21,8 @@ export const Modal: React.FC<ModalProps> = ({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
+        // Marca a tecla como consumida para o atalho global não limpar a seleção
+        e.preventDefault();
         onClose();
       }
     };

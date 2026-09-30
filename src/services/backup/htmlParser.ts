@@ -8,6 +8,8 @@ export interface ParsedBookmarkItem {
   icon?: string;
   children?: ParsedBookmarkItem[];
   path?: string;
+  // Pasta marcada com PERSONAL_TOOLBAR_FOLDER="true": a barra de favoritos, em qualquer idioma
+  isToolbar?: boolean;
 }
 
 export interface ParseHtmlResult {
@@ -68,6 +70,9 @@ function parseNetscapeStreaming(htmlContent: string): ParseHtmlResult {
         path: nextPath,
         children: [],
       };
+      if (/PERSONAL_TOOLBAR_FOLDER="true"/i.test(trimmed)) {
+        folderItem.isToolbar = true;
+      }
 
       if (currentParent && currentParent.children) {
         currentParent.children.push(folderItem);
@@ -183,12 +188,17 @@ export function parseNetscapeHtml(htmlContent: string): ParseHtmlResult {
 
         const subChildren = subDl ? parseContainer(subDl, nextPath) : [];
 
-        items.push({
+        const folderItem: ParsedBookmarkItem = {
           id: folderId,
           title: folderTitle,
           children: subChildren,
           path: nextPath,
-        });
+        };
+        if ((h3.getAttribute('personal_toolbar_folder') || '').toLowerCase() === 'true') {
+          folderItem.isToolbar = true;
+        }
+
+        items.push(folderItem);
         continue;
       }
 

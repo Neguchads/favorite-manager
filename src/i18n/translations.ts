@@ -42,6 +42,7 @@ export const translations = {
     'nav.stats': 'Estatísticas',
     'nav.backups': 'Backups & Snapshots',
     'nav.crossBrowserSync': 'Sincronizar (Edge ⇄ Chrome ⇄ Brave)',
+    'nav.syncLegacyKey': 'Chave antiga — gere uma nova',
     'nav.folderTree': 'Árvore de Pastas',
     'nav.newSubfolder': 'Criar nova subpasta',
 
@@ -154,7 +155,7 @@ export const translations = {
     'popup.useSuggestion': 'Usar',
 
     // Side Panel
-    'sidepanel.title': 'Favoritos Edge',
+    'sidepanel.title': 'Favorite Manager',
     'sidepanel.addBookmark': 'Adicionar favorito',
     'sidepanel.organizeAi': 'Organizar com IA',
     'sidepanel.openFullTab': 'Abrir em aba cheia',
@@ -266,6 +267,7 @@ export const translations = {
     'nav.stats': 'Statistics',
     'nav.backups': 'Backups & Snapshots',
     'nav.crossBrowserSync': 'Sync (Edge ⇄ Chrome ⇄ Brave)',
+    'nav.syncLegacyKey': 'Old key — generate a new one',
     'nav.folderTree': 'Folders Tree',
     'nav.newSubfolder': 'Create new subfolder',
 
@@ -378,7 +380,7 @@ export const translations = {
     'popup.useSuggestion': 'Use',
 
     // Side Panel
-    'sidepanel.title': 'Edge Favorites',
+    'sidepanel.title': 'Favorite Manager',
     'sidepanel.addBookmark': 'Add bookmark',
     'sidepanel.organizeAi': 'Organize with AI',
     'sidepanel.openFullTab': 'Open in full tab',

@@ -202,9 +202,11 @@ export async function importBookmarks(options: ImportOptions): Promise<ImportRes
         // "Outros" e "Móveis" viram subpastas com o nome original; raiz vazia é ignorada
         const itemsToImport: ParsedBookmarkItem[] = [];
         for (const node of parsedRootNodes) {
+          // isToolbar: atributo PERSONAL_TOOLBAR_FOLDER do HTML, vale mesmo com nome em outro idioma
           const rootId = node.url
             ? null
-            : systemRootIdFromName(node.title || '') ||
+            : (node.isToolbar ? '1' : null) ||
+              systemRootIdFromName(node.title || '') ||
               (fileType === 'json' && ['1', '2', '3'].includes(node.id) ? node.id : null);
           if (!rootId) {
             itemsToImport.push(node);

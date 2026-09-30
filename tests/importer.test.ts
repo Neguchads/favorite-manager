@@ -91,4 +91,31 @@ describe('importar no modo preservar', () => {
     const children = await importedChildren('Importados Nomes');
     expect(children.map((c) => c.title)).toEqual(['minhas receitas']);
   });
+
+  it('HTML de navegador em outro idioma: PERSONAL_TOOLBAR_FOLDER marca a barra', async () => {
+    const html = [
+      '<!DOCTYPE NETSCAPE-Bookmark-file-1>',
+      '<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">',
+      '<TITLE>Bookmarks</TITLE>',
+      '<H1>Bookmarks</H1>',
+      '<DL><p>',
+      '    <DT><H3 ADD_DATE="1700000000" PERSONAL_TOOLBAR_FOLDER="true">Lesezeichenleiste</H3>',
+      '    <DL><p>',
+      '        <DT><A HREF="https://imp-de.example/" ADD_DATE="1700000000">Deutsch</A>',
+      '    </DL><p>',
+      '</DL><p>',
+    ].join('\n');
+    const result = await importBookmarks({
+      fileContent: html,
+      fileType: 'html',
+      strategy: 'preserve',
+      createDedicatedFolder: true,
+      dedicatedFolderName: 'Importados Toolbar',
+      skipExistingUrls: false,
+    });
+    expect(result.success).toBe(true);
+    const children = await importedChildren('Importados Toolbar');
+    expect(children.map((c) => c.url)).toEqual(['https://imp-de.example/']);
+    expect(children.some((c) => c.title === 'Lesezeichenleiste')).toBe(false);
+  });
 });
