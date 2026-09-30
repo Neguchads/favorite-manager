@@ -435,19 +435,21 @@ export function useBookmarks() {
 
   // CRUD actions (Bug 4 fix applied)
   const createBookmark = useCallback(
-    async (title: string, url: string, parentId?: string) => {
+    async (title: string, url: string, parentId?: string, index?: number) => {
       const targetParent = resolveSafeParentId(parentId);
       const created = await bookmarksService.create({
         parentId: targetParent,
         title,
         url,
+        index,
       });
-      const folderPath = targetParent ? parentPathMap.get(targetParent) || 'Barra de favoritos' : 'Barra de favoritos';
+      // parentPathMap guarda só o caminho dos pais; o path de allFolders inclui a própria pasta
+      const folderPath = allFolders.find((f) => f.id === targetParent)?.path || 'Barra de favoritos';
       crossBrowserSyncService.onLocalBookmarkCreated(created, folderPath);
       await loadTree();
       return created;
     },
-    [loadTree, resolveSafeParentId, parentPathMap]
+    [loadTree, resolveSafeParentId, allFolders]
   );
 
   const createFolder = useCallback(

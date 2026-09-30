@@ -686,6 +686,8 @@ export function capitalizeFolderWords(folderPath: string): string {
     'windows': 'Windows',
     'whatsapp': 'WhatsApp',
     'youtube': 'YouTube',
+    'linkedin': 'LinkedIn',
+    'tiktok': 'TikTok',
     'netflix': 'Netflix',
     'disney+': 'Disney+',
   };

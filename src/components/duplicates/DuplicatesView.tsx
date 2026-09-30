@@ -522,7 +522,7 @@ export const DuplicatesView: React.FC<DuplicatesViewProps> = ({
                 Você está prestes a apagar {allDuplicateIds.length} favoritos duplicados.
               </p>
               <p className="text-slate-600 dark:text-slate-300 mt-1">
-                A versão <strong>{keepStrategy === 'oldest' ? 'mais antiga' : 'mais recente'}</strong> de cada grupo será preservada.
+                A versão <strong>{{ oldest: 'mais antiga', newest: 'mais recente', longest: 'com título mais completo' }[keepStrategy]}</strong> de cada grupo será preservada.
                 Um snapshot de recuperação será salvo automaticamente antes da exclusão.
               </p>
             </div>

@@ -204,7 +204,15 @@ export const CrossBrowserSyncModal: React.FC<CrossBrowserSyncModalProps> = ({
                 Gerar Nova
               </button>
             </div>
-          ) : (
+          ) : null}
+
+          {syncKey && /^FAV-\d{4}-[A-Z0-9]{4}$/.test(syncKey) && (
+            <p className="text-xs text-amber-700 dark:text-amber-400">
+              Esta chave é do formato antigo e curto, mais fácil de adivinhar. Clique em <strong>Gerar Nova</strong> e use a nova chave em todos os navegadores.
+            </p>
+          )}
+
+          {!syncKey && (
             <div className="flex items-center space-x-2">
               <button
                 type="button"
@@ -221,7 +229,7 @@ export const CrossBrowserSyncModal: React.FC<CrossBrowserSyncModalProps> = ({
           <form onSubmit={handleConnectInput} className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center space-x-2">
             <input
               type="text"
-              placeholder="Ou cole uma chave existente (ex: FAV-4892-A7K2)"
+              placeholder="Ou cole uma chave existente (ex: FAV-X7K1-M2QP-8ZRT-HN4W-C9DE)"
               value={inputKey}
               onChange={(e) => setInputKey(e.target.value.toUpperCase())}
               className="flex-1 px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 font-mono text-xs focus:outline-none focus:border-sky-500"

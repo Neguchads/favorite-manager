@@ -42,6 +42,8 @@ export const Modal: React.FC<ModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150" onClick={onClose}>
       <div
+        role="dialog"
+        aria-modal="true"
         className={`w-full ${maxWidthClasses} max-h-[calc(100vh-2.5rem)] flex flex-col bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden transform transition-all`}
         onClick={(e) => e.stopPropagation()}
       >

@@ -156,6 +156,8 @@ export const AiOrganizeModal: React.FC<AiOrganizeModalProps> = ({
 
   const [chatInput, setChatInput] = useState('');
   const [isChatting, setIsChatting] = useState(false);
+  // Controller da resposta em andamento: botão Cancelar, timeout de 120 s e fechar o modal abortam
+  const chatAbortRef = useRef<{ controller: AbortController; timedOut: boolean } | null>(null);
   const chatMessagesEndRef = useRef<HTMLDivElement>(null);
 
   // Track collapsed master categories in preview
@@ -214,6 +216,12 @@ export const AiOrganizeModal: React.FC<AiOrganizeModalProps> = ({
       }
     } catch {}
   };
+
+  // Fechar o modal cancela a resposta do Ollama em andamento
+  useEffect(() => {
+    if (!isOpen) chatAbortRef.current?.controller.abort();
+    return () => chatAbortRef.current?.controller.abort();
+  }, [isOpen]);
 
   // Check Ollama connection on open
   useEffect(() => {
@@ -468,6 +476,13 @@ Você pode clicar na aba **"Organizar Favoritos"** a qualquer momento para gerar
       return;
     }
 
+    const chatRequest = { controller: new AbortController(), timedOut: false };
+    chatAbortRef.current = chatRequest;
+    const chatTimeoutId = setTimeout(() => {
+      chatRequest.timedOut = true;
+      chatRequest.controller.abort();
+    }, 120_000);
+
     try {
       if (ollamaStatus.connected) {
         const fullMessages: ChatMessage[] = [
@@ -475,7 +490,7 @@ Você pode clicar na aba **"Organizar Favoritos"** a qualquer momento para gerar
           ...chatMessages.filter((m) => m.role !== 'system'),
           userMsg,
         ];
-        let responseText = await chatWithOllama(fullMessages, ollamaConfig);
+        let responseText = await chatWithOllama(fullMessages, ollamaConfig, chatRequest.controller.signal);
 
         // Intercept false safety/privacy refusal and replace with factual live analysis
         const isRefusal =
@@ -505,6 +520,19 @@ Você pode clicar na aba **"Organizar Favoritos"** a qualquer momento para gerar
         ]);
       }
     } catch (err: any) {
+      if (err?.name === 'AbortError') {
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: chatRequest.timedOut
+              ? '*ℹ️ O Ollama não respondeu em 2 minutos. Tente um modelo menor ou uma pergunta mais curta.*'
+              : '*Resposta cancelada.*',
+            timestamp: Date.now(),
+          },
+        ]);
+        return;
+      }
       const isCors = err?.message?.includes('403') || err?.message?.includes('CORS');
       const simulated = generateSmartAssistantAnswer(textToSend);
       setChatMessages((prev) => [
@@ -516,6 +544,8 @@ Você pode clicar na aba **"Organizar Favoritos"** a qualquer momento para gerar
         },
       ]);
     } finally {
+      clearTimeout(chatTimeoutId);
+      if (chatAbortRef.current === chatRequest) chatAbortRef.current = null;
       setIsChatting(false);
     }
   };
@@ -1491,6 +1521,13 @@ Você pode clicar na aba **"Organizar Favoritos"** a qualquer momento para gerar
                   <div className="bg-white dark:bg-slate-800 rounded-xl p-2.5 border border-slate-200 dark:border-slate-700 flex items-center space-x-2 text-slate-500">
                     <RefreshCw className="w-3.5 h-3.5 animate-spin text-violet-500" />
                     <span>Mini-Agente pensando...</span>
+                    <button
+                      type="button"
+                      onClick={() => chatAbortRef.current?.controller.abort()}
+                      className="ml-1 px-2 py-0.5 text-[11px] font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-md transition-colors cursor-pointer"
+                    >
+                      Cancelar
+                    </button>
                   </div>
                 </div>
               )}

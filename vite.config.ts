@@ -1,9 +1,14 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 
 export default defineConfig({
   base: './',
+  test: {
+    environment: 'node',
+    include: ['tests/**/*.test.ts'],
+  },
   plugins: [react()],
   resolve: {
     alias: {

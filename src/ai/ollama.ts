@@ -13,11 +13,15 @@ export async function checkOllamaConnection(endpoint: string = DEFAULT_OLLAMA_CO
   isCorsForbidden?: boolean;
 }> {
   const startTime = Date.now();
+  // Ollama travado não pode deixar o "Testar Conexão" girando para sempre
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
   try {
     const cleanEndpoint = endpoint.replace(/\/$/, '');
     const res = await fetch(`${cleanEndpoint}/api/tags`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
     });
 
     const latencyMs = Date.now() - startTime;
@@ -41,6 +45,9 @@ export async function checkOllamaConnection(endpoint: string = DEFAULT_OLLAMA_CO
     return { connected: true, models, latencyMs };
   } catch (err: any) {
     const latencyMs = Date.now() - startTime;
+    if (err?.name === 'AbortError') {
+      return { connected: false, models: [], latencyMs, error: 'timeout' };
+    }
     const msg = err?.message || 'Servidor Ollama indisponível';
     return {
       connected: false,
@@ -48,6 +55,8 @@ export async function checkOllamaConnection(endpoint: string = DEFAULT_OLLAMA_CO
       latencyMs,
       error: msg,
     };
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 

@@ -15,7 +15,9 @@ Este arquivo vale para qualquer agente de IA que trabalhe neste projeto.
 - Instalar dependências: `npm install`
 - Build e checagem de tipos: `npm run build` (roda `tsc` e depois `vite build`, saída em `dist/`)
 - Testar no navegador: `edge://extensions`, modo desenvolvedor, "Carregar sem compactação", pasta `dist/`
-- Ainda não existem testes nem lint.
+- Testes: `npm test` (Vitest, pasta `tests/`, roda contra o `MockBookmarksService`, sem dados pessoais).
+- Pacote para a loja: `npm run package` (gera `Favorite-Manager.zip`, ignorado pelo git).
+- Sem lint: o `tsc` strict do build cobre o essencial.
 
 ## Estrutura
 
@@ -44,15 +46,11 @@ Os dois agentes usam a MESMA pasta e a MESMA branch. Cada um vê as mudanças do
 - Identificadores e mensagens de commit em inglês. Comentários e textos da UI em português do Brasil.
 - Siga o estilo do código ao redor. Poucas dependências: não adicione bibliotecas sem justificar ao usuário.
 - Nunca entregue código truncado, com `...` no lugar de código, TODO vazio, import faltando ou função vazia.
-- Pronto = `npm run build` passando sem erros.
+- Pronto = `npm test` e `npm run build` passando sem erros.
 - Nunca coloque segredos no código. Use `.env` (já está no `.gitignore`).
 
-## Bugs conhecidos (Status: 100% resolvidos)
+## Bugs conhecidos
 
-1. [RESOLVIDO] `hierarchy.ts`: `buildExistingFolderMap` indexa por `parentId:folderTitle.toLowerCase()` e `ensureHierarchicalFolder` busca com essa mesma chave. Subpastas duplicadas eliminadas.
-2. [RESOLVIDO] `background/index.ts`: auto-organização no `onCreated` é estritamente opt-in (`autoOrganizeOnCreate === true`) e respeita subpastas manuais do usuário.
-3. [RESOLVIDO] `restoreSnapshot`: restauração segura implementada em `backup/index.ts` e conectada ao botão de restauração na UI com snapshot de segurança prévio.
-4. [RESOLVIDO] `App.tsx`: `resolveSafeParentId` sanitiza seleções virtuais (`'all'`, `'recent'`) para IDs de pasta válidos ('1' ou pasta selecionada).
-5. [RESOLVIDO] `hierarchy.ts`: `pruneEmptyFolders` opera seletivamente sobre `candidateFolderIds` (pastas esvaziadas pela operação).
-6. [RESOLVIDO] `useBookmarks.ts`: `loadTree()` com debounce de 300ms contra sobrecarga de eventos.
-7. [RESOLVIDO] Verificação de links: HEAD com 403/405/400 faz fallback suave via GET com cabeçalho de faixa de bytes para evitar falsos "links quebrados".
+Os 7 bugs da auditoria de 25/09/2026 foram resolvidos. A auditoria de 30/09/2026 achou outros; as correções da Fase 0 estão em `docs/ROADMAP.md` e no `HANDOFF.md`, cada uma com teste em `tests/` quando dá para testar fora do navegador.
+
+Pendências conhecidas que dependem de teste manual no Edge: regra do Ollama (A2), sync cifrado entre dois navegadores (A1), atalhos com modal (D1), cancelar chat do Ollama (D2), desfazer na posição original (C6) e permissão opcional de sites (E2).
