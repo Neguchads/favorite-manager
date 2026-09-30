@@ -27,6 +27,8 @@ interface SnapshotStorage {
   get(keys: string[]): Promise<Record<string, any>>;
   set(items: Record<string, any>): Promise<void>;
   remove(keys: string[]): Promise<void>;
+  /** Todas as chaves guardadas; usado só na coleta de árvores órfãs. */
+  keys(): Promise<string[]>;
 }
 
 function chromeStorage(): SnapshotStorage {
@@ -48,6 +50,16 @@ function chromeStorage(): SnapshotStorage {
       new Promise((resolve) => {
         if (keys.length === 0) return resolve();
         chrome.storage.local.remove(keys, () => resolve());
+      }),
+    keys: () =>
+      new Promise((resolve) => {
+        const local = chrome.storage.local as any;
+        // getKeys (Chrome 130+) evita carregar todas as árvores só para listar chaves
+        if (typeof local.getKeys === 'function') {
+          local.getKeys((keys: string[] | undefined) => resolve(keys || []));
+        } else {
+          chrome.storage.local.get(null, (res) => resolve(Object.keys(res || {})));
+        }
       }),
   };
 }
@@ -78,6 +90,18 @@ function webStorage(ls: Storage): SnapshotStorage {
           // Ignora: remover é melhor esforço
         }
       }
+    },
+    async keys() {
+      const res: string[] = [];
+      try {
+        for (let i = 0; i < ls.length; i++) {
+          const k = ls.key(i);
+          if (k !== null) res.push(k);
+        }
+      } catch {
+        // Implementação sem key()/length: sem coleta de órfãs
+      }
+      return res;
     },
   };
 }
@@ -115,13 +139,54 @@ function toMetadata(item: any): SnapshotMetadata {
   };
 }
 
+const SNAPSHOT_LOCK_NAME = 'efm_snapshots';
+
+// Popup, side panel e página completa rodam em contextos separados: a Web Locks API
+// serializa entre eles. Sem ela (ex.: Node antigo), vale só a fila em memória.
+function withCrossContextLock<T>(task: () => Promise<T>): Promise<T> {
+  const locks = typeof navigator !== 'undefined' ? navigator?.locks : undefined;
+  if (locks && typeof locks.request === 'function') {
+    return locks.request(SNAPSHOT_LOCK_NAME, task) as Promise<T>;
+  }
+  return task();
+}
+
 // Fila em memória: serializa leitura-modificação-escrita do índice neste contexto
 let indexQueue: Promise<unknown> = Promise.resolve();
 
 function enqueue<T>(task: () => Promise<T>): Promise<T> {
-  const run = indexQueue.then(task, task);
+  const locked = () => withCrossContextLock(task);
+  const run = indexQueue.then(locked, locked);
   indexQueue = run.catch(() => undefined);
   return run;
+}
+
+// Coleta de órfãs roda no máximo uma vez por contexto (carregamento de página)
+let orphanCollectionDone = false;
+
+/**
+ * Remove chaves de árvore que nenhum snapshot referencia (ex.: sobra de escrita
+ * concorrente ou de falha no meio). Deve rodar dentro da trava, logo após gravar o índice.
+ */
+async function collectOrphanTrees(storage: SnapshotStorage, index: SnapshotMetadata[]): Promise<void> {
+  if (orphanCollectionDone) return;
+  orphanCollectionDone = true;
+  try {
+    const res = await storage.get([LEGACY_SNAPSHOTS_KEY]);
+    const referenced = new Set(index.map((m) => treeKey(m.id)));
+    // Árvores ainda pendentes de migração continuam protegidas
+    if (Array.isArray(res[LEGACY_SNAPSHOTS_KEY])) {
+      for (const item of res[LEGACY_SNAPSHOTS_KEY]) {
+        if (item && typeof item.id === 'string') referenced.add(treeKey(item.id));
+      }
+    }
+    const orphans = (await storage.keys()).filter(
+      (k) => k.startsWith(SNAPSHOT_TREE_PREFIX) && !referenced.has(k)
+    );
+    await storage.remove(orphans);
+  } catch (e) {
+    console.warn('Não foi possível limpar árvores órfãs de snapshots:', e);
+  }
 }
 
 // Ids únicos mesmo com várias criações no mesmo milissegundo
@@ -138,45 +203,73 @@ function nextSnapshotId(now: number): string {
   return `snapshot_${now}`;
 }
 
-/** Só para testes: zera a fila e o gerador de ids. */
+/** Só para testes: zera a fila, o gerador de ids e a coleta de órfãs. */
 export function __resetSnapshotStateForTests(): void {
   indexQueue = Promise.resolve();
+  orphanCollectionDone = false;
   lastIdTimestamp = 0;
   idSequence = 0;
 }
 
 /**
  * Lê o índice e, se ainda existir o array legado, divide-o no novo layout.
- * Deve rodar dentro da fila. A chave legada só é removida se tudo foi gravado.
+ * Deve rodar dentro da fila/trava.
+ *
+ * Regras da migração:
+ * - Só semeia o índice com o legado enquanto a chave do índice não existe. Depois disso,
+ *   item legado fora do índice foi apagado ou descartado pelo limite e não volta.
+ * - O array legado é regravado só com os itens cuja árvore ainda não foi gravada; a chave
+ *   legada só some quando toda árvore referenciada pelo índice existir na própria chave.
  */
 async function readIndex(storage: SnapshotStorage): Promise<SnapshotMetadata[]> {
   const res = await storage.get([STORAGE_INDEX_KEY, LEGACY_SNAPSHOTS_KEY]);
-  const index: SnapshotMetadata[] = Array.isArray(res[STORAGE_INDEX_KEY]) ? res[STORAGE_INDEX_KEY] : [];
+  const hasIndex = Array.isArray(res[STORAGE_INDEX_KEY]);
+  const index: SnapshotMetadata[] = hasIndex ? res[STORAGE_INDEX_KEY] : [];
   const legacy: any[] | undefined = res[LEGACY_SNAPSHOTS_KEY];
   if (!Array.isArray(legacy)) return index;
 
-  const known = new Set(index.map((m) => m.id));
   const merged = [...index];
-  let complete = true;
+  const known = new Set(index.map((m) => m.id));
+  const candidates: any[] = [];
+  const seen = new Set<string>();
   for (const item of legacy) {
-    if (!item || typeof item.id !== 'string' || known.has(item.id)) continue;
-    // Entra no índice mesmo se a árvore falhar: getSnapshotById recorre ao array legado
-    merged.push(toMetadata(item));
-    known.add(item.id);
-    try {
-      if (item.data) await storage.set({ [treeKey(item.id)]: item.data });
-    } catch (e) {
-      complete = false;
-      console.warn('Não foi possível migrar o snapshot legado', item.id, e);
+    if (!item || typeof item.id !== 'string' || seen.has(item.id)) continue;
+    seen.add(item.id);
+    if (known.has(item.id)) {
+      candidates.push(item);
+    } else if (!hasIndex) {
+      // Primeira migração: entra no índice mesmo se a árvore falhar (getSnapshotById recorre ao legado)
+      merged.push(toMetadata(item));
+      known.add(item.id);
+      candidates.push(item);
     }
+    // Com índice já existente, item fora dele foi apagado/descartado: não reinsere
   }
 
   merged.sort((a, b) => b.timestamp - a.timestamp);
   const dropped = merged.splice(MAX_SNAPSHOTS);
+  const kept = new Set(merged.map((m) => m.id));
+
+  // Confere quais árvores já existem na própria chave e tenta gravar as que faltam
+  const live = candidates.filter((item) => kept.has(item.id));
+  const existing = live.length > 0 ? await storage.get(live.map((item) => treeKey(item.id))) : {};
+  const pending: any[] = [];
+  for (const item of live) {
+    if (existing[treeKey(item.id)] !== undefined) continue;
+    if (!item.data) continue; // Sem árvore no legado: nada a preservar
+    try {
+      await storage.set({ [treeKey(item.id)]: item.data });
+    } catch (e) {
+      pending.push(item);
+      console.warn('Não foi possível migrar o snapshot legado', item.id, e);
+    }
+  }
+
   try {
     await storage.set({ [STORAGE_INDEX_KEY]: merged });
     await storage.remove(dropped.map((m) => treeKey(m.id)));
-    if (complete) await storage.remove([LEGACY_SNAPSHOTS_KEY]);
+    if (pending.length === 0) await storage.remove([LEGACY_SNAPSHOTS_KEY]);
+    else if (pending.length < legacy.length) await storage.set({ [LEGACY_SNAPSHOTS_KEY]: pending });
   } catch (e) {
     console.warn('Não foi possível gravar o índice migrado de snapshots:', e);
   }
@@ -215,26 +308,49 @@ export async function createLocalSnapshot(label: string = 'Snapshot Automático'
       const index = [meta, ...current.filter((m) => m.id !== snapshotId)];
       const trimmed = index.splice(MAX_SNAPSHOTS);
 
-      // Árvore antes do índice: o índice nunca aponta para uma árvore inexistente
+      // Árvores antigas liberadas para abrir espaço; guardadas em memória para desfazer
+      const evicted: { meta: SnapshotMetadata; tree: unknown }[] = [];
+      let lastError: unknown = null;
+
       for (;;) {
         try {
+          // Árvore antes do índice: o índice nunca aponta para uma árvore inexistente
           await storage.set({ [treeKey(snapshotId)]: tree, [STORAGE_INDEX_KEY]: index });
+          lastError = null;
           break;
         } catch (e) {
-          if (!isQuotaError(e) || index.length <= 1) {
-            // Desiste: apaga a árvore gravada pela metade e salva o índice sem o novo snapshot
-            await storage.remove([treeKey(snapshotId)]);
-            await storage.set({ [STORAGE_INDEX_KEY]: index.slice(1) }).catch(() => undefined);
-            await storage.remove(trimmed.map((m) => treeKey(m.id)));
-            throw e;
-          }
-          // Sem espaço: descarta o snapshot mais antigo e tenta de novo
+          lastError = e;
+          // Só vale descartar antigos por falta de espaço e enquanto houver antigos
+          if (!isQuotaError(e) || index.length <= 1) break;
           const oldest = index.pop()!;
-          trimmed.push(oldest);
+          const saved = await storage.get([treeKey(oldest.id)]);
+          evicted.push({ meta: oldest, tree: saved[treeKey(oldest.id)] });
           await storage.remove([treeKey(oldest.id)]);
         }
       }
+
+      if (lastError) {
+        // Falhou: o índice antigo não foi tocado. Remove a árvore nova (sem referência)
+        // e devolve as árvores antigas liberadas durante as tentativas.
+        await storage.remove([treeKey(snapshotId)]);
+        for (const { meta: old, tree: oldTree } of evicted.reverse()) {
+          if (oldTree === undefined) continue;
+          try {
+            await storage.set({ [treeKey(old.id)]: oldTree });
+          } catch (e) {
+            console.warn('Não foi possível devolver a árvore do snapshot', old.id, e);
+          }
+        }
+        if (isQuotaError(lastError)) {
+          console.warn('Snapshot novo não cabe no armazenamento; snapshots existentes mantidos.');
+          return;
+        }
+        throw lastError;
+      }
+
+      // Índice gravado: só agora as árvores excedentes podem sumir
       await storage.remove(trimmed.map((m) => treeKey(m.id)));
+      await collectOrphanTrees(storage, index);
     });
   } catch (e) {
     // createLocalSnapshot nunca lança: um backup que falha não pode travar a operação que o pediu
@@ -288,6 +404,7 @@ export async function deleteSnapshot(id: string): Promise<void> {
       const index = (await readIndex(storage)).filter((m) => m.id !== id);
       await storage.set({ [STORAGE_INDEX_KEY]: index });
       await storage.remove([treeKey(id)]);
+      await collectOrphanTrees(storage, index);
     });
   } catch (e) {
     console.warn('Não foi possível apagar o snapshot:', e);
