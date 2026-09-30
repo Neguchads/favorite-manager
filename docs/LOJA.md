@@ -66,7 +66,9 @@ Produtividade
 - Sincronização opcional usa WebSocket para `broker.hivemq.com` com mensagens cifradas ponta a ponta (AES-GCM 256); nenhum dado legível sai do navegador.
 
 ## URL da política de privacidade
-Pendente: publicar `docs/PRIVACIDADE.md` em um endereço público (gist público ou repositório público) e colar a URL aqui.
+https://gist.github.com/Neguchads/c5a554a1d03ea38f4840eb0a9d331521
+
+Ao mudar `docs/PRIVACIDADE.md`, atualize o gist: `gh gist edit c5a554a1d03ea38f4840eb0a9d331521 docs/PRIVACIDADE.md`.
 
 ## Capturas de tela (1280×800 ou 640×400, até 10)
 1. Página completa com a árvore de pastas e a lista de favoritos (tema claro).
