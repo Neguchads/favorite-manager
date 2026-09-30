@@ -2,6 +2,32 @@
 
 Registro curto de passagem de turno. Entrada mais recente no topo.
 
+## 2026-09-30 — Claude Code — Fase 0 implementada (sem commit)
+- Arquivos alterados:
+  - Testes (novo): `tests/` com 11 arquivos, Vitest. Configuração em `package.json` (`npm test`, `npm run package`), `vite.config.ts` e `tsconfig.json`.
+  - Sync cifrado (A1): `src/services/sync/crypto.ts` (novo, AES-GCM com HKDF, tópico derivado, lotes de 200), `syncService.ts` (cifra, janela de 5 min contra replay, mensagens processadas uma por vez, snapshot só no 1º lote, cliente antigo descartado), `browserDetect.ts` (chave de 100 bits com `crypto.getRandomValues`), `CrossBrowserSyncModal.tsx` (aviso para chave antiga).
+  - Ollama (A2): `src/background/index.ts` com regra de sessão só para requisições da própria extensão; `public/manifest.json` sem `declarative_net_request`.
+  - Integridade (A3, C1–C6): `hierarchy.ts` (limpeza de pastas não apaga conteúdo, ordenação A-Z correta, `SYSTEM_ROOT_NAMES` e `systemRootIdFromName` exportados, incluindo nomes do Edge em inglês), `bookmarks/bulkLock.ts` (novo, trava com contador e janela de 1,5 s), `backup/index.ts` (restauração com trava), `importer.ts` (trava, JSON do próprio backup sem pasta fantasma, raízes desembrulhadas, nomes preservados), `twoWayMerge.ts` e `sync/types.ts` (`rootId`, `resolveRemoteTarget`), `useBookmarks.ts` (índice no `createBookmark`, caminho do sync corrigido), `App.tsx` (desfazer na posição original), `mockAdapter.ts` (campo `index` e regra de mover do Chrome).
+  - UX (D1–D4): `App.tsx` (atalhos respeitam `SELECT` e modais), `Modal.tsx` e `CommandPaletteModal.tsx` (`aria-modal`), `ollama.ts` e `AiOrganizeModal.tsx` (timeout de 5 s e 120 s, botão Cancelar), `health/index.ts` (sem `no-cors`, 404/5xx classificados), `DuplicatesView.tsx`, `classifier.ts` (LinkedIn, TikTok), `htmlParser.ts` (decodifica `&amp;` na URL).
+  - Loja (E1–E4): versão 1.2.0 em `package.json` e no manifest, `@types/paho-mqtt` em devDependencies, `host_permissions` só para o Ollama e `<all_urls>` opcional (`src/services/permissions.ts`, pedido em `CleanupView.tsx`), omnibox busca nos favoritos (`#search=`), `htmlExporter.ts` com `PERSONAL_TOOLBAR_FOLDER`, `docs/PRIVACIDADE.md` (novo), `README.md`, `AGENTS.md`, `docs/ROADMAP.md` (caixas marcadas).
+- Verificado: `npm test` 38/38, `npm run build` sem erros, `npm run package` gera `Favorite-Manager.zip`. Revisão final feita por um revisor separado; o Critical e os Important foram corrigidos com testes.
+- Pendente:
+  1. Teste manual no Edge (checklist da Tarefa E5 no `ROADMAP.md`): Ollama "Testar Conexão" e bloqueio de fetch vindo de `example.com`, sync entre Edge e Chrome, atalhos com modal, Cancelar no chat, desfazer, pedido de permissão de sites.
+  2. Apagar `public/rules/ollama_cors.json` à mão: um hook local bloqueia a remoção pelo agente. O arquivo não é mais usado, mas vai para o pacote.
+  3. URL pública da política de privacidade (gist ou repositório público): decisão do usuário.
+  4. Pendências menores sem correção: replay aceito depois de reconectar; chave antiga `FAV-####-XXXX` ainda aceita; regra do Ollama vale para qualquer porta de localhost; `ContextMenu` sem `aria-modal`; `#search=` não reage a `hashchange`; parser HTML não usa `PERSONAL_TOOLBAR_FOLDER`.
+- Avisos para o outro agente: sync v2 não conversa com instalações antigas (tópico e formato novos); os dois navegadores precisam da versão nova. Nada foi commitado.
+
+## 2026-09-30 — Claude Code — Auditoria completa e roadmap unificado
+- Arquivos alterados:
+  - `docs/ROADMAP.md` (novo, arquivo único de planejamento: resumo da Fase 0, status das Fases 1–3, passo a passo da Fase 0 e o conteúdo antigo dos pilares)
+  - `docs/PLANO_EVOLUCAO_E_MELHORIAS.md` (apagado; conteúdo incorporado ao `ROADMAP.md`)
+- Verificado: pasta local igual ao GitHub (`main` em `a8da6c0`); `npm run build` sem erros; `scratch/test-full-suite.ts` 56/56.
+- Pendente / próximo passo: executar a Fase 0 do `docs/ROADMAP.md` a partir da Tarefa T1. Faltam duas decisões do usuário: sync (criptografar ou remover) e onde hospedar a política de privacidade.
+- Avisos para o outro agente:
+  1. A auditoria achou falhas graves: o sync publica os favoritos em texto claro no broker público HiveMQ, e a regra de CORS do Ollama vale para qualquer site. A lista "100% resolvidos" do `AGENTS.md` não vale mais; a lista atual está no `ROADMAP.md`.
+  2. Os testes de `scratch/` não estão no git e dependem do arquivo pessoal de favoritos. A Tarefa T1 cria `tests/` versionado.
+
 Formato de cada entrada:
 
 ```

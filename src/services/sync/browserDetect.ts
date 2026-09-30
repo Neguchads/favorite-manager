@@ -63,14 +63,11 @@ export function getOrCreateInstallationId(): string {
 }
 
 /**
- * Generates an easy-to-read Sync Key like "FAV-8492-X7K1"
+ * Generates a Sync Key like "FAV-X7K1-M2QP-8ZRT-HN4W-C9DE" (20 random symbols = 100 bits)
  */
 export function generateSyncKey(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  const part1 = Math.floor(1000 + Math.random() * 9000);
-  let part2 = '';
-  for (let i = 0; i < 4; i++) {
-    part2 += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return `FAV-${part1}-${part2}`;
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 32 símbolos = 5 bits cada, sem viés com b % 32
+  const bytes = crypto.getRandomValues(new Uint8Array(20));
+  const body = Array.from(bytes, (b) => chars[b % 32]).join('');
+  return `FAV-${body.match(/.{4}/g)!.join('-')}`;
 }

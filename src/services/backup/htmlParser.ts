@@ -89,7 +89,8 @@ function parseNetscapeStreaming(htmlContent: string): ParseHtmlResult {
     const aMatch = /<A\s+[^>]*HREF="([^"]+)"[^>]*>([^<]*)<\/A>/i.exec(trimmed);
     if (aMatch) {
       totalBookmarks++;
-      const url = aMatch[1];
+      // HREF vem escapado (&amp;), igual ao que o DOMParser decodifica sozinho
+      const url = decodeHtmlEntities(aMatch[1]);
       const title = decodeHtmlEntities(aMatch[2] || url).trim();
 
       const addDateMatch = /ADD_DATE="(\d+)"/i.exec(trimmed);

@@ -54,7 +54,9 @@ export function generateNetscapeHtml(tree: BookmarkNode[]): string {
             : node.title;
 
         const safeFolderTitle = escapeHtml(folderTitle || 'Nova Pasta');
-        lines.push(`${indent}<DT><H3 ADD_DATE="${unixDate}" LAST_MODIFIED="${unixDate}">${safeFolderTitle}</H3>`);
+        // Navegadores reconhecem a barra por este atributo ao importar
+        const toolbarAttr = node.id === '1' ? ' PERSONAL_TOOLBAR_FOLDER="true"' : '';
+        lines.push(`${indent}<DT><H3 ADD_DATE="${unixDate}" LAST_MODIFIED="${unixDate}"${toolbarAttr}>${safeFolderTitle}</H3>`);
         lines.push(`${indent}<DL><p>`);
 
         if (node.children && node.children.length > 0) {

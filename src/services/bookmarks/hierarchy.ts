@@ -4,6 +4,32 @@ import { bookmarksService } from './index';
 
 export const PROTECTED_FOLDER_IDS = new Set(['0', '1', '2', '3', 'mobile', 'synced']);
 
+export type SystemRootId = '1' | '2' | '3';
+
+/** Nomes das raízes do navegador (pt-BR e inglês), em minúsculas. */
+export const SYSTEM_ROOT_NAMES = new Set([
+  'barra de favoritos',
+  'outros favoritos',
+  'favoritos móveis',
+  'favoritos moveis',
+  'bookmarks bar',
+  'other bookmarks',
+  'mobile bookmarks',
+  'bookmarks toolbar',
+  'favorites bar',
+  'other favorites',
+  'mobile favorites',
+]);
+
+/** Id da raiz de sistema pelo nome ('1' barra, '2' outros, '3' móveis), ou null se não for raiz. */
+export function systemRootIdFromName(name: string): SystemRootId | null {
+  const n = name.toLowerCase().trim();
+  if (!SYSTEM_ROOT_NAMES.has(n)) return null;
+  if (n === 'outros favoritos' || n === 'other bookmarks' || n === 'other favorites') return '2';
+  if (n.includes('móveis') || n.includes('moveis') || n.includes('mobile')) return '3';
+  return '1';
+}
+
 /**
  * Ensures that a multi-level folder path (e.g. "Jogos & Games / Sony & PlayStation")
  * exists under rootParentId ('1' = Barra de favoritos).
@@ -118,14 +144,9 @@ export async function pruneEmptyFolders(
         prunedCount++;
         return true;
       } catch (err) {
-        try {
-          await bookmarksService.removeTree(node.id);
-          prunedCount++;
-          return true;
-        } catch (treeErr) {
-          console.warn(`Não foi possível remover pasta [${node.id}] ${node.title}:`, treeErr);
-          return false;
-        }
+        // remove() só falha se a pasta ganhou itens depois da leitura: manter a pasta
+        console.warn(`Pasta [${node.id}] ${node.title} não está vazia; mantida.`, err);
+        return false;
       }
     }
 
@@ -186,12 +207,19 @@ export async function sortFoldersAlphabetically(
 
     const sortedChildren = [...folders, ...bookmarks];
 
+    // Ordem atual real, atualizada a cada move (o node.index lido antes fica velho)
+    const currentOrder = [...children].sort((a, b) => (a.index ?? 0) - (b.index ?? 0)).map((c) => c.id);
+
     for (let i = 0; i < sortedChildren.length; i++) {
       const node = sortedChildren[i];
+      const from = currentOrder.indexOf(node.id);
       // Index diffing: skip the API call if the item is already in the correct position
-      if (node.index === i) continue;
+      if (from === i) continue;
       try {
+        // Sempre sobe (from > i): as posições < i já estão finais
         await bookmarksService.move(node.id, { parentId, index: i });
+        currentOrder.splice(from, 1);
+        currentOrder.splice(i, 0, node.id);
       } catch (err) {
         console.warn(`Erro ao reordenar item [${node.id}] ${node.title}:`, err);
       }

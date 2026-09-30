@@ -1,5 +1,6 @@
 import { BookmarkNode } from '../../types/bookmarks';
 import { bookmarksService } from '../bookmarks';
+import { withBulkOperation } from '../bookmarks/bulkLock';
 
 export interface SnapshotMetadata {
   id: string;
@@ -156,54 +157,57 @@ export async function restoreSnapshot(snapshotId: string): Promise<boolean> {
     return null;
   }
 
-  // 2. Clear current bookmarks inside editable roots ('1' Bookmarks Bar, '2' Other, '3' Mobile)
-  const currentTree = await bookmarksService.getTree();
-  for (const rootId of ['1', '2', '3']) {
-    const node = findNodeById(currentTree, rootId);
-    if (node && node.children) {
-      for (const child of [...node.children]) {
-        try {
-          if (child.url) {
-            await bookmarksService.remove(child.id);
-          } else {
-            await bookmarksService.removeTree(child.id);
+  // Trava de sessão: sem ela, a auto-organização do service worker mexe nos itens restaurados
+  await withBulkOperation(async () => {
+    // 2. Clear current bookmarks inside editable roots ('1' Bookmarks Bar, '2' Other, '3' Mobile)
+    const currentTree = await bookmarksService.getTree();
+    for (const rootId of ['1', '2', '3']) {
+      const node = findNodeById(currentTree, rootId);
+      if (node && node.children) {
+        for (const child of [...node.children]) {
+          try {
+            if (child.url) {
+              await bookmarksService.remove(child.id);
+            } else {
+              await bookmarksService.removeTree(child.id);
+            }
+          } catch (err) {
+            console.warn(`Aviso ao limpar item ${child.id} antes da restauração:`, err);
           }
-        } catch (err) {
-          console.warn(`Aviso ao limpar item ${child.id} antes da restauração:`, err);
         }
       }
     }
-  }
 
-  // 3. Helper to recreate children recursively
-  async function recreateChildren(children: BookmarkNode[], targetParentId: string) {
-    for (const child of children) {
-      if (child.url) {
-        await bookmarksService.create({
-          parentId: targetParentId,
-          title: child.title,
-          url: child.url,
-        });
-      } else {
-        const createdFolder = await bookmarksService.create({
-          parentId: targetParentId,
-          title: child.title,
-        });
-        if (child.children && child.children.length > 0) {
-          await recreateChildren(child.children, createdFolder.id);
+    // 3. Helper to recreate children recursively
+    async function recreateChildren(children: BookmarkNode[], targetParentId: string) {
+      for (const child of children) {
+        if (child.url) {
+          await bookmarksService.create({
+            parentId: targetParentId,
+            title: child.title,
+            url: child.url,
+          });
+        } else {
+          const createdFolder = await bookmarksService.create({
+            parentId: targetParentId,
+            title: child.title,
+          });
+          if (child.children && child.children.length > 0) {
+            await recreateChildren(child.children, createdFolder.id);
+          }
         }
       }
     }
-  }
 
-  // 4. Reconstruct items from snapshot.data under '1', '2', '3'
-  const snapshotTree = Array.isArray(snapshot.data) ? snapshot.data : [snapshot.data];
-  for (const rootId of ['1', '2', '3']) {
-    const rootSnapshotNode = findNodeById(snapshotTree, rootId);
-    if (rootSnapshotNode && rootSnapshotNode.children && rootSnapshotNode.children.length > 0) {
-      await recreateChildren(rootSnapshotNode.children, rootId);
+    // 4. Reconstruct items from snapshot.data under '1', '2', '3'
+    const snapshotTree = Array.isArray(snapshot.data) ? snapshot.data : [snapshot.data];
+    for (const rootId of ['1', '2', '3']) {
+      const rootSnapshotNode = findNodeById(snapshotTree, rootId);
+      if (rootSnapshotNode && rootSnapshotNode.children && rootSnapshotNode.children.length > 0) {
+        await recreateChildren(rootSnapshotNode.children, rootId);
+      }
     }
-  }
+  });
 
   return true;
 }

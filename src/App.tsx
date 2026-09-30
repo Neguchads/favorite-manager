@@ -112,14 +112,15 @@ export const App: React.FC = () => {
   });
 
   // Undo Toast state for instant single-item deletions
+  type UndoItem = { title: string; url: string; parentId: string; index?: number };
   const [undoToast, setUndoToast] = useState<{
     isOpen: boolean;
-    item: { title: string; url: string; parentId: string };
+    item: UndoItem;
   } | null>(null);
 
   const undoToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const triggerUndoToast = (item: { title: string; url: string; parentId: string }) => {
+  const triggerUndoToast = (item: UndoItem) => {
     if (undoToastTimerRef.current) clearTimeout(undoToastTimerRef.current);
     setUndoToast({ isOpen: true, item });
     undoToastTimerRef.current = setTimeout(() => {
@@ -130,12 +131,22 @@ export const App: React.FC = () => {
   const handleUndoDelete = async () => {
     if (!undoToast?.item) return;
     if (undoToastTimerRef.current) clearTimeout(undoToastTimerRef.current);
-    const { title, url, parentId } = undoToast.item;
+    const { title, url, parentId, index } = undoToast.item;
     setUndoToast(null);
     try {
-      await createBookmark(title, url, parentId);
+      // Volta para a mesma posição que ocupava na pasta
+      await createBookmark(title, url, parentId, index);
     } catch (err) {
-      console.error('Erro ao desfazer exclusão:', err);
+      if (index === undefined) {
+        console.error('Erro ao desfazer exclusão:', err);
+        return;
+      }
+      // A pasta encolheu enquanto o aviso estava aberto: recria no fim para não perder o favorito
+      try {
+        await createBookmark(title, url, parentId);
+      } catch (retryErr) {
+        console.error('Erro ao desfazer exclusão:', retryErr);
+      }
     }
   };
 
@@ -163,10 +174,11 @@ export const App: React.FC = () => {
     }
 
     // Single bookmark item -> Instant Action + Undo Toast (6s)
-    const backupItem = {
+    const backupItem: UndoItem = {
       title: node.title,
       url: node.url,
       parentId: node.parentId || '1',
+      index: node.index,
     };
 
     // Execute immediately without blocking modal
@@ -214,15 +226,29 @@ export const App: React.FC = () => {
     }
   };
 
+  // Omnibox "fav <termo>" abre index.html#search=<termo>: preenche a busca
+  useEffect(() => {
+    const match = window.location.hash.match(/^#search=(.*)$/);
+    if (!match) return;
+    try {
+      setSearchQuery(decodeURIComponent(match[1]));
+    } catch {
+      // termo malformado na URL: ignora
+    }
+  }, []);
+
   // Global Edge-style keyboard shortcuts (Ctrl+K, Ctrl+Shift+F, Ctrl+A, Delete)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
       const isInput =
-        target &&
+        !!target &&
         (target.tagName === 'INPUT' ||
           target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
           target.isContentEditable);
+      // Com modal aberto, atalhos da lista (Delete, setas, Ctrl+A, Ctrl+Z) ficam desligados
+      const isModalOpen = document.querySelector('[aria-modal="true"]') !== null;
 
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
@@ -236,14 +262,15 @@ export const App: React.FC = () => {
       }
 
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
-        if (undoToast?.isOpen) {
+        // Em campo de texto, Ctrl+Z desfaz o texto, não a exclusão
+        if (undoToast?.isOpen && !isInput && !isModalOpen) {
           e.preventDefault();
           handleUndoDelete();
           return;
         }
       }
 
-      if (!isInput) {
+      if (!isInput && !isModalOpen) {
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
           e.preventDefault();
           selectAll(displayedItems);

@@ -36,6 +36,9 @@ export interface SyncBookmarkPayload {
 export interface SyncCatalogItem {
   title: string;
   url?: string;
+  // Raiz de origem ('1' barra, '2' outros, '3' móveis). Ausente em mensagens do formato antigo.
+  rootId?: '1' | '2' | '3';
+  // Caminho da pasta SEM o nome da raiz (ex.: "Estudos / Inglês")
   folderPath: string;
   dateAdded?: number;
 }

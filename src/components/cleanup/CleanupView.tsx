@@ -21,6 +21,7 @@ import {
   findBookmarksWithGenericTitles,
   fetchTitleForUrl,
 } from '../../services/cleanup/titleEnricher';
+import { requestAllSitesAccess, ALL_SITES_DENIED_MESSAGE } from '../../services/permissions';
 import {
   checkBookmarksHealth,
   LinkHealthResult,
@@ -73,6 +74,7 @@ export const CleanupView: React.FC<CleanupViewProps> = ({
   const [healthProgress, setHealthProgress] = useState<{ current: number; total: number } | null>(null);
   const [healthResults, setHealthResults] = useState<LinkHealthResult[]>([]);
   const [restoredArchiveMap, setRestoredArchiveMap] = useState<Record<string, boolean>>({});
+  const [sitesAccessDenied, setSitesAccessDenied] = useState(false);
 
   const handleRestoreArchiveUrl = async (res: LinkHealthResult) => {
     if (!onUpdateBookmark || !res.waybackUrl) return;
@@ -114,6 +116,12 @@ export const CleanupView: React.FC<CleanupViewProps> = ({
   // Handler: Auto-enrich titles
   const handleEnrichTitles = async () => {
     if (!onUpdateBookmark || genericTitleItems.length === 0) return;
+    // Primeiro await do clique: o navegador só mostra o pedido de permissão durante o gesto
+    if (!(await requestAllSitesAccess())) {
+      setSitesAccessDenied(true);
+      return;
+    }
+    setSitesAccessDenied(false);
     setEnrichingTitles(true);
     setTitleProgress({ current: 0, total: genericTitleItems.length });
 
@@ -141,6 +149,12 @@ export const CleanupView: React.FC<CleanupViewProps> = ({
 
   // Handler: Scan broken links
   const handleStartHealthScan = async () => {
+    // Primeiro await do clique: o navegador só mostra o pedido de permissão durante o gesto
+    if (!(await requestAllSitesAccess())) {
+      setSitesAccessDenied(true);
+      return;
+    }
+    setSitesAccessDenied(false);
     setIsScanningHealth(true);
     setHealthResults([]);
     setHealthProgress({ current: 0, total: Math.min(allItems.length, 300) });
@@ -226,6 +240,11 @@ export const CleanupView: React.FC<CleanupViewProps> = ({
 
   return (
     <div className="p-4 space-y-4 text-xs">
+      {sitesAccessDenied && (
+        <div className="p-3 rounded-lg border border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300">
+          {ALL_SITES_DENIED_MESSAGE}
+        </div>
+      )}
       {/* Sub-Tabs Navigation */}
       <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
         <button

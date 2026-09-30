@@ -1,6 +1,7 @@
 // Microsoft Edge / Chromium Manifest V3 Background Service Worker
 import { classifyBookmarkIntelligently } from '../ai/classifier';
 import { ensureHierarchicalFolder, buildExistingFolderMap } from '../services/bookmarks/hierarchy';
+import { isBulkLockActive } from '../services/bookmarks/bulkLock';
 
 function escapeXml(str: string): string {
   return str
@@ -11,13 +12,18 @@ function escapeXml(str: string): string {
     .replace(/'/g, '&apos;');
 }
 
-function setupOllamaCorsRules() {
-  if (typeof chrome !== 'undefined' && chrome.declarativeNetRequest?.updateDynamicRules) {
-    chrome.declarativeNetRequest.updateDynamicRules({
-      removeRuleIds: [1001, 1002],
+// Só reescreve o Origin das chamadas da PRÓPRIA extensão ao Ollama local.
+// Páginas da extensão com host_permissions já ignoram CORS; o Ollama só rejeita o Origin chrome-extension://.
+async function setupOllamaOriginRule() {
+  if (typeof chrome === 'undefined' || !chrome.declarativeNetRequest?.updateSessionRules) return;
+  try {
+    // Limpa as regras antigas, que valiam para qualquer site
+    await chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [1001, 1002] });
+    await chrome.declarativeNetRequest.updateSessionRules({
+      removeRuleIds: [2001],
       addRules: [
         {
-          id: 1001,
+          id: 2001,
           priority: 1,
           action: {
             type: chrome.declarativeNetRequest.RuleActionType.MODIFY_HEADERS,
@@ -28,77 +34,26 @@ function setupOllamaCorsRules() {
                 value: 'http://localhost',
               },
             ],
-            responseHeaders: [
-              {
-                header: 'Access-Control-Allow-Origin',
-                operation: chrome.declarativeNetRequest.HeaderOperation.SET,
-                value: '*',
-              },
-              {
-                header: 'Access-Control-Allow-Methods',
-                operation: chrome.declarativeNetRequest.HeaderOperation.SET,
-                value: 'GET, POST, PUT, DELETE, OPTIONS',
-              },
-              {
-                header: 'Access-Control-Allow-Headers',
-                operation: chrome.declarativeNetRequest.HeaderOperation.SET,
-                value: '*',
-              },
-            ],
           },
           condition: {
-            urlFilter: '||127.0.0.1:11434/',
-            resourceTypes: [chrome.declarativeNetRequest.ResourceType.XMLHTTPREQUEST],
-          },
-        },
-        {
-          id: 1002,
-          priority: 1,
-          action: {
-            type: chrome.declarativeNetRequest.RuleActionType.MODIFY_HEADERS,
-            requestHeaders: [
-              {
-                header: 'origin',
-                operation: chrome.declarativeNetRequest.HeaderOperation.SET,
-                value: 'http://localhost',
-              },
-            ],
-            responseHeaders: [
-              {
-                header: 'Access-Control-Allow-Origin',
-                operation: chrome.declarativeNetRequest.HeaderOperation.SET,
-                value: '*',
-              },
-              {
-                header: 'Access-Control-Allow-Methods',
-                operation: chrome.declarativeNetRequest.HeaderOperation.SET,
-                value: 'GET, POST, PUT, DELETE, OPTIONS',
-              },
-              {
-                header: 'Access-Control-Allow-Headers',
-                operation: chrome.declarativeNetRequest.HeaderOperation.SET,
-                value: '*',
-              },
-            ],
-          },
-          condition: {
-            urlFilter: '||localhost:11434/',
+            initiatorDomains: [chrome.runtime.id],
+            requestDomains: ['localhost', '127.0.0.1'],
             resourceTypes: [chrome.declarativeNetRequest.ResourceType.XMLHTTPREQUEST],
           },
         },
       ],
-    }).catch((err) => {
-      console.warn('Ollama dynamic rules registration skipped:', err);
     });
+  } catch (err) {
+    console.warn('Ollama origin rule registration skipped:', err);
   }
 }
 
 // Run rules setup immediately
-setupOllamaCorsRules();
+setupOllamaOriginRule();
 
 chrome.runtime.onInstalled.addListener(() => {
   console.log('Edge Favorite Manager installed successfully');
-  setupOllamaCorsRules();
+  setupOllamaOriginRule();
 
   // Configure side panel behavior if API is present
   if (chrome.sidePanel && 'setPanelBehavior' in chrome.sidePanel) {
@@ -127,11 +82,14 @@ chrome.omnibox.onInputChanged.addListener(async (text, suggest) => {
   }
 });
 
+chrome.omnibox.setDefaultSuggestion({ description: 'Buscar nos favoritos: <match>%s</match>' });
+
 chrome.omnibox.onInputEntered.addListener((url, disposition) => {
   if (!url) return;
-  const targetUrl = url.startsWith('http')
+  // Sugestão escolhida traz a URL; texto digitado abre a busca da própria extensão
+  const targetUrl = /^https?:\/\//i.test(url)
     ? url
-    : `https://www.bing.com/search?q=${encodeURIComponent(url)}`;
+    : chrome.runtime.getURL(`index.html#search=${encodeURIComponent(url.trim())}`);
   if (disposition === 'currentTab') {
     chrome.tabs.update({ url: targetUrl });
   } else {
@@ -154,8 +112,8 @@ chrome.bookmarks.onCreated.addListener(async (id, bookmark) => {
     // Global Mutex Check: Suppress auto-organization and event loops during bulk imports or sync
     if (chrome.storage?.session) {
       try {
-        const { isBulkOperating } = await chrome.storage.session.get('isBulkOperating');
-        if (isBulkOperating === true) return;
+        const lockState = await chrome.storage.session.get(['isBulkOperating', 'bulkReleasedAt']);
+        if (isBulkLockActive(lockState)) return;
       } catch {}
     }
 

@@ -105,7 +105,15 @@ npm run dev
 
 # Compilar para produção (gera pasta dist/)
 npm run build
+
+# Rodar os testes automatizados (Vitest, pasta tests/)
+npm test
+
+# Gerar o pacote Favorite-Manager.zip para a loja do Edge
+npm run package
 ```
+
+Política de privacidade: [docs/PRIVACIDADE.md](docs/PRIVACIDADE.md).
 
 ---
 

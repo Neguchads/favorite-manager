@@ -232,6 +232,7 @@ export class MockBookmarksService implements IBookmarksService {
 
   constructor() {
     this.tree = JSON.parse(JSON.stringify(INITIAL_MOCK_TREE));
+    this.reindexAll(this.tree[0]);
   }
 
   isNative(): boolean {
@@ -271,6 +272,7 @@ export class MockBookmarksService implements IBookmarksService {
     } else {
       parent.children.push(newNode);
     }
+    this.reindex(parent);
 
     this.notify();
     return JSON.parse(JSON.stringify(newNode));
@@ -291,6 +293,7 @@ export class MockBookmarksService implements IBookmarksService {
     const { node, parent } = this.findNodeAndParent(this.tree[0], id);
     if (!node || !parent) throw new Error(`Node ${id} or parent not found`);
 
+    const oldIndex = parent.children?.findIndex((c) => c.id === id) ?? -1;
     parent.children = parent.children?.filter((c) => c.id !== id);
 
     const targetParentId = params.parentId || parent.id;
@@ -301,10 +304,14 @@ export class MockBookmarksService implements IBookmarksService {
     node.parentId = targetParent.id;
 
     if (params.index !== undefined && params.index >= 0) {
-      targetParent.children.splice(params.index, 0, node);
+      // Igual ao Chrome: descendo na mesma pasta, o índice conta com o item ainda no lugar antigo
+      const finalIndex = targetParent.id === parent.id && params.index > oldIndex ? params.index - 1 : params.index;
+      targetParent.children.splice(finalIndex, 0, node);
     } else {
       targetParent.children.push(node);
     }
+    this.reindex(parent);
+    this.reindex(targetParent);
 
     this.notify();
     return JSON.parse(JSON.stringify(node));
@@ -314,6 +321,7 @@ export class MockBookmarksService implements IBookmarksService {
     const { parent } = this.findNodeAndParent(this.tree[0], id);
     if (parent && parent.children) {
       parent.children = parent.children.filter((c) => c.id !== id);
+      this.reindex(parent);
       this.notify();
     }
   }
@@ -329,6 +337,18 @@ export class MockBookmarksService implements IBookmarksService {
 
   private notify(): void {
     this.listeners.forEach((cb) => cb());
+  }
+
+  // Mantém o campo index como o Chrome devolve (posição na pasta)
+  private reindex(parent: BookmarkNode): void {
+    parent.children?.forEach((child, i) => {
+      child.index = i;
+    });
+  }
+
+  private reindexAll(node: BookmarkNode): void {
+    this.reindex(node);
+    node.children?.forEach((child) => this.reindexAll(child));
   }
 
   private findNode(current: BookmarkNode, id: string): BookmarkNode | null {
