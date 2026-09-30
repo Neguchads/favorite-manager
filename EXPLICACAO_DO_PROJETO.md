@@ -402,7 +402,7 @@ Ao testar links ou buscar títulos de páginas diretamente do JavaScript de uma 
 ### Mapa Detalhado dos Arquivos do Projeto:
 
 ```text
-edge-favorite-manager/
+favorite-manager/
 ├── public/
 │   ├── icons/                          # Ícones da extensão (16x16, 32x32, 48x48, 128x128 px)
 │   └── manifest.json                   # Manifesto V3 com permissões, omnibox e service worker
