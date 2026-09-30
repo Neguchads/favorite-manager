@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   createLocalSnapshot,
   listSnapshots,
@@ -6,6 +6,7 @@ import {
   deleteSnapshot,
   __resetSnapshotStateForTests,
 } from '../src/services/backup';
+import { bookmarksService } from '../src/services/bookmarks';
 
 // chrome.storage.local falso, no estilo callback usado pelo módulo
 function createFakeStorage() {
@@ -107,6 +108,107 @@ describe('snapshots particionados (chrome.storage.local)', () => {
     expect(record?.data).toEqual(tree);
     expect(record?.label).toBe('velho');
   });
+
+  it('refaz a migração de árvore que falhou e só remove o legado depois', async () => {
+    const tree = [{ id: '0', title: '', children: [{ id: '1', title: 'Barra', children: [] }] }];
+    fake.store.efm_snapshots = [
+      { id: 'snapshot_2', timestamp: 2, label: 'novo', totalBookmarks: 1, totalFolders: 1, data: tree },
+      { id: 'snapshot_1', timestamp: 1, label: 'velho', totalBookmarks: 0, totalFolders: 1, data: tree },
+    ];
+    // Falha uma única vez ao gravar a árvore de snapshot_1
+    let failOnce = true;
+    const originalSet = fake.local.set;
+    (globalThis as any).chrome.runtime = { lastError: undefined };
+    fake.local.set = (items: Record<string, any>, cb?: () => void) => {
+      if (failOnce && 'efm_snapshot_snapshot_1' in items) {
+        failOnce = false;
+        setTimeout(() => {
+          (globalThis as any).chrome.runtime.lastError = { message: 'falha simulada' };
+          cb?.();
+          (globalThis as any).chrome.runtime.lastError = undefined;
+        }, 0);
+        return;
+      }
+      originalSet(items, cb);
+    };
+
+    await listSnapshots();
+    expect(fake.store.efm_snapshot_snapshot_1).toBeUndefined();
+    expect(fake.store.efm_snapshots).toBeDefined();
+    // Enquanto pendente, a árvore ainda sai do array legado
+    expect((await getSnapshotById('snapshot_1'))?.data).toEqual(tree);
+
+    const list = await listSnapshots();
+    expect(list.map((s) => s.id)).toEqual(['snapshot_2', 'snapshot_1']);
+    expect(fake.store.efm_snapshot_snapshot_1).toEqual(tree);
+    expect(fake.store.efm_snapshots).toBeUndefined();
+    expect((await getSnapshotById('snapshot_1'))?.data).toEqual(tree);
+  });
+
+  it('snapshot apagado não reaparece enquanto o legado existe', async () => {
+    const tree = [{ id: '0', title: '', children: [] }];
+    fake.store.efm_snapshots = [
+      { id: 'snapshot_2', timestamp: 2, label: 'novo', totalBookmarks: 0, totalFolders: 0, data: tree },
+      { id: 'snapshot_1', timestamp: 1, label: 'velho', totalBookmarks: 0, totalFolders: 0, data: tree },
+    ];
+    // Todas as gravações de árvore de snapshot_1 falham: o legado continua existindo
+    const originalSet = fake.local.set;
+    (globalThis as any).chrome.runtime = { lastError: undefined };
+    fake.local.set = (items: Record<string, any>, cb?: () => void) => {
+      if ('efm_snapshot_snapshot_1' in items) {
+        setTimeout(() => {
+          (globalThis as any).chrome.runtime.lastError = { message: 'falha simulada' };
+          cb?.();
+          (globalThis as any).chrome.runtime.lastError = undefined;
+        }, 0);
+        return;
+      }
+      originalSet(items, cb);
+    };
+
+    expect((await listSnapshots()).map((s) => s.id)).toEqual(['snapshot_2', 'snapshot_1']);
+    expect(fake.store.efm_snapshots).toBeDefined();
+    await deleteSnapshot('snapshot_1');
+    expect((await listSnapshots()).map((s) => s.id)).toEqual(['snapshot_2']);
+    expect((await listSnapshots()).map((s) => s.id)).toEqual(['snapshot_2']);
+    expect(await getSnapshotById('snapshot_1')).toBeNull();
+  });
+
+  it('remove árvores órfãs e mantém as referenciadas', async () => {
+    const kept = await createLocalSnapshot('mantida');
+    __resetSnapshotStateForTests();
+    fake.store.efm_snapshot_snapshot_orfao = [{ id: '0', title: '', children: [] }];
+    fake.store.efm_snapshots_index_extra = 'não é árvore';
+
+    const created = await createLocalSnapshot('nova');
+    expect(fake.store.efm_snapshot_snapshot_orfao).toBeUndefined();
+    expect(fake.store[`efm_snapshot_${kept}`]).toBeDefined();
+    expect(fake.store[`efm_snapshot_${created}`]).toBeDefined();
+    expect(fake.store.efm_snapshots_index_extra).toBe('não é árvore');
+    expect((await listSnapshots()).map((s) => s.id).sort()).toEqual([kept, created].sort());
+  });
+
+  it('serializa entre contextos com navigator.locks', async () => {
+    const request = vi.fn((_name: string, fn: () => Promise<unknown>) => fn());
+    vi.stubGlobal('navigator', { locks: { request } });
+    try {
+      await createLocalSnapshot('com trava');
+      expect(request).toHaveBeenCalled();
+      expect(request.mock.calls.every(([name]) => name === 'efm_snapshots')).toBe(true);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('funciona sem navigator.locks (fila em memória)', async () => {
+    vi.stubGlobal('navigator', undefined);
+    try {
+      const [a, b] = await Promise.all([createLocalSnapshot('A'), createLocalSnapshot('B')]);
+      expect((await listSnapshots()).map((s) => s.id).sort()).toEqual([a, b].sort());
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
 });
 
 describe('snapshots no fallback localStorage', () => {
@@ -163,6 +265,39 @@ describe('snapshots no fallback localStorage', () => {
     // Cota menor que uma árvore: não lança
     quota = 10;
     await expect(createLocalSnapshot('4')).resolves.toMatch(/^snapshot_/);
+  });
+
+  it('não apaga os snapshots antigos se a nova árvore não cabe nem sozinha', async () => {
+    const smallTree = [{ id: '0', title: '', children: [] }];
+    const index = [
+      { id: 'snapshot_2', timestamp: 2, label: 'dois', totalBookmarks: 0, totalFolders: 0 },
+      { id: 'snapshot_1', timestamp: 1, label: 'um', totalBookmarks: 0, totalFolders: 0 },
+    ];
+    store.efm_snapshots_index = JSON.stringify(index);
+    store.efm_snapshot_snapshot_1 = JSON.stringify(smallTree);
+    store.efm_snapshot_snapshot_2 = JSON.stringify(smallTree);
+
+    // Qualquer gravação maior que N falha; a árvore nova sozinha passa de N
+    const newTreeSize = JSON.stringify(await bookmarksService.getTree()).length;
+    const maxWrite = Math.floor(newTreeSize / 2);
+    expect(maxWrite).toBeGreaterThan(JSON.stringify(index).length + 200);
+    const ls = (globalThis as any).localStorage;
+    const baseSet = ls.setItem;
+    ls.setItem = (k: string, v: string) => {
+      if (v.length > maxWrite) {
+        const err = new Error('quota');
+        err.name = 'QuotaExceededError';
+        throw err;
+      }
+      baseSet(k, v);
+    };
+
+    const id = await createLocalSnapshot('grande');
+    const list = await listSnapshots();
+    expect(list.map((s) => s.id)).toEqual(['snapshot_2', 'snapshot_1']);
+    expect(store[`efm_snapshot_${id}`]).toBeUndefined();
+    expect((await getSnapshotById('snapshot_1'))?.data).toEqual(smallTree);
+    expect((await getSnapshotById('snapshot_2'))?.data).toEqual(smallTree);
   });
 });
 
