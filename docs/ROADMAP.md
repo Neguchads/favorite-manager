@@ -1,5 +1,5 @@
-# 🗺️ Roadmap — Favorite Manager for Microsoft Edge
-**Favorite Manager for Microsoft Edge & Chromium** — Arquitetura, Frontend Craft & Inteligência Artificial.
+# 🗺️ Roadmap — Favorite Manager
+**Favorite Manager** — Arquitetura, Frontend Craft & Inteligência Artificial.
 
 > Documento de planejamento técnico consolidado a partir da auditoria forense multiagente realizada em **25 de setembro de 2026**.
 > Destinado a orientar os próximos ciclos de desenvolvimento e refatorações no projeto.

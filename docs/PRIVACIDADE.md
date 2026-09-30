@@ -1,4 +1,4 @@
-# Política de Privacidade — Favorite Manager for Microsoft Edge
+# Política de Privacidade — Favorite Manager
 
 _Última atualização: 30 de setembro de 2026_
 

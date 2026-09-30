@@ -128,7 +128,7 @@ export const PopupContent: React.FC = () => {
           </div>
           <div>
             <h1 className="font-bold text-xs tracking-tight text-white leading-none">
-              Edge Favorite Manager
+              Favorite Manager
             </h1>
             <p className="text-[10px] text-slate-400 mt-0.5">
               {stats.totalBookmarks} {t('popup.favoritesCount')} {stats.totalFolders} {t('popup.foldersCount')}

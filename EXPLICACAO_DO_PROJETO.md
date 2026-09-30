@@ -1,4 +1,4 @@
-# 🌟 Edge Favorite Manager — Documentação Técnica & Manual Completo do Projeto
+# 🌟 Favorite Manager — Documentação Técnica & Manual Completo do Projeto
 
 > **Manual Definitivo: Contexto Real, O Que É, Por Que Usar, Taxonomia Completa, Como Usar, Arquitetura, Algoritmos, Como Foi Construído e Solução de Problemas.**
 
@@ -6,7 +6,7 @@
 
 ## 📑 Sumário
 
-1. [O Que É o Edge Favorite Manager?](#-1-o-que-é-o-edge-favorite-manager)
+1. [O Que É o Favorite Manager?](#-1-o-que-é-o-favorite-manager)
 2. [A Origem: O Desafio Real dos 3.511 Favoritos](#-2-a-origem-o-desafio-real-dos-3511-favoritos)
 3. [Por Que Usar? Diferenciais Frente ao Navegador Padrão](#-3-por-que-usar-diferenciais-frente-ao-navegador-padrão)
 4. [A Taxonomia Semântica Completa (18 Categorias & Subpastas)](#-4-a-taxonomia-semântica-completa-18-categorias--subpastas)
@@ -32,9 +32,9 @@
 
 ---
 
-## 📌 1. O Que É o Edge Favorite Manager?
+## 📌 1. O Que É o Favorite Manager?
 
-O **Edge Favorite Manager** é uma extensão profissional de alto desempenho construída especificamente para o **Microsoft Edge** (e compatível com qualquer navegador Chromium, como Chrome, Brave e Opera) sob as diretrizes do **Manifest V3**.
+O **Favorite Manager** é uma extensão profissional de alto desempenho construída especificamente para o **Microsoft Edge** (e compatível com qualquer navegador Chromium, como Chrome, Brave e Opera) sob as diretrizes do **Manifest V3**.
 
 O objetivo da extensão é transformar a gestão caótica de favoritos do navegador em um **ambiente de trabalho organizado, auditado e inteligente**, integrando manipulação direta através da API nativa `chrome.bookmarks`, processamento semântico local ultrarrápido, proteção com snapshots atômicos e ferramentas de manutenção profunda de URLs.
 
@@ -49,7 +49,7 @@ A aplicação se divide em três superfícies complementares:
 
 A maioria das extensões de favoritos do mercado foi feita para coleções pequenas (50 a 100 links). Quando submetidas a uma biblioteca real de um profissional técnico — com milhares de itens acumulados durante anos —, elas congelam, estouram a memória do navegador ou simplesmente falham ao tentar mover as pastas.
 
-O **Edge Favorite Manager** foi concebido a partir da análise exaustiva de um arquivo real de exportação (`favoritos_22_09_2026. html.html`), que continha:
+O **Favorite Manager** foi concebido a partir da análise exaustiva de um arquivo real de exportação (`favoritos_22_09_2026. html.html`), que continha:
 - **3.511 favoritos cadastrados**;
 - **86 pastas originais** com sobreposições conceituais severas;
 - **1.116 links acumulados** em uma única pasta desordenada (`Barra de favoritos / OUTROS / DIVERSOS`);
@@ -66,7 +66,7 @@ O **Edge Favorite Manager** foi concebido a partir da análise exaustiva de um a
 
 ## 🎯 3. Por Que Usar? Diferenciais Frente ao Navegador Padrão
 
-| Desafio no Edge Nativo | Solução no Edge Favorite Manager |
+| Desafio no Edge Nativo | Solução no Favorite Manager |
 |---|---|
 | **Pastas vazias acumuladas** após reorganizar | **Algoritmo de Pruning Pós-Ordem** que remove apenas pastas 100% vazias |
 | **Links mortos (Erro 404)** de sites antigos | **Scanner de Integridade** com botão direto para o **Wayback Machine (Archive.org)** |
@@ -220,7 +220,7 @@ A extensão já está totalmente transpilada e empacotada na pasta `dist/`:
 2. No menu lateral esquerdo, certifique-se de que a opção **"Modo de desenvolvedor"** (*Developer mode*) está ativada.
 3. Clique no botão **"Carregar sem compactação"** (*Load unpacked*) no topo da tela.
 4. Navegue até a pasta descompactada e selecione o diretório **`dist`**.
-5. A extensão **Edge Favorite Manager** estará instalada e pronta para uso!
+5. A extensão **Favorite Manager** estará instalada e pronta para uso!
 
 ---
 
@@ -286,10 +286,10 @@ No menu lateral, selecione **Central de Limpeza**. No topo da tela, você encont
 ---
 
 ### 5.6. Auto-Organização em Tempo Real (`Ctrl + D`)
-- Sempre que você encontrar um site interessante e apertar **`Ctrl + D`** (ou clicar no ícone de estrela da barra do Edge), o **Edge Favorite Manager** entra em ação.
+- Sempre que você encontrar um site interessante e apertar **`Ctrl + D`** (ou clicar no ícone de estrela da barra do Edge), o **Favorite Manager** entra em ação.
 - Ele analisa a URL e o título do novo favorito e o transfere na mesma hora para a subpasta temática correta.
 - O Windows/Edge emite uma notificação nativa no canto da tela:
-  > *⚡ Edge Favorite Manager: Favorito salvo e organizado em: 📁 Jogos & Games / Sony & PlayStation*
+  > *⚡ Favorite Manager: Favorito salvo e organizado em: 📁 Jogos & Games / Sony & PlayStation*
 - Para desativar ou reativar esse recurso, basta alternar o botão **"Auto-Organizar: ON/OFF"** no cabeçalho.
 
 ---
@@ -313,7 +313,7 @@ No menu lateral, selecione **Central de Limpeza**. No topo da tela, você encont
 ---
 
 ### 5.9. Uso no Edge Side Panel (Painel Lateral)
-- O Edge Favorite Manager foi compilado com suporte nativo ao **Side Panel** do Edge.
+- O Favorite Manager foi compilado com suporte nativo ao **Side Panel** do Edge.
 - Ao abrir o painel lateral do Edge, você tem acesso à árvore completa de favoritos, busca e inspetor enquanto continua lendo páginas ou assistindo a vídeos no painel principal.
 - No topo do painel lateral, há um botão com ícone de seta externa para expandir para tela cheia a qualquer momento.
 
@@ -378,7 +378,7 @@ O verificador de links (`health/index.ts`) opera com um pool de concorrência co
 
 ### 6.6. Service Worker Manifest V3 e Bypass Seguro de CORS
 Ao testar links ou buscar títulos de páginas diretamente do JavaScript de uma página web comum, as políticas de CORS do navegador bloqueariam a requisição.
-- O **Edge Favorite Manager** utiliza a permissão `"host_permissions": ["<all_urls>"]` configurada no `manifest.json`.
+- O **Favorite Manager** utiliza a permissão `"host_permissions": ["<all_urls>"]` configurada no `manifest.json`.
 - As requisições são delegadas via `chrome.runtime.sendMessage` para o Service Worker (`background.js`), que executa a checagem sem nenhuma restrição de CORS e retorna apenas o status ou o `<title>` higienizado para a interface visual.
 
 ---
@@ -506,4 +506,4 @@ edge-favorite-manager/
 
 ---
 
-*Edge Favorite Manager — Desenvolvido com foco em máxima performance, privacidade absoluta e organização impecável.*
+*Favorite Manager — Desenvolvido com foco em máxima performance, privacidade absoluta e organização impecável.*

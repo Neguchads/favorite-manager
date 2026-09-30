@@ -3,7 +3,7 @@
 Texto pronto para colar no Partner Center no primeiro envio. Limites da loja entre parênteses.
 
 ## Nome (até 45 caracteres)
-Favorite Manager for Microsoft Edge
+Favorite Manager
 
 ## Descrição curta (até 132 caracteres)
 Organize, busque e limpe seus favoritos: pastas automáticas, duplicados, links quebrados, backup e IA local opcional.

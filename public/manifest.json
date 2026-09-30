@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Favorite Manager for Microsoft Edge",
+  "name": "Favorite Manager",
   "version": "0.0.0",
   "description": "Gerenciador profissional de favoritos para Microsoft Edge com organização avançada, busca rápida, detecção de duplicados e IA local.",
   "permissions": [
@@ -39,7 +39,7 @@
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Favorite Manager for Microsoft Edge"
+    "default_title": "Favorite Manager"
   },
   "options_ui": {
     "page": "index.html",

@@ -3,7 +3,7 @@ export type Language = 'pt' | 'en';
 export const translations = {
   pt: {
     // Header
-    'header.title': 'Edge Favorite Manager',
+    'header.title': 'Favorite Manager',
     'header.badgeNative': 'Edge API',
     'header.badgeMock': 'Dev Mock',
     'header.subtitle': 'Organização avançada, limpeza e IA',
@@ -120,7 +120,7 @@ export const translations = {
     'dnd.dropHere': 'Solte para mover aqui',
 
     // Popup
-    'popup.title': 'Edge Favorite Manager',
+    'popup.title': 'Favorite Manager',
     'popup.sidebar': 'Sidebar',
     'popup.sidebarTooltip': 'Abrir no Painel Lateral do Edge',
     'popup.fullTab': 'Tela Cheia',
@@ -227,7 +227,7 @@ export const translations = {
 
   en: {
     // Header
-    'header.title': 'Edge Favorite Manager',
+    'header.title': 'Favorite Manager',
     'header.badgeNative': 'Edge API',
     'header.badgeMock': 'Dev Mock',
     'header.subtitle': 'Advanced organization, cleanup & local AI',
@@ -344,7 +344,7 @@ export const translations = {
     'dnd.dropHere': 'Drop to move here',
 
     // Popup
-    'popup.title': 'Edge Favorite Manager',
+    'popup.title': 'Favorite Manager',
     'popup.sidebar': 'Sidebar',
     'popup.sidebarTooltip': 'Open in Edge Side Panel',
     'popup.fullTab': 'Full Screen',
