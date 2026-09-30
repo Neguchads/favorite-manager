@@ -24,6 +24,7 @@ import { downloadMarkdownAwesomeList } from './services/backup/markdownExporter'
 import { AiProposedPlan } from './ai/types';
 import { executeAiPlanWithHierarchy } from './services/bookmarks';
 import { openUrlInNewTab, openUrlsInNewWindow, openUrlsInIncognitoWindow } from './services/tabs/workspaceTabs';
+import { shouldHandleListShortcut, parseSearchHash } from './utils/keyboard';
 
 export const App: React.FC = () => {
   const {
@@ -227,28 +228,30 @@ export const App: React.FC = () => {
   };
 
   // Omnibox "fav <termo>" abre index.html#search=<termo>: preenche a busca
+  // Também escuta hashchange: se index.html já está aberto, o omnibox só troca o hash
   useEffect(() => {
-    const match = window.location.hash.match(/^#search=(.*)$/);
-    if (!match) return;
-    try {
-      setSearchQuery(decodeURIComponent(match[1]));
-    } catch {
-      // termo malformado na URL: ignora
-    }
+    const applySearchHash = () => {
+      const term = parseSearchHash(window.location.hash);
+      if (term !== null) setSearchQuery(term);
+    };
+    applySearchHash();
+    window.addEventListener('hashchange', applySearchHash);
+    return () => window.removeEventListener('hashchange', applySearchHash);
   }, []);
 
   // Global Edge-style keyboard shortcuts (Ctrl+K, Ctrl+Shift+F, Ctrl+A, Delete)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
-      const isInput =
-        !!target &&
-        (target.tagName === 'INPUT' ||
-          target.tagName === 'TEXTAREA' ||
-          target.tagName === 'SELECT' ||
-          target.isContentEditable);
-      // Com modal aberto, atalhos da lista (Delete, setas, Ctrl+A, Ctrl+Z) ficam desligados
-      const isModalOpen = document.querySelector('[aria-modal="true"]') !== null;
+      // Com modal ou menu de contexto aberto, atalhos da lista (Delete, setas, Ctrl+A, Ctrl+Z) ficam desligados;
+      // em campos de texto e (para Enter/Espaço) em botões e links, a tecla fica com o elemento focado
+      const handleList = shouldHandleListShortcut({
+        tagName: target?.tagName,
+        isContentEditable: target?.isContentEditable,
+        role: target?.getAttribute?.('role'),
+        key: e.key,
+        overlayOpen: document.querySelector('[aria-modal="true"], [role="menu"]') !== null,
+      });
 
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
@@ -263,14 +266,14 @@ export const App: React.FC = () => {
 
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
         // Em campo de texto, Ctrl+Z desfaz o texto, não a exclusão
-        if (undoToast?.isOpen && !isInput && !isModalOpen) {
+        if (undoToast?.isOpen && handleList) {
           e.preventDefault();
           handleUndoDelete();
           return;
         }
       }
 
-      if (!isInput && !isModalOpen) {
+      if (handleList) {
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
           e.preventDefault();
           selectAll(displayedItems);
