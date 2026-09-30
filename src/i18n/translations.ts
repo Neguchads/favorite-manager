@@ -154,7 +154,7 @@ export const translations = {
     'popup.useSuggestion': 'Usar',
 
     // Side Panel
-    'sidepanel.title': 'Favoritos Edge',
+    'sidepanel.title': 'Favorite Manager',
     'sidepanel.addBookmark': 'Adicionar favorito',
     'sidepanel.organizeAi': 'Organizar com IA',
     'sidepanel.openFullTab': 'Abrir em aba cheia',
@@ -378,7 +378,7 @@ export const translations = {
     'popup.useSuggestion': 'Use',
 
     // Side Panel
-    'sidepanel.title': 'Edge Favorites',
+    'sidepanel.title': 'Favorite Manager',
     'sidepanel.addBookmark': 'Add bookmark',
     'sidepanel.organizeAi': 'Organize with AI',
     'sidepanel.openFullTab': 'Open in full tab',
