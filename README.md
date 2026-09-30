@@ -120,7 +120,7 @@ Política de privacidade: [docs/PRIVACIDADE.md](docs/PRIVACIDADE.md).
 ## 📁 Estrutura do Código-Fonte
 
 ```text
-edge-favorite-manager/
+favorite-manager/
 ├── public/                 # Manifest V3 e ícones da extensão
 ├── src/
 │   ├── ai/                 # Motor Semântico Heurístico (99ms) e Ollama
