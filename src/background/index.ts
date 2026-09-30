@@ -2,6 +2,7 @@
 import { classifyBookmarkIntelligently } from '../ai/classifier';
 import { ensureHierarchicalFolder, buildExistingFolderMap } from '../services/bookmarks/hierarchy';
 import { isBulkLockActive } from '../services/bookmarks/bulkLock';
+import { buildOllamaOriginRule, OLLAMA_ORIGIN_RULE_ID } from './ollamaRule';
 
 function escapeXml(str: string): string {
   return str
@@ -20,28 +21,8 @@ async function setupOllamaOriginRule() {
     // Limpa as regras antigas, que valiam para qualquer site
     await chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [1001, 1002] });
     await chrome.declarativeNetRequest.updateSessionRules({
-      removeRuleIds: [2001],
-      addRules: [
-        {
-          id: 2001,
-          priority: 1,
-          action: {
-            type: chrome.declarativeNetRequest.RuleActionType.MODIFY_HEADERS,
-            requestHeaders: [
-              {
-                header: 'origin',
-                operation: chrome.declarativeNetRequest.HeaderOperation.SET,
-                value: 'http://localhost',
-              },
-            ],
-          },
-          condition: {
-            initiatorDomains: [chrome.runtime.id],
-            requestDomains: ['localhost', '127.0.0.1'],
-            resourceTypes: [chrome.declarativeNetRequest.ResourceType.XMLHTTPREQUEST],
-          },
-        },
-      ],
+      removeRuleIds: [OLLAMA_ORIGIN_RULE_ID],
+      addRules: [buildOllamaOriginRule(chrome.runtime.id)],
     });
   } catch (err) {
     console.warn('Ollama origin rule registration skipped:', err);
