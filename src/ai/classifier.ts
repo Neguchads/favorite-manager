@@ -971,20 +971,25 @@ export function matchWithExistingFolders(
   };
 
   let matchedMaster = master;
-  for (const [canonical, aliases] of Object.entries(ALIAS_GROUPS)) {
-    if (canonical.toLowerCase() === master.toLowerCase() || aliases.includes(master.toLowerCase())) {
-      for (const existing of existingFolderNames) {
-        const existingLower = existing.toLowerCase().trim();
-        // Discard old legacy redundant strings in existing folders
-        if (REDUNDANT_NAMES.has(existingLower)) {
-          continue;
+  const usableExisting = Array.from(existingFolderNames)
+    .map((e) => e.toLowerCase().trim())
+    // Discard old legacy redundant strings in existing folders
+    .filter((e) => !REDUNDANT_NAMES.has(e));
+
+  // Pasta com o nome exato da categoria vence qualquer apelido ("Dev & IA" antes de "Dev")
+  if (usableExisting.includes(master.toLowerCase())) {
+    matchedMaster = capitalizeFolderWords(master);
+  } else {
+    for (const [canonical, aliases] of Object.entries(ALIAS_GROUPS)) {
+      if (canonical.toLowerCase() === master.toLowerCase() || aliases.includes(master.toLowerCase())) {
+        const found =
+          usableExisting.find((e) => e === canonical.toLowerCase()) ||
+          usableExisting.find((e) => aliases.includes(e));
+        if (found) {
+          matchedMaster = capitalizeFolderWords(found);
         }
-        if (aliases.includes(existingLower) || existingLower === canonical.toLowerCase()) {
-          matchedMaster = capitalizeFolderWords(existing);
-          break;
-        }
+        break;
       }
-      break;
     }
   }
 
