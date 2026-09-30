@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import { Modal } from '../common/Modal';
 import { useSync } from '../../hooks/useSync';
-import { isLegacySyncKey } from '../../services/sync';
 
 interface CrossBrowserSyncModalProps {
   isOpen: boolean;
@@ -24,6 +23,7 @@ export const CrossBrowserSyncModal: React.FC<CrossBrowserSyncModalProps> = ({
 }) => {
   const {
     syncKey,
+    hasLegacyKey,
     status,
     peers,
     autoSync,
@@ -131,6 +131,8 @@ export const CrossBrowserSyncModal: React.FC<CrossBrowserSyncModalProps> = ({
                     ? `Seu ${myBrowser} e os navegadores pareados (${peers.map((p) => p.browser).join(', ')}) estão conectados ao vivo. Qualquer alteração em um reflete nos demais.`
                     : status === 'connected'
                     ? `Cole a mesma chave no seu ${otherBrowsersLabel} com a extensão aberta para eles se enxergarem.`
+                    : hasLegacyKey
+                    ? 'A chave salva é do formato antigo e não é mais aceita. Gere uma nova chave abaixo.'
                     : 'Use uma Sync Key para conectar seu Microsoft Edge, Google Chrome ou Brave Browser.'}
                 </p>
               </div>
@@ -195,26 +197,34 @@ export const CrossBrowserSyncModal: React.FC<CrossBrowserSyncModalProps> = ({
               <div className="flex-1 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg font-mono font-bold text-sm tracking-wider text-sky-600 dark:text-sky-400 select-all">
                 {syncKey}
               </div>
-              <button
-                type="button"
-                onClick={handleCopy}
-                className="px-3.5 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-medium flex items-center space-x-1.5 transition-colors cursor-pointer text-xs shadow-sm"
-              >
-                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                <span>{copied ? 'Copiado!' : 'Copiar Chave'}</span>
-              </button>
+              {/* Chave antiga seria recusada pelos outros navegadores: não oferece cópia */}
+              {!hasLegacyKey && (
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  className="px-3.5 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-medium flex items-center space-x-1.5 transition-colors cursor-pointer text-xs shadow-sm"
+                >
+                  {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  <span>{copied ? 'Copiado!' : 'Copiar Chave'}</span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => generateNewKey()}
-                className="px-3 py-2 text-slate-600 dark:text-slate-300 bg-slate-200/70 dark:bg-slate-700 hover:bg-slate-300 rounded-lg transition-colors"
+                className={
+                  hasLegacyKey
+                    ? 'px-3.5 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-medium flex items-center space-x-1.5 transition-colors cursor-pointer text-xs shadow-sm'
+                    : 'px-3 py-2 text-slate-600 dark:text-slate-300 bg-slate-200/70 dark:bg-slate-700 hover:bg-slate-300 rounded-lg transition-colors'
+                }
                 title="Gerar uma nova chave"
               >
-                Gerar Nova
+                {hasLegacyKey && <RefreshCw className="w-4 h-4" />}
+                <span>Gerar Nova</span>
               </button>
             </div>
           ) : null}
 
-          {syncKey && isLegacySyncKey(syncKey) && (
+          {hasLegacyKey && (
             <p
               role="alert"
               className="p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-300"

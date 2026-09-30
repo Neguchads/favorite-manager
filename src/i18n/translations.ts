@@ -42,6 +42,7 @@ export const translations = {
     'nav.stats': 'Estatísticas',
     'nav.backups': 'Backups & Snapshots',
     'nav.crossBrowserSync': 'Sincronizar (Edge ⇄ Chrome ⇄ Brave)',
+    'nav.syncLegacyKey': 'Chave antiga — gere uma nova',
     'nav.folderTree': 'Árvore de Pastas',
     'nav.newSubfolder': 'Criar nova subpasta',
 
@@ -266,6 +267,7 @@ export const translations = {
     'nav.stats': 'Statistics',
     'nav.backups': 'Backups & Snapshots',
     'nav.crossBrowserSync': 'Sync (Edge ⇄ Chrome ⇄ Brave)',
+    'nav.syncLegacyKey': 'Old key — generate a new one',
     'nav.folderTree': 'Folders Tree',
     'nav.newSubfolder': 'Create new subfolder',
 

@@ -76,6 +76,8 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        // Marca a tecla como consumida para o atalho global não limpar a seleção
+        e.preventDefault();
         onClose();
       }
     };

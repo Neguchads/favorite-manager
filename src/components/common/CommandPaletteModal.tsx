@@ -224,6 +224,8 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         }
       }
     } else if (e.key === 'Escape') {
+      // Marca a tecla como consumida para o atalho global não limpar a seleção
+      e.preventDefault();
       onClose();
     }
   };
