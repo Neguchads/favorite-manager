@@ -27,6 +27,12 @@ describe('shouldHandleListShortcut', () => {
     expect(shouldHandleListShortcut({ tagName: 'BUTTON', key: 'ArrowDown', overlayOpen: false })).toBe(true);
   });
 
+  it('ignora teclas já consumidas por um overlay (defaultPrevented)', () => {
+    // Esc que fechou o menu de contexto: o menu já saiu do DOM, mas o evento veio com preventDefault
+    expect(shouldHandleListShortcut({ tagName: 'BODY', key: 'Escape', overlayOpen: false, defaultPrevented: true })).toBe(false);
+    expect(shouldHandleListShortcut({ tagName: 'BODY', key: 'Escape', overlayOpen: false, defaultPrevented: false })).toBe(true);
+  });
+
   it('trata ArrowDown e Enter no body sem overlay', () => {
     expect(shouldHandleListShortcut({ tagName: 'BODY', key: 'ArrowDown', overlayOpen: false })).toBe(true);
     expect(shouldHandleListShortcut({ tagName: 'BODY', key: 'Enter', overlayOpen: false })).toBe(true);

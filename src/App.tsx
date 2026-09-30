@@ -251,6 +251,8 @@ export const App: React.FC = () => {
         role: target?.getAttribute?.('role'),
         key: e.key,
         overlayOpen: document.querySelector('[aria-modal="true"], [role="menu"]') !== null,
+        // Esc que fechou um menu/modal já chega com preventDefault; não deve limpar a seleção
+        defaultPrevented: e.defaultPrevented,
       });
 
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {

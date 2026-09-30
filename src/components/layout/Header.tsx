@@ -62,7 +62,7 @@ export const Header: React.FC<HeaderProps> = ({
   isSidePanel = false,
 }) => {
   const { t, language, setLanguage } = useTranslation();
-  const { status: syncStatus, peers: syncPeers } = useSync();
+  const { status: syncStatus, peers: syncPeers, hasLegacyKey: syncLegacyKey } = useSync();
   const [showSearchHelp, setShowSearchHelp] = useState(false);
   const [autoOrganize, setAutoOrganize] = useState(false);
   const [isToolsOpen, setIsToolsOpen] = useState(false);
@@ -353,6 +353,14 @@ export const Header: React.FC<HeaderProps> = ({
                       <Radio className="w-4 h-4 text-sky-500 shrink-0" />
                       <span className="truncate">Sincronização Edge ⇄ Chrome</span>
                     </div>
+                    {syncLegacyKey && (
+                      <span
+                        className="text-[10px] px-1.5 py-0.2 rounded-full bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 font-semibold shrink-0"
+                        title={t('nav.syncLegacyKey')}
+                      >
+                        {t('nav.syncLegacyKey')}
+                      </span>
+                    )}
                     {syncStatus === 'connected' && syncPeers.length > 0 && (
                       <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-semibold shrink-0">
                         Ativa

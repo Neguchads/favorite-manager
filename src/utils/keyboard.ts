@@ -8,6 +8,11 @@ export interface ListShortcutContext {
   key: string;
   /** há modal (aria-modal="true") ou menu (role="menu") aberto */
   overlayOpen: boolean;
+  /**
+   * KeyboardEvent.defaultPrevented: um overlay (menu, modal, paleta) já consumiu a tecla,
+   * p.ex. o Esc que acabou de fechá-lo e tirá-lo do DOM antes deste handler rodar
+   */
+  defaultPrevented?: boolean;
 }
 
 const TEXT_ENTRY_TAGS = new Set(['INPUT', 'TEXTAREA', 'SELECT']);
@@ -24,8 +29,9 @@ export function shouldHandleListShortcut({
   role,
   key,
   overlayOpen,
+  defaultPrevented,
 }: ListShortcutContext): boolean {
-  if (overlayOpen) return false;
+  if (overlayOpen || defaultPrevented) return false;
 
   const tag = (tagName ?? '').toUpperCase();
   if (TEXT_ENTRY_TAGS.has(tag) || isContentEditable) return false;

@@ -57,8 +57,12 @@ export function useSync() {
     await crossBrowserSyncService.triggerTwoWayMerge();
   }, []);
 
+  // Chave salva por versão antiga: não conecta, a UI deve pedir para gerar uma nova
+  const hasLegacyKey = syncKey !== null && isLegacySyncKey(syncKey);
+
   return {
     syncKey,
+    hasLegacyKey,
     status,
     peers,
     autoSync,
