@@ -2,6 +2,12 @@
 
 Registro curto de passagem de turno. Entrada mais recente no topo.
 
+## 2026-10-01 — Claude Code — Estado ao fim da sessão
+- Tudo na `main` (PRs #1 a #11 mesclados, CI verde), pasta principal em dia com o GitHub. Nada pendente na branch `claude/favorite-manager-audit-bdc274`.
+- `docs/ROADMAP.md` atualizado: status da Fase 0 em 01/10, itens das Fases 1–3 conferidos (1.1, 1.2, 1.3, 1.5 e 1.6 agora feitos), o que foi feito depois da Fase 0 e o próximo passo.
+- Próximo passo: (1) teste manual no Edge, checklist da Tarefa E5; (2) envio no Partner Center seguindo `docs/LOJA.md`; (3) apagar `docs/Store_Assets/` na pasta principal.
+- Entrega neste projeto é automática quando testes e build passam: commit, push, PR, Auto-fix, merge após CI verde e `git pull --ff-only` na pasta principal.
+
 ## 2026-10-01 — Claude Code — Material da loja refeito
 - Arquivos alterados:
   - `docs/loja/` (novo): logo 300×300 da estrela, promo 440×280 e 1400×560, 6 capturas 1280×800 da versão atual (favoritos fictícios do mock). Fontes em `docs/loja/fontes/` (`star.js`, `logo.html`, `promo.html`).
