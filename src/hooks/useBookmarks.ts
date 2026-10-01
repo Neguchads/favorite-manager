@@ -7,7 +7,8 @@ import { findDuplicates } from '../services/duplicates';
 import { analyzeCleanup } from '../services/cleanup';
 import { createLocalSnapshot } from '../services/backup';
 import { isDescendantOf } from '../utils/dragDrop';
-import { crossBrowserSyncService } from '../services/sync';
+// Carrega o serviço de sync em toda página da extensão: ele ouve os eventos de favoritos do navegador
+import '../services/sync';
 
 export interface FolderOption {
   id: string;
@@ -443,9 +444,7 @@ export function useBookmarks() {
         url,
         index,
       });
-      // parentPathMap guarda só o caminho dos pais; o path de allFolders inclui a própria pasta
-      const folderPath = allFolders.find((f) => f.id === targetParent)?.path || 'Barra de favoritos';
-      crossBrowserSyncService.onLocalBookmarkCreated(created, folderPath);
+      // O sync envia o favorito novo pelo evento chrome.bookmarks.onCreated
       await loadTree();
       return created;
     },
@@ -479,12 +478,9 @@ export function useBookmarks() {
 
   const deleteBookmark = useCallback(
     async (id: string) => {
-      const targetNode = nodeMap.get(id);
       await createLocalSnapshot('Exclusão de Favorito');
+      // O sync envia a remoção pelo evento chrome.bookmarks.onRemoved
       await bookmarksService.remove(id);
-      if (targetNode?.url) {
-        crossBrowserSyncService.onLocalBookmarkRemoved(targetNode.url);
-      }
       setSelectedIds((prev) => {
         const next = new Set(prev);
         next.delete(id);
