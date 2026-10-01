@@ -8,7 +8,6 @@ import {
   LayoutGrid,
   ExternalLink,
   X,
-  Layers,
   HelpCircle,
   Zap,
   Laptop,
@@ -112,9 +111,8 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Brand & Mode */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-sky-600 to-blue-500 flex items-center justify-center text-white shadow-md shadow-sky-500/20">
-              <Layers className="w-4 h-4" />
-            </div>
+            {/* Mesmo ícone da extensão (public/icons) */}
+            <img src="icons/icon48.png" alt="" className="w-8 h-8 shrink-0" />
             <div>
               <div className="flex items-center space-x-2">
                 <span className="font-bold text-slate-800 dark:text-slate-100 text-sm tracking-tight">

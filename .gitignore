@@ -12,3 +12,5 @@ Thumbs.db
 *.crx
 *.pem
 scratch/
+.playwright-mcp/
+.claude/launch.json

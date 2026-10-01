@@ -119,9 +119,9 @@ export function useBookmarks() {
 
     function traverse(node: BookmarkNode, currentPath: string, level: number) {
       nMap.set(node.id, node);
-      pMap.set(node.id, currentPath);
 
       if (node.url) {
+        pMap.set(node.id, currentPath);
         bookmarks.push(node);
       } else {
         // Folder
@@ -143,7 +143,11 @@ export function useBookmarks() {
           });
         }
 
-        const nextPath = currentPath ? `${currentPath} / ${folderTitle}` : folderTitle;
+        // O nó raiz '0' não entra no caminho (no mock ele se chama "root")
+        const nextPath = node.id === '0' ? '' : currentPath ? `${currentPath} / ${folderTitle}` : folderTitle;
+        // Pasta: caminho completo incluindo ela mesma. Quem consulta passa o parentId de um favorito
+        // e espera ver a pasta onde ele está (antes aparecia a pasta de cima)
+        pMap.set(node.id, nextPath);
         if (node.children) {
           for (const child of node.children) {
             traverse(child, nextPath, level + 1);

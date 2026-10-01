@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>Imagem promocional</title>
+  <!-- ?size=small (440x280) ou ?size=large (1400x560) -->
+  <style>
+    html, body { margin: 0; overflow: hidden; font-family: "Segoe UI", -apple-system, Roboto, Arial, sans-serif; }
+    .tile {
+      position: relative; box-sizing: border-box; overflow: hidden; color: #e6f0ff;
+      background: radial-gradient(120% 140% at 0% 0%, #1b3558 0%, #0d1a2d 55%, #070f1c 100%);
+      display: flex; align-items: center;
+    }
+    .glow { position: absolute; border-radius: 50%; filter: blur(60px); background: #2584f0; opacity: 0.25; }
+    .text h1 { margin: 0; font-weight: 700; letter-spacing: -0.02em; color: #ffffff; }
+    .text p { margin: 0; color: #a9c4e6; }
+    .chips { display: flex; flex-wrap: wrap; gap: 10px; }
+    .chip { border: 1px solid #2a4466; background: rgba(37, 132, 240, 0.12); color: #cfe2ff; border-radius: 999px; }
+    .shot { position: absolute; border-radius: 14px; border: 1px solid #2a4466; box-shadow: 0 30px 80px rgba(0,0,0,0.55); }
+
+    .small { width: 440px; height: 280px; padding: 0 36px; gap: 24px; }
+    .small .glow { width: 260px; height: 260px; left: -60px; top: -60px; }
+    .small .text h1 { font-size: 34px; }
+    .small .text p { font-size: 15px; margin-top: 8px; line-height: 1.35; }
+
+    .large { width: 1400px; height: 560px; padding: 0 70px; gap: 36px; }
+    .large .glow { width: 600px; height: 600px; left: -120px; top: -200px; }
+    .large .text { width: 470px; flex: none; z-index: 1; }
+    .large .text h1 { font-size: 54px; white-space: nowrap; }
+    .large .text p { font-size: 20px; margin-top: 14px; line-height: 1.4; }
+    .large .chips { margin-top: 28px; }
+    .large .chip { font-size: 16px; padding: 7px 14px; }
+    .large .shot { width: 560px; right: 40px; top: 50%; transform: translateY(-50%); }
+  </style>
+</head>
+<body>
+  <div id="tile" class="tile">
+    <div class="glow"></div>
+    <div id="star" data-star data-size="120"></div>
+    <div class="text">
+      <h1>Favorite Manager</h1>
+      <p id="tagline">Organize, busque e limpe seus favoritos</p>
+      <div id="chips" class="chips"></div>
+    </div>
+  </div>
+  <script>
+    const size = new URLSearchParams(location.search).get('size') || 'small';
+    const tile = document.getElementById('tile');
+    tile.classList.add(size);
+    if (size === 'large') {
+      document.getElementById('star').setAttribute('data-size', '150');
+      document.getElementById('tagline').textContent =
+        'Organize milhares de favoritos em pastas, encontre qualquer link e limpe duplicados e links quebrados. Sem conta, sem rastreamento.';
+      document.getElementById('chips').innerHTML = ['Organização com IA local', 'Duplicados', 'Links quebrados', 'Backup e restauração']
+        .map((t) => `<span class="chip">${t}</span>`).join('');
+      const img = document.createElement('img');
+      img.className = 'shot';
+      img.src = '../screenshot-1-pastas-organizadas.png';
+      tile.appendChild(img);
+    } else {
+      document.getElementById('star').setAttribute('data-size', '110');
+    }
+  </script>
+  <script src="star.js"></script>
+</body>
+</html>

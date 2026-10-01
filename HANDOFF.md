@@ -2,6 +2,17 @@
 
 Registro curto de passagem de turno. Entrada mais recente no topo.
 
+## 2026-10-01 — Claude Code — Material da loja refeito
+- Arquivos alterados:
+  - `docs/loja/` (novo): logo 300×300 da estrela, promo 440×280 e 1400×560, 6 capturas 1280×800 da versão atual (favoritos fictícios do mock). Fontes em `docs/loja/fontes/` (`star.js`, `logo.html`, `promo.html`).
+  - `docs/LOJA.md`: guia completo do Partner Center aba por aba (pacote, disponibilidade, propriedades, privacidade com cada justificativa, listagens pt-BR/EN, imagens, notas para certificação).
+  - `src/hooks/useBookmarks.ts`: `parentPathMap` agora traz o caminho completo da pasta (antes trazia só os pais, e a etiqueta de pasta dos favoritos mostrava a pasta de cima; no mock aparecia "root"). `src/ai/classifier.ts`: análise conta favoritos direto na raiz como não organizados.
+  - `Header.tsx`, `PopupContent.tsx`, `SidePanelContent.tsx`: logo do cabeçalho passa a ser o ícone da extensão (estrela) em vez do ícone de camadas.
+  - Sync (PR #10): eventos nativos de favoritos (Ctrl+D, estrela, gerenciador) também sincronizam.
+- Verificado: `npm test` 87/87, `npm run build`, `npm run package`.
+- Pendente: enviar no Partner Center seguindo `docs/LOJA.md` (rascunho já existe com nome e pacote antigos); teste manual no Edge.
+- Avisos: `docs/Store_Assets/` na pasta principal (fora do git, de 24/09) está obsoleta: nome e ícone antigos, pacote 1.1.0 e declaração de privacidade falsa ("100% offline", `activeTab`). Não usar; pode apagar.
+
 ## 2026-09-30 — Claude Code — Pendências menores fechadas + snapshots em chaves separadas
 - Arquivos alterados:
   - Sync: `syncService.ts` (proteção contra replay mantida após reconectar; chave antiga `FAV-####-XXXX` recusada), `browserDetect.ts` (`isLegacySyncKey`), `useSync.ts` (`hasLegacyKey`, `connect` devolve boolean), `CrossBrowserSyncModal.tsx`, `Header.tsx`, `Sidebar.tsx`, `translations.ts` (aviso "Chave antiga — gere uma nova").

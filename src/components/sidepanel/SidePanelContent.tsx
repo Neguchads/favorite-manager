@@ -7,7 +7,6 @@ import {
   Trash2,
   Globe,
   Sparkles,
-  Layers,
 } from 'lucide-react';
 import { extractDomain, getFaviconUrl } from '../../utils/url';
 import { CreateBookmarkModal } from '../modals/CreateBookmarkModal';
@@ -79,9 +78,7 @@ export const SidePanelContent: React.FC = () => {
       {/* Side Panel Header */}
       <header className="px-3 py-2.5 bg-white dark:bg-slate-850 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0 shadow-xs">
         <div className="flex items-center space-x-2">
-          <div className="w-6 h-6 rounded-md bg-gradient-to-tr from-sky-600 to-blue-500 flex items-center justify-center text-white shadow-xs">
-            <Layers className="w-3.5 h-3.5" />
-          </div>
+          <img src="icons/icon32.png" alt="" className="w-6 h-6 shrink-0" />
           <span className="font-bold text-xs tracking-tight">{t('sidepanel.title')}</span>
         </div>
 
