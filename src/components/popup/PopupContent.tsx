@@ -6,7 +6,6 @@ import {
   Plus,
   Trash2,
   Globe,
-  Layers,
   Sparkles,
   Maximize2,
   Sidebar as SidebarIcon,
@@ -123,9 +122,7 @@ export const PopupContent: React.FC = () => {
       {/* Top Header */}
       <header className="px-3.5 py-2.5 bg-slate-900 text-white flex items-center justify-between shrink-0 shadow-md">
         <div className="flex items-center space-x-2">
-          <div className="w-6 h-6 rounded-md bg-gradient-to-tr from-sky-500 to-blue-600 flex items-center justify-center text-white shadow-xs">
-            <Layers className="w-3.5 h-3.5" />
-          </div>
+          <img src="icons/icon32.png" alt="" className="w-6 h-6 shrink-0" />
           <div>
             <h1 className="font-bold text-xs tracking-tight text-white leading-none">
               Favorite Manager

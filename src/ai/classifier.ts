@@ -1604,7 +1604,9 @@ export function extractBookmarkCatalogSummary(
     if (!folderName && parentPathMap && rawParentId) {
       folderName = parentPathMap instanceof Map ? parentPathMap.get(rawParentId) : (parentPathMap as any)[rawParentId];
     }
-    if (!folderName || folderName === '1' || folderName === '2') {
+    // Favorito direto numa raiz ("Barra de favoritos", "Outros favoritos"...) conta como não organizado
+    const isSystemRoot = !!folderName && /^(barra de favoritos|outros favoritos|favoritos m[oó]veis)$/i.test(folderName.trim());
+    if (!folderName || folderName === '1' || folderName === '2' || isSystemRoot) {
       folderName = 'Barra de favoritos (Raiz)';
       unorganizedCount++;
     } else {
