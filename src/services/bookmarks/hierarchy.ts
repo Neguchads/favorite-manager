@@ -242,6 +242,96 @@ export async function sortFoldersAlphabetically(
   return { sortedFoldersCount, sortedBookmarksCount };
 }
 
+interface UserFolderEntry {
+  id: string;
+  // Caminho em minúsculas a partir da raiz do sistema (sem o nome da raiz)
+  path: string[];
+  rootId: string;
+}
+
+/** Lista todas as pastas do usuário, em qualquer profundidade e em qualquer raiz. */
+function indexUserFolders(tree: BookmarkNode[]): UserFolderEntry[] {
+  const out: UserFolderEntry[] = [];
+
+  function walk(nodes: BookmarkNode[], path: string[], rootId: string | null) {
+    for (const node of nodes) {
+      if (node.url) continue;
+      const children = node.children || [];
+      if (node.id === '0') {
+        walk(children, [], null);
+      } else if (!rootId) {
+        // Raiz do sistema (barra, outros, móveis): não entra no caminho
+        walk(children, [], node.id);
+      } else {
+        const nextPath = [...path, (node.title || '').trim().toLowerCase()];
+        out.push({ id: node.id, path: nextPath, rootId });
+        walk(children, nextPath, rootId);
+      }
+    }
+  }
+
+  walk(tree, [], null);
+  return out;
+}
+
+/**
+ * Decide onde um caminho do plano ("Estudos / Inglês") deve ficar, reaproveitando pastas que já
+ * existem em qualquer lugar da árvore (inclusive dentro de outras pastas ou em outra raiz).
+ * Procura primeiro o caminho inteiro, depois prefixos cada vez menores; entre várias pastas iguais,
+ * prefere a que está na raiz de destino e a menos profunda.
+ * Devolve a pasta existente mais funda encontrada e o resto do caminho que ainda precisa ser criado.
+ */
+function resolvePlanFolderTarget(
+  folders: UserFolderEntry[],
+  pathString: string,
+  rootParentId: string
+): { parentId: string; remaining: string } {
+  const parts = pathString
+    .split(/\s*\/\s*/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const lower = parts.map((p) => p.toLowerCase());
+
+  const isBetter = (a: UserFolderEntry, b: UserFolderEntry) => {
+    const aRoot = a.rootId === rootParentId ? 0 : 1;
+    const bRoot = b.rootId === rootParentId ? 0 : 1;
+    return aRoot !== bRoot ? aRoot < bRoot : a.path.length < b.path.length;
+  };
+
+  for (let k = lower.length; k >= 1; k--) {
+    const prefix = lower.slice(0, k);
+    let best: UserFolderEntry | null = null;
+    for (const folder of folders) {
+      if (folder.path.length < k) continue;
+      const offset = folder.path.length - k;
+      if (!prefix.every((part, i) => folder.path[offset + i] === part)) continue;
+      if (!best || isBetter(folder, best)) best = folder;
+    }
+    if (best) {
+      return { parentId: best.id, remaining: parts.slice(k).join(' / ') };
+    }
+  }
+
+  return { parentId: rootParentId, remaining: parts.join(' / ') };
+}
+
+/**
+ * Cria a pasta de um caminho reaproveitando pastas existentes em qualquer nível da árvore lida.
+ * Uso: `const ensure = createFolderPathResolver(tree, '1', map); const id = await ensure('A / B');`
+ */
+export function createFolderPathResolver(
+  tree: BookmarkNode[],
+  rootParentId: string,
+  existingFolderMap: Map<string, string>,
+  onFolderCreated?: (folderId: string) => void
+): (pathString: string) => Promise<string> {
+  const userFolders = indexUserFolders(tree);
+  return (pathString: string) => {
+    const { parentId, remaining } = resolvePlanFolderTarget(userFolders, pathString, rootParentId);
+    return ensureHierarchicalFolder(remaining, parentId, existingFolderMap, onFolderCreated);
+  };
+}
+
 /**
  * Executes an AI plan with full hierarchy support, creating master and subfolders
  * and moving bookmarks into their designated targets with high-performance concurrent chunking.
@@ -280,6 +370,7 @@ export async function executeAiPlanWithHierarchy(
   mapTree(tree);
 
   let createdFoldersCount = 0;
+  const userFolders = indexUserFolders(tree);
 
   // 1. Resolve or create all target folders (sorted alphabetically A-Z)
   const sortedFolders = [...plan.suggestedFolders].sort((a, b) =>
@@ -288,9 +379,11 @@ export async function executeAiPlanWithHierarchy(
   for (const folderPath of sortedFolders) {
     const key = folderPath.toLowerCase();
     if (!targetFolderIdMap.has(key)) {
+      // Pasta já existente em qualquer nível é reaproveitada; só o que falta é criado
+      const { parentId, remaining } = resolvePlanFolderTarget(userFolders, folderPath, rootParentId);
       const folderId = await ensureHierarchicalFolder(
-        folderPath,
-        rootParentId,
+        remaining,
+        parentId,
         existingFolderMap,
         () => {
           createdFoldersCount++;

@@ -5,7 +5,7 @@ import {
   validateAndSanitizeFolder,
   matchWithExistingFolders,
 } from '../../ai/classifier';
-import { ensureHierarchicalFolder, buildExistingFolderMap, systemRootIdFromName } from '../bookmarks/hierarchy';
+import { buildExistingFolderMap, createFolderPathResolver, systemRootIdFromName } from '../bookmarks/hierarchy';
 import { createLocalSnapshot } from './index';
 import { parseNetscapeHtml, ParsedBookmarkItem } from './htmlParser';
 import { withBulkOperation } from '../bookmarks/bulkLock';
@@ -142,6 +142,13 @@ export async function importBookmarks(options: ImportOptions): Promise<ImportRes
 
       // 3. Execution Strategy: AI Organize vs Preserve Original Structure
       if (strategy === 'ai_organize') {
+        // Reaproveita pastas existentes em qualquer nível (não recria "Dev & IA" se ela está dentro de outra pasta)
+        const ensureCategoryFolder = createFolderPathResolver(
+          currentTree,
+          destinationParentId,
+          existingFolderMap,
+          () => totalFoldersCreated++
+        );
         for (let i = 0; i < flatBookmarks.length; i++) {
           if (abortSignal?.aborted) break;
 
@@ -163,12 +170,7 @@ export async function importBookmarks(options: ImportOptions): Promise<ImportRes
           const targetCategory = matchWithExistingFolders(sanitized, existingFolderNamesSet);
 
           // Ensure hierarchical destination folder exists
-          const folderId = await ensureHierarchicalFolder(
-            targetCategory,
-            destinationParentId,
-            existingFolderMap,
-            () => totalFoldersCreated++
-          );
+          const folderId = await ensureCategoryFolder(targetCategory);
 
           // Create bookmark in destination folder
           await bookmarksService.create({

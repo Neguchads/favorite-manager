@@ -1,5 +1,18 @@
 import { describe, it, expect } from 'vitest';
-import { capitalizeFolderWords, parseChatActionIntent } from '../src/ai/classifier';
+import { capitalizeFolderWords, parseChatActionIntent, matchWithExistingFolders } from '../src/ai/classifier';
+
+describe('matchWithExistingFolders', () => {
+  it('prefere a pasta existente com o nome exato da categoria a um apelido', () => {
+    const existing = new Set(['dev', 'dev & ia']);
+    expect(matchWithExistingFolders('Dev & IA / Repositórios', existing)).toBe('Dev & IA / Repositórios');
+  });
+
+  it('sem o nome exato, usa o apelido existente', () => {
+    expect(matchWithExistingFolders('Dev & IA / Repositórios', new Set(['programação']))).toBe(
+      'Programação / Repositórios'
+    );
+  });
+});
 
 describe('capitalizeFolderWords', () => {
   it('preserva siglas técnicas', () => {

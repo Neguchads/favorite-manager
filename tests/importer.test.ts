@@ -92,6 +92,36 @@ describe('importar no modo preservar', () => {
     expect(children.map((c) => c.title)).toEqual(['minhas receitas']);
   });
 
+  it('modo organizar com IA reaproveita pasta existente dentro de outra pasta', async () => {
+    // "Dev & IA" é a categoria que o classificador dá para github.com
+    const pessoal = await bookmarksService.create({ parentId: '1', title: 'Pessoal Import IA' });
+    const dev = await bookmarksService.create({ parentId: pessoal.id, title: 'Dev & IA' });
+    const [barBefore] = await bookmarksService.getSubTree('1');
+    const topLevelDevBefore = barBefore.children?.filter((c) => c.title === 'Dev & IA').length ?? 0;
+
+    const tree: BookmarkNode[] = [
+      { id: '7', title: 'Repo', url: 'https://github.com/import-ia-teste' },
+    ];
+    await importBookmarks({
+      fileContent: exportBookmarksToJson(tree),
+      fileType: 'json',
+      strategy: 'ai_organize',
+      skipExistingUrls: false,
+    });
+
+    const [bar] = await bookmarksService.getSubTree('1');
+    expect(bar.children?.filter((c) => c.title === 'Dev & IA').length ?? 0).toBe(topLevelDevBefore);
+    const [devNode] = await bookmarksService.getSubTree(dev.id);
+    const urls: string[] = [];
+    const stack = [...(devNode.children || [])];
+    while (stack.length) {
+      const n = stack.pop()!;
+      if (n.url) urls.push(n.url);
+      if (n.children) stack.push(...n.children);
+    }
+    expect(urls).toContain('https://github.com/import-ia-teste');
+  });
+
   it('HTML de navegador em outro idioma: PERSONAL_TOOLBAR_FOLDER marca a barra', async () => {
     const html = [
       '<!DOCTYPE NETSCAPE-Bookmark-file-1>',
