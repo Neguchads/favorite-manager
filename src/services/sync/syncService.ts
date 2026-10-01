@@ -9,7 +9,14 @@ import {
   SupportedBrowser,
   SyncCatalogItem,
 } from './types';
-import { applyRemoteCatalogMerge, extractCatalogFromTree, normalizeSyncUrl, resolveRemoteTarget } from './twoWayMerge';
+import {
+  applyRemoteCatalogMerge,
+  extractCatalogFromTree,
+  locateBookmarkInTree,
+  normalizeSyncUrl,
+  resolveRemoteTarget,
+} from './twoWayMerge';
+import { isBulkLockActive } from '../bookmarks/bulkLock';
 import { deriveSyncMaterial, sealMessage, openMessage, chunk, SyncMaterial } from './crypto';
 import { ensureHierarchicalFolder, buildExistingFolderMap } from '../bookmarks/hierarchy';
 
@@ -18,6 +25,8 @@ const STORAGE_AUTO_SYNC = 'fav_manager_auto_sync_enabled';
 const CATALOG_BATCH_SIZE = 200;
 const MAX_MESSAGE_AGE_MS = 5 * 60_000;
 const SEEN_PAYLOADS_LIMIT = 500;
+// Favorito aplicado a partir de outro navegador: o evento local dele não é reenviado (eco) nesta janela
+const REMOTE_ECHO_WINDOW_MS = 15_000;
 
 class CrossBrowserSyncService {
   private client: Paho.Client | null = null;
@@ -29,7 +38,9 @@ class CrossBrowserSyncService {
   private peers: Map<string, SyncPeer> = new Map();
   private listeners: Set<() => void> = new Set();
   private autoSync: boolean = true;
-  private isApplyingRemoteChange: boolean = false;
+  // URL normalizada -> até quando ignorar o evento local gerado por uma mudança vinda de outro navegador
+  private remoteAppliedUrls: Map<string, number> = new Map();
+  private watchingLocalBookmarks = false;
   private myInstallationId: string;
   private myBrowser: SupportedBrowser;
   private reconnectTimer: any = null;
@@ -40,6 +51,69 @@ class CrossBrowserSyncService {
     this.myInstallationId = getOrCreateInstallationId();
     this.myBrowser = detectBrowserName();
     this.loadSavedSettings();
+    this.startLocalBookmarkWatch();
+  }
+
+  /**
+   * Ouve os favoritos criados e apagados pelo próprio navegador (Ctrl+D, estrela, gerenciador nativo),
+   * não só pela interface da extensão. Funciona enquanto alguma página da extensão estiver aberta.
+   */
+  private startLocalBookmarkWatch() {
+    if (this.watchingLocalBookmarks) return;
+    if (typeof chrome === 'undefined' || !chrome.bookmarks?.onCreated || !chrome.bookmarks?.onRemoved) return;
+    this.watchingLocalBookmarks = true;
+    chrome.bookmarks.onCreated.addListener((id, node) => {
+      void this.handleLocalCreated(id, node as BookmarkNode);
+    });
+    chrome.bookmarks.onRemoved.addListener((id, removeInfo) => {
+      void this.handleLocalRemoved(id, removeInfo as { node?: { url?: string } });
+    });
+  }
+
+  private markRemoteApplied(url: string) {
+    const now = Date.now();
+    for (const [key, until] of this.remoteAppliedUrls) {
+      if (until < now) this.remoteAppliedUrls.delete(key);
+    }
+    this.remoteAppliedUrls.set(normalizeSyncUrl(url), now + REMOTE_ECHO_WINDOW_MS);
+  }
+
+  private wasRemoteApplied(url: string): boolean {
+    const until = this.remoteAppliedUrls.get(normalizeSyncUrl(url));
+    return until !== undefined && until >= Date.now();
+  }
+
+  // Importação, restauração, organização e merge criam/apagam em lote: nada disso vira mensagem de sync
+  private async isBulkOperationRunning(): Promise<boolean> {
+    try {
+      if (typeof chrome !== 'undefined' && chrome.storage?.session) {
+        const state = await chrome.storage.session.get(['isBulkOperating', 'bulkReleasedAt']);
+        return isBulkLockActive(state);
+      }
+    } catch {}
+    return false;
+  }
+
+  private async handleLocalCreated(id: string, node: BookmarkNode) {
+    if (!node?.url || !this.autoSync) return;
+    if (this.wasRemoteApplied(node.url)) return;
+    if (await this.isBulkOperationRunning()) return;
+    const location = locateBookmarkInTree(await bookmarksService.getTree(), id);
+    await this.broadcastMessage('BOOKMARK_CREATED', {
+      title: node.title,
+      url: node.url,
+      rootId: location?.rootId,
+      folderPath: location?.folderPath ?? '',
+    });
+  }
+
+  private async handleLocalRemoved(_id: string, removeInfo: { node?: { url?: string } }) {
+    // Pasta apagada não é propagada: só favoritos
+    const url = removeInfo?.node?.url;
+    if (!url || !this.autoSync) return;
+    if (this.wasRemoteApplied(url)) return;
+    if (await this.isBulkOperationRunning()) return;
+    await this.broadcastMessage('BOOKMARK_REMOVED', { url });
   }
 
   private async loadSavedSettings() {
@@ -368,8 +442,7 @@ class CrossBrowserSyncService {
     folderPath?: string;
   }) {
     if (!item.url) return;
-    this.isApplyingRemoteChange = true;
-    try {
+    {
       const currentTree = await bookmarksService.getTree();
       const localCatalog = extractCatalogFromTree(currentTree);
       const normalizedNew = normalizeSyncUrl(item.url);
@@ -380,6 +453,7 @@ class CrossBrowserSyncService {
         const { rootId, path } = resolveRemoteTarget({ rootId: item.rootId, folderPath: item.folderPath || '' });
         const targetFolderId = await ensureHierarchicalFolder(path, rootId, existingFolderMap);
 
+        this.markRemoteApplied(item.url);
         await bookmarksService.create({
           parentId: targetFolderId,
           title: item.title || item.url,
@@ -391,14 +465,12 @@ class CrossBrowserSyncService {
           `Novo favorito recebido em tempo real: ${item.title}`
         );
       }
-    } finally {
-      this.isApplyingRemoteChange = false;
     }
   }
 
   private async handleRemoteBookmarkRemoved(rawUrl: string) {
-    this.isApplyingRemoteChange = true;
-    try {
+    this.markRemoteApplied(rawUrl);
+    {
       const currentTree = await bookmarksService.getTree();
       const targetNormalized = normalizeSyncUrl(rawUrl);
 
@@ -414,29 +486,7 @@ class CrossBrowserSyncService {
       }
 
       findAndRemove(currentTree);
-    } finally {
-      this.isApplyingRemoteChange = false;
     }
-  }
-
-  /**
-   * Called by local bookmark listeners when a bookmark is created locally
-   */
-  public onLocalBookmarkCreated(bookmark: BookmarkNode, folderPath: string) {
-    if (this.isApplyingRemoteChange || !this.autoSync) return;
-    void this.broadcastMessage('BOOKMARK_CREATED', {
-      title: bookmark.title,
-      url: bookmark.url,
-      folderPath,
-    });
-  }
-
-  /**
-   * Called by local bookmark listeners when a bookmark is removed locally
-   */
-  public onLocalBookmarkRemoved(url: string) {
-    if (this.isApplyingRemoteChange || !this.autoSync) return;
-    void this.broadcastMessage('BOOKMARK_REMOVED', { url });
   }
 
   /**

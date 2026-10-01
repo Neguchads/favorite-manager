@@ -59,6 +59,30 @@ export function extractCatalogFromTree(tree: BookmarkNode[]): SyncCatalogItem[] 
   return items;
 }
 
+/** Raiz e caminho da pasta (sem o nome da raiz) de um favorito da árvore, ou null se não achar. */
+export function locateBookmarkInTree(
+  tree: BookmarkNode[],
+  bookmarkId: string
+): { rootId: SystemRootId | undefined; folderPath: string } | null {
+  function search(nodes: BookmarkNode[], path: string[], rootId?: SystemRootId): ReturnType<typeof locateBookmarkInTree> {
+    for (const node of nodes) {
+      if (node.id === bookmarkId) return { rootId, folderPath: path.join(' / ') };
+      if (!node.children) continue;
+      let found: ReturnType<typeof locateBookmarkInTree>;
+      if (node.id === '0') {
+        found = search(node.children, [], undefined);
+      } else if (!rootId && ROOT_IDS.has(node.id)) {
+        found = search(node.children, [], node.id as SystemRootId);
+      } else {
+        found = search(node.children, [...path, node.title], rootId);
+      }
+      if (found) return found;
+    }
+    return null;
+  }
+  return search(tree, []);
+}
+
 /**
  * Decide em qual raiz e caminho um item remoto deve ser criado.
  * Aceita o formato antigo (sem rootId, com o nome da raiz no início do caminho).

@@ -82,6 +82,7 @@ graph LR
 - Sincroniza favoritos entre Edge, Chrome e Brave com uma chave `FAV-XXXX-XXXX-XXXX-XXXX-XXXX` (20 símbolos aleatórios). Desligada até você gerar ou colar uma chave.
 - Mensagens cifradas com **AES-GCM**; chave de cifra e tópico MQTT derivados da chave de sincronização via **HKDF**. O servidor MQTT público só vê bytes ilegíveis.
 - Catálogo enviado em lotes de 200 itens, com descarte de mensagens antigas (mais de 5 minutos) e de reenvios idênticos (*replay*), inclusive depois de reconectar.
+- Em tempo real, envia favoritos criados ou apagados de qualquer jeito (Ctrl+D, estrela, gerenciador do navegador ou a própria extensão), desde que alguma página da extensão esteja aberta (página completa, popup ou painel lateral). Operações em massa (importar, restaurar, organizar) não geram mensagens; pastas apagadas não são propagadas. Com as páginas fechadas, use **Sincronizar agora**, que só adiciona o que falta.
 - Chaves do formato antigo e curto (`FAV-1234-AB12`) não são mais aceitas: clique em **Gerar Nova** e use a nova chave em todos os navegadores.
 
 ### 🔐 Permissões
