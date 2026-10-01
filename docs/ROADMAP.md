@@ -20,21 +20,31 @@
 | **D. Experiência** | Atalhos que respeitam campos e modais; timeout e cancelar no Ollama; checagem de links confiável; textos corrigidos | Bugs visíveis no uso diário |
 | **E. Loja** | Permissões mínimas (`<all_urls>` opcional), omnibox buscando nos favoritos, versão alinhada, política de privacidade, pacote e checklist no Edge | Requisitos de aprovação na loja |
 
-**Status (30/09/2026):** código da Fase 0 implementado (sync mantido e cifrado), `npm test` 38/38 e build passando, sem commit. **Falta:** teste manual no Edge (Tarefa E5), apagar `public/rules/ollama_cors.json`, URL pública da política de privacidade (decisão do usuário) e envio à loja.
+**Status (01/10/2026):** código da Fase 0 concluído e na `main` (PRs #1 a #11), `npm test` 87/87, build e CI passando. Política de privacidade publicada em https://gist.github.com/Neguchads/c5a554a1d03ea38f4840eb0a9d331521. Material da loja pronto em `docs/loja/` e guia do Partner Center em `docs/LOJA.md`. **Falta (usuário):** teste manual no Edge (Tarefa E5) e envio no Partner Center (o rascunho existente ainda tem nome e pacote antigos).
+
+**Feito depois da Fase 0 (30/09–01/10):**
+- CI no GitHub Actions (`npm test` + `npm run build` em todo PR) e versão única no `package.json` (`scripts/manifestVersion.ts`).
+- Nome **Favorite Manager**, ícones de estrela, pacote npm `favorite-manager`.
+- Sync: replay recusado após reconectar, chave antiga `FAV-####-XXXX` recusada, eventos nativos do navegador (Ctrl+D, estrela, gerenciador) sincronizam com uma página da extensão aberta.
+- Organizar e importar com IA reaproveitam pastas existentes em qualquer nível (sem duplicar pastas aninhadas).
+- Snapshots em chaves separadas com índice, trava entre páginas (`navigator.locks`) e migração do formato antigo.
+- Atalhos: menu de contexto e modais bloqueiam a lista; Esc de overlay não limpa seleção; `#search=` reage a `hashchange`.
+- Regra do Ollama só na porta 11434 (inclui `[::1]`); barra de favoritos reconhecida por `PERSONAL_TOOLBAR_FOLDER` na importação.
+- Etiqueta de pasta dos favoritos mostra a pasta certa; logo do cabeçalho é o ícone da extensão.
 
 **Critério de pronto:** `npm test` e `npm run build` passando, checklist manual no Edge concluído e pacote `1.2.0` enviado (envio só com confirmação do usuário).
 
-### Status dos itens das Fases 1–3 (conferido no código em 30/09/2026)
+### Status dos itens das Fases 1–3 (conferido no código em 01/10/2026)
 
 | Item | Status |
 |---|---|
-| 1.1 Mutex de sessão | Feito em importação e sync. Falta na restauração de snapshot (Tarefa C2). |
-| 1.2 E2EE no sync | **Não feito.** Continua em texto claro no broker público (Tarefa A1). |
-| 1.3 Sharding de snapshots | Não feito. Fica para depois da publicação (não bloqueia). |
+| 1.1 Mutex de sessão | Feito em importação, sync e restauração, com contador e janela de carência (`bulkLock.ts`). |
+| 1.2 E2EE no sync | Feito (AES-GCM + HKDF, `crypto.ts`). |
+| 1.3 Sharding de snapshots | Feito (uma chave por snapshot, índice, `navigator.locks`, migração). |
 | 1.4 Stream no fetch de títulos | Feito. |
-| 1.5 Diffing de índice | Feito, **mas com bug**: a ordenação sai errada (Tarefa C1). |
-| 1.6 Omnibox e permissões opcionais | Não feito (Tarefa E2). |
-| 2.1–2.7 | Feitos (virtualização, `useDeferredValue`, tema no side panel, backdrop/Escape no modal, teclado, undo toast, header). Os bugs de teclado e de undo estão nas Tarefas C6 e D1. |
+| 1.5 Diffing de índice | Feito e corrigido (Tarefa C1). |
+| 1.6 Omnibox e permissões opcionais | Feito (Tarefa E2). |
+| 2.1–2.7 | Feitos, com os bugs de teclado e undo corrigidos (Tarefas C6 e D1). |
 | 3.1, 3.2 (BM25), 3.4, 3.5 | Feitos. Embeddings (3.2 etapa 2) e 3.3 ficam para depois da publicação. |
 
 
@@ -542,7 +552,7 @@
 #### Tarefa E4: Política de privacidade e documentação
 
 - [x] Criar `docs/PRIVACIDADE.md` em pt-BR e inglês. Conteúdo: nada sai da máquina, exceto (1) checagem de links e títulos direto nos sites; (2) consulta ao Archive.org; (3) sync opcional cifrado ponta a ponta (ou "sem sync", se a A1 remover); (4) Ollama só em localhost. Sem coleta, sem analytics.
-- [ ] A loja exige uma **URL pública** para a política, e o repositório é privado. Opções: gist público ou repositório público só com a política. **Decisão do usuário.**
+- [x] A loja exige uma **URL pública** para a política, e o repositório é privado. Publicada em gist: https://gist.github.com/Neguchads/c5a554a1d03ea38f4840eb0a9d331521
 - [x] Atualizar `AGENTS.md` (lista "Bugs conhecidos" e comandos: `npm test` passa a existir), `README.md` (como testar) e `HANDOFF.md`.
 
 #### Tarefa E5: Verificação final
@@ -558,7 +568,7 @@
   - Duplicados, Limpeza e checagem de links.
   - Side panel em tema escuro.
   - Atalhos da Tarefa D1.
-- [ ] Enviar o `.zip` na Partner Center do Edge. **Ação externa: só com confirmação do usuário.**
+- [ ] Enviar o `.zip` na Partner Center do Edge seguindo `docs/LOJA.md` (imagens em `docs/loja/`). **Ação externa: só com confirmação do usuário.**
 - **Ponto de commit (Bloco E):** `chore(release): prepare 1.2.0 for Edge Add-ons`
 
 ---
@@ -769,10 +779,12 @@ flowchart TD
 
 ## 🎯 Próximo Passo ao Retomar o Projeto
 
-Ao retornar para implementar as mudanças:
-1. Executar a **Fase 0 (Prontidão para Publicação)** seguindo seção "Fase 0 em detalhe", logo abaixo, começando pela Tarefa T1.
-2. Validar cada tarefa com `npm test` e `npm run build`.
-3. Só depois da publicação retomar os itens pendentes das Fases 1–3 (sharding de snapshots, embeddings, scraper de metadados).
+1. **Teste manual no Edge** (checklist da Tarefa E5): `npm run package`, carregar `dist/` em `edge://extensions`. Atenção especial: migração de snapshots de uma instalação 1.2.0 anterior, Ollama "Testar Conexão", pedido de permissão em "Escanear Favoritos", sync entre Edge e Chrome com Ctrl+D, organização de pasta com subpastas (sem duplicar).
+2. **Envio no Partner Center** seguindo `docs/LOJA.md` (atualizar o rascunho antigo: pacote 1.2.0, nome, privacidade, imagens de `docs/loja/`).
+3. Apagar `docs/Store_Assets/` na pasta principal (obsoleta, fora do git).
+4. Depois da publicação: embeddings locais (3.2 etapa 2), scraper de metadados (3.3), envio automático de atualizações pela API da loja, testes E2E com Playwright.
+
+**Limitações conhecidas do sync:** só roda com alguma página da extensão aberta; "Sincronizar agora" só adiciona (não apaga); pasta apagada não é propagada; depende do broker público `broker.hivemq.com`.
 
 ---
 *Documento registrado em repositório para preservação de arquitetura e continuidade do desenvolvimento.*
