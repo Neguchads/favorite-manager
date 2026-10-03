@@ -86,7 +86,7 @@ graph LR
 - Chaves do formato antigo e curto (`FAV-1234-AB12`) não são mais aceitas: clique em **Gerar Nova** e use a nova chave em todos os navegadores.
 
 ### 🔐 Permissões
-- Fixas: `bookmarks`, `storage`, `unlimitedStorage`, `sidePanel`, `notifications`, `tabs`, `declarativeNetRequest` e acesso apenas ao Ollama local (`localhost`, `127.0.0.1` e `[::1]`, porta `11434`).
+- Fixas: `bookmarks`, `storage`, `unlimitedStorage`, `sidePanel`, `notifications`, `tabs`, `favicon`, `declarativeNetRequest` e acesso apenas ao Ollama local (`localhost`, `127.0.0.1` e `[::1]`, porta `11434`).
 - Opcional: `<all_urls>`, pedida no primeiro uso de "Escanear Favoritos" ou "Buscar e Atualizar Títulos".
 - O `declarativeNetRequest` só reescreve o cabeçalho `Origin` das chamadas da própria extensão ao Ollama local na porta `11434` (regra de sessão com `regexFilter`, sem regra global de CORS).
 

@@ -37,4 +37,16 @@ describe('checkSingleUrlStatus (fetch direto)', () => {
     const res = await checkSingleUrlStatus('https://example.com/velho');
     expect(res).toMatchObject({ status: 'redirected', finalUrl: 'https://example.com/novo' });
   });
+
+  it('401 e 429 contam como ok (a página existe)', async () => {
+    stubFetch({ ok: false, status: 401 });
+    expect((await checkSingleUrlStatus('https://example.com/')).status).toBe('ok');
+    stubFetch({ ok: false, status: 429 });
+    expect((await checkSingleUrlStatus('https://example.com/')).status).toBe('ok');
+  });
+
+  it('410 (removida) vira broken_404', async () => {
+    stubFetch({ ok: false, status: 410 });
+    expect(await checkSingleUrlStatus('https://example.com/')).toMatchObject({ status: 'broken_404', httpCode: 410 });
+  });
 });

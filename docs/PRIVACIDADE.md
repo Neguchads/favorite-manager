@@ -25,6 +25,7 @@ Só nestes casos, e só quando você usa o recurso:
 - `bookmarks`: ler e organizar seus favoritos.
 - `storage` e `unlimitedStorage`: guardar configurações e snapshots de backup localmente.
 - `tabs`: salvar a aba atual e abrir favoritos.
+- `favicon`: mostrar o ícone de cada site a partir do cache local do navegador, sem consultar serviços externos.
 - `sidePanel`, `notifications`: painel lateral e avisos de sincronização.
 - `declarativeNetRequest`: ajustar o cabeçalho `Origin` apenas das chamadas da própria extensão ao Ollama local.
 - Acesso a `localhost:11434`: falar com o Ollama local.
@@ -59,6 +60,7 @@ Only in these cases, and only when you use the feature:
 - `bookmarks`: read and organize your bookmarks.
 - `storage` and `unlimitedStorage`: keep settings and backup snapshots locally.
 - `tabs`: save the current tab and open bookmarks.
+- `favicon`: show each site's icon from the browser's local cache, without querying external services.
 - `sidePanel`, `notifications`: side panel and sync notices.
 - `declarativeNetRequest`: rewrite the `Origin` header only on the extension's own requests to local Ollama.
 - Access to `localhost:11434`: talk to local Ollama.

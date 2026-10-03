@@ -30,6 +30,8 @@ type UrlCheckResult = {
   finalUrl?: string;
 };
 
+const ALIVE_STATUSES = new Set([401, 403, 405, 429]);
+
 // Mesma regra para a resposta do service worker e para o fetch direto
 function classifyCheck(
   url: string,
@@ -44,12 +46,13 @@ function classifyCheck(
       finalUrl: res.finalUrl,
     };
   }
-  // 403/405: o site recusa robôs ou HEAD, mas a página existe
-  if (res.ok || status === 403 || status === 405) {
+  // 401/403/405/429: o site pede login, recusa robôs/HEAD ou limita requisições, mas a página existe
+  if (res.ok || ALIVE_STATUSES.has(status)) {
     return { status: 'ok', httpCode: status || 200 };
   }
-  if (status === 404) {
-    return { status: 'broken_404', httpCode: 404 };
+  // 404 e 410 (removida de vez): o link está quebrado
+  if (status === 404 || status === 410) {
+    return { status: 'broken_404', httpCode: status };
   }
   if (status >= 500) {
     return { status: 'broken_server', httpCode: status };

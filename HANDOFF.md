@@ -2,6 +2,15 @@
 
 Registro curto de passagem de turno. Entrada mais recente no topo.
 
+## 2026-10-03 — Claude Code — Revisão final de prontidão e correções
+- Arquivos alterados:
+  - `src/utils/url.ts`, `public/manifest.json`: ícones dos sites agora vêm do cache local do navegador (`/_favicon/`, permissão nova `favicon`). Antes cada domínio dos favoritos ia para `google.com/s2/favicons`, o que contradizia a política de privacidade ("nenhum dado a terceiros"). Fora da extensão (`npm run dev`) ainda usa o Google.
+  - `docs/PRIVACIDADE.md`, `docs/LOJA.md`, `README.md`: permissão `favicon` listada e justificada. **Atualizar o gist da política** (comando em `docs/LOJA.md`) e **adicionar a justificativa `favicon` no Partner Center**.
+  - `src/services/health/index.ts`, `src/background/index.ts`: 401/429 contam como link vivo; 410 conta como quebrado; títulos buscados não decodificam entidades duas vezes (`&amp;lt;`) e aceitam `&#NNN;`.
+  - Testes novos: `tests/favicon.test.ts`, casos 401/429/410 em `tests/health.test.ts`.
+- Verificado: `npm test` 91/91, `npm run build`, as três páginas (index, popup, sidepanel) carregam e respondem a cliques sem erros de console contra o mock.
+- Pendente (só no Edge): confirmar que os ícones aparecem via `/_favicon/` (se não aparecerem, o fallback do componente mostra o ícone genérico); checklist manual da Tarefa E5; envio no Partner Center.
+
 ## 2026-10-01 — Claude Code — Estado ao fim da sessão
 - Tudo na `main` (PRs #1 a #11 mesclados, CI verde), pasta principal em dia com o GitHub. Nada pendente na branch `claude/favorite-manager-audit-bdc274`.
 - `docs/ROADMAP.md` atualizado: status da Fase 0 em 01/10, itens das Fases 1–3 conferidos (1.1, 1.2, 1.3, 1.5 e 1.6 agora feitos), o que foi feito depois da Fase 0 e o próximo passo.

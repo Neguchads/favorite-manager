@@ -72,6 +72,11 @@ Avisar o usuário quando um favorito chega de outro navegador pela sincronizaç�
 Salvar a aba atual como favorito pelo popup, abrir favoritos em novas abas ou janelas e abrir a página da extensão a partir do atalho de teclado e da barra de endereço (omnibox).
 ```
 
+**favicon**
+```
+Mostrar o ícone de cada site ao lado dos favoritos, lido do cache local do navegador (/_favicon/). Nenhum domínio é enviado a serviços externos para buscar ícones.
+```
+
 **declarativeNetRequest** (aparece depois de enviar o pacote 1.2.0)
 ```
 Usada apenas para a IA local opcional (Ollama em localhost:11434). Uma regra de sessão reescreve o cabeçalho Origin somente nas requisições iniciadas pela própria extensão para localhost/127.0.0.1/[::1] na porta 11434, porque o Ollama recusa o Origin chrome-extension://. Nenhuma requisição de páginas da web é alterada.
