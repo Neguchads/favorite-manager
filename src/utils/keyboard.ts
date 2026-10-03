@@ -4,6 +4,8 @@ export interface ListShortcutContext {
   isContentEditable?: boolean;
   /** atributo role do alvo, se houver */
   role?: string | null;
+  /** type do alvo quando é INPUT (ex.: 'checkbox', 'text') */
+  inputType?: string | null;
   /** KeyboardEvent.key */
   key: string;
   /** há modal (aria-modal="true") ou menu (role="menu") aberto */
@@ -17,6 +19,8 @@ export interface ListShortcutContext {
 
 const TEXT_ENTRY_TAGS = new Set(['INPUT', 'TEXTAREA', 'SELECT']);
 const ACTIVATABLE_TAGS = new Set(['BUTTON', 'A']);
+// INPUT que não recebe texto (caixa de seleção do favorito, p.ex.): Delete, setas e Ctrl+A continuam valendo
+const NON_TEXT_INPUT_TYPES = new Set(['checkbox', 'radio', 'button', 'submit', 'reset', 'range', 'color', 'file', 'image']);
 
 /**
  * Decide se um atalho da lista (setas, Delete, Enter, Espaço, Ctrl+A, Ctrl+Z, Esc)
@@ -27,6 +31,7 @@ export function shouldHandleListShortcut({
   tagName,
   isContentEditable,
   role,
+  inputType,
   key,
   overlayOpen,
   defaultPrevented,
@@ -34,11 +39,12 @@ export function shouldHandleListShortcut({
   if (overlayOpen || defaultPrevented) return false;
 
   const tag = (tagName ?? '').toUpperCase();
-  if (TEXT_ENTRY_TAGS.has(tag) || isContentEditable) return false;
+  const isNonTextInput = tag === 'INPUT' && NON_TEXT_INPUT_TYPES.has((inputType ?? '').toLowerCase());
+  if ((TEXT_ENTRY_TAGS.has(tag) && !isNonTextInput) || isContentEditable) return false;
 
-  // Enter/Espaço em botão ou link devem ativar o próprio controle
+  // Enter/Espaço em botão, link ou caixa de seleção devem ativar o próprio controle
   if (key === 'Enter' || key === ' ') {
-    if (ACTIVATABLE_TAGS.has(tag) || role === 'button') return false;
+    if (ACTIVATABLE_TAGS.has(tag) || isNonTextInput || role === 'button') return false;
   }
 
   return true;
