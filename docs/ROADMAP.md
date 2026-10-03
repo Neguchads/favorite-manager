@@ -20,7 +20,7 @@
 | **D. Experiência** | Atalhos que respeitam campos e modais; timeout e cancelar no Ollama; checagem de links confiável; textos corrigidos | Bugs visíveis no uso diário |
 | **E. Loja** | Permissões mínimas (`<all_urls>` opcional), omnibox buscando nos favoritos, versão alinhada, política de privacidade, pacote e checklist no Edge | Requisitos de aprovação na loja |
 
-**Status (01/10/2026):** código da Fase 0 concluído e na `main` (PRs #1 a #11), `npm test` 87/87, build e CI passando. Política de privacidade publicada em https://gist.github.com/Neguchads/c5a554a1d03ea38f4840eb0a9d331521. Material da loja pronto em `docs/loja/` e guia do Partner Center em `docs/LOJA.md`. **Falta (usuário):** teste manual no Edge (Tarefa E5) e envio no Partner Center (o rascunho existente ainda tem nome e pacote antigos).
+**Status (03/10/2026):** código da Fase 0 concluído e na `main` (PRs #1 a #13), `npm test` 94/94, build e CI passando. Teste ponta a ponta em Chromium real (ver `HANDOFF.md`) feito em 03/10; no Edge falta só conferir ícones (`/_favicon/`), o pedido da permissão de sites e o omnibox. Política de privacidade publicada em https://gist.github.com/Neguchads/c5a554a1d03ea38f4840eb0a9d331521. Material da loja pronto em `docs/loja/` e guia do Partner Center em `docs/LOJA.md`. **Falta (usuário):** teste manual no Edge (Tarefa E5) e envio no Partner Center (o rascunho existente ainda tem nome e pacote antigos).
 
 **Feito depois da Fase 0 (30/09–01/10):**
 - CI no GitHub Actions (`npm test` + `npm run build` em todo PR) e versão única no `package.json` (`scripts/manifestVersion.ts`).
@@ -558,7 +558,7 @@
 #### Tarefa E5: Verificação final
 
 - [x] `npm test`, `npm run build` e `npm run package`.
-- [ ] Carregar `dist/` em `edge://extensions` e passar pelo checklist:
+- [ ] Carregar `dist/` em `edge://extensions` e passar pelo checklist (já coberto em Chromium real em 03/10, exceto o que está marcado como "só no Edge" no `HANDOFF.md`):
   - Popup: salvar a aba atual com a pasta sugerida.
   - Ctrl+D com auto-organização ligada e desligada.
   - Omnibox `fav <termo>`.

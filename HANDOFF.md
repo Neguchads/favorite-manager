@@ -2,6 +2,11 @@
 
 Registro curto de passagem de turno. Entrada mais recente no topo.
 
+## 2026-10-03 — Claude Code — Fechamento da PR #13 e pacote da loja
+- PR #13 (favicons locais, atalhos com checkbox, varredura completa de links e títulos, status 401/429/410) com CI verde e mesclada na `main`.
+- Pacote `Favorite-Manager.zip` (versão 1.2.0, permissões conferidas no manifest) gerado a partir do `dist/` e entregue ao usuário. O `npm run package` só funciona no Windows (PowerShell); no Linux o zip foi feito com `zip -r` dentro de `dist/`.
+- Falta (usuário): conferir no Edge ícones, pedido da permissão de sites e omnibox; atualizar o gist da política (`docs/PRIVACIDADE.md`, comando em `docs/LOJA.md`); incluir a justificativa `favicon` no Partner Center; enviar o zip; apagar `docs/Store_Assets/` na pasta local.
+
 ## 2026-10-03 — Claude Code — Revisão final de prontidão e correções
 - Arquivos alterados:
   - `src/utils/url.ts`, `public/manifest.json`: ícones dos sites agora vêm do cache local do navegador (`/_favicon/`, permissão nova `favicon`). Antes cada domínio dos favoritos ia para `google.com/s2/favicons`, o que contradizia a política de privacidade ("nenhum dado a terceiros"). Fora da extensão (`npm run dev`) ainda usa o Google.
