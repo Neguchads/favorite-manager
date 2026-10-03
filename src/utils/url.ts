@@ -72,6 +72,10 @@ export function getFaviconUrl(url?: string): string {
   if (!url) return '';
   const domain = extractDomain(url);
   if (!domain) return '';
-  // Free reliable favicon service (Google)
+  // Dentro da extensão: ícone do cache local do navegador (permissão "favicon"), sem enviar domínios a terceiros
+  if (typeof chrome !== 'undefined' && chrome.runtime?.id && typeof chrome.runtime.getURL === 'function') {
+    return `${chrome.runtime.getURL('/_favicon/')}?pageUrl=${encodeURIComponent(url)}&size=64`;
+  }
+  // Só no modo de desenvolvimento (npm run dev), fora da extensão
   return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`;
 }

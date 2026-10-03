@@ -42,7 +42,7 @@ graph LR
 - Opção automática integrada ao modal de organização por IA e botão rápido **"Excluir Todas as Pastas Vazias"** na Central de Limpeza.
 
 ### 3. 🔍 Verificador de Links Quebrados & 404 (Wayback Machine)
-- Scanner de integridade com conexões paralelas em lote e timeout seguro de 6 segundos.
+- Scanner de integridade que verifica todos os favoritos http/https, com 20 conexões paralelas, timeout seguro de 6 segundos, barra de progresso e botão Cancelar (os resultados parciais ficam na tela).
 - Identifica páginas fora do ar (`404 Não Encontrado`, `Erro 500+`, falhas de DNS e timeout).
 - Para cada link caído, fornece um atalho direto para o **Wayback Machine (Archive.org)** para recuperar o conteúdo salvo no passado.
 - Exclusão seletiva ou remoção em massa de links mortos.
@@ -60,7 +60,7 @@ graph LR
 
 ### 6. 🏷️ Enriquecedor de Títulos Genéricos
 - Detecta links salvos com nomes como *"Nova guia"*, *"Home"*, *"Início"*, ou que repetem a URL crua.
-- Faz a leitura invisível da tag `<title>` real da página em segundo plano e renomeia o favorito.
+- Faz a leitura invisível da tag `<title>` real da página em segundo plano (5 páginas ao mesmo tempo, todos os favoritos genéricos de uma vez) e renomeia o favorito.
 - Usa a mesma permissão opcional de acesso a todos os sites, pedida no primeiro uso.
 
 ### 7. ⌨️ Omnibox do Edge (`fav <termo>`) e Paleta de Comandos (`Ctrl + K`)
@@ -86,7 +86,7 @@ graph LR
 - Chaves do formato antigo e curto (`FAV-1234-AB12`) não são mais aceitas: clique em **Gerar Nova** e use a nova chave em todos os navegadores.
 
 ### 🔐 Permissões
-- Fixas: `bookmarks`, `storage`, `unlimitedStorage`, `sidePanel`, `notifications`, `tabs`, `declarativeNetRequest` e acesso apenas ao Ollama local (`localhost`, `127.0.0.1` e `[::1]`, porta `11434`).
+- Fixas: `bookmarks`, `storage`, `unlimitedStorage`, `sidePanel`, `notifications`, `tabs`, `favicon`, `declarativeNetRequest` e acesso apenas ao Ollama local (`localhost`, `127.0.0.1` e `[::1]`, porta `11434`).
 - Opcional: `<all_urls>`, pedida no primeiro uso de "Escanear Favoritos" ou "Buscar e Atualizar Títulos".
 - O `declarativeNetRequest` só reescreve o cabeçalho `Origin` das chamadas da própria extensão ao Ollama local na porta `11434` (regra de sessão com `regexFilter`, sem regra global de CORS).
 

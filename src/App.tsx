@@ -249,6 +249,7 @@ export const App: React.FC = () => {
         tagName: target?.tagName,
         isContentEditable: target?.isContentEditable,
         role: target?.getAttribute?.('role'),
+        inputType: (target as HTMLInputElement | null)?.type,
         key: e.key,
         overlayOpen: document.querySelector('[aria-modal="true"], [role="menu"]') !== null,
         // Esc que fechou um menu/modal já chega com preventDefault; não deve limpar a seleção

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   FolderX,
   FileQuestion,
@@ -42,6 +42,11 @@ interface CleanupViewProps {
 
 type CleanupTab = 'folders' | 'trackers' | 'titles' | 'health';
 
+// Conexões simultâneas na verificação de links (cada uma tem timeout de 6 s)
+const HEALTH_SCAN_CONCURRENCY = 20;
+// Páginas buscadas ao mesmo tempo no enriquecimento de títulos
+const TITLE_FETCH_CONCURRENCY = 5;
+
 export const CleanupView: React.FC<CleanupViewProps> = ({
   report,
   allItems,
@@ -71,6 +76,8 @@ export const CleanupView: React.FC<CleanupViewProps> = ({
 
   // Link Health state
   const [isScanningHealth, setIsScanningHealth] = useState(false);
+  // Permite cancelar a verificação de links; os resultados parciais continuam visíveis
+  const healthAbortRef = useRef<AbortController | null>(null);
   const [healthProgress, setHealthProgress] = useState<{ current: number; total: number } | null>(null);
   const [healthResults, setHealthResults] = useState<LinkHealthResult[]>([]);
   const [restoredArchiveMap, setRestoredArchiveMap] = useState<Record<string, boolean>>({});
@@ -126,17 +133,24 @@ export const CleanupView: React.FC<CleanupViewProps> = ({
     setTitleProgress({ current: 0, total: genericTitleItems.length });
 
     try {
-      const itemsToProcess = genericTitleItems.slice(0, 50); // Safe batch of 50
+      // Todos os favoritos com título genérico: busca em paralelo (pequeno lote) e grava um a um
+      const itemsToProcess = genericTitleItems.filter((bm) => bm.url);
+      setTitleProgress({ current: 0, total: itemsToProcess.length });
+      const found: { bm: BookmarkNode; title: string }[] = [];
       let done = 0;
-      for (const bm of itemsToProcess) {
-        if (bm.url) {
-          const newTitle = await fetchTitleForUrl(bm.url);
-          if (newTitle && newTitle !== bm.title) {
-            await onUpdateBookmark(bm.id, newTitle, bm.url);
-          }
+      let next = 0;
+      const worker = async () => {
+        while (next < itemsToProcess.length) {
+          const bm = itemsToProcess[next++];
+          const newTitle = await fetchTitleForUrl(bm.url!);
+          if (newTitle && newTitle !== bm.title) found.push({ bm, title: newTitle });
+          done++;
+          setTitleProgress({ current: done, total: itemsToProcess.length });
         }
-        done++;
-        setTitleProgress({ current: done, total: itemsToProcess.length });
+      };
+      await Promise.all(Array.from({ length: TITLE_FETCH_CONCURRENCY }, worker));
+      for (const { bm, title } of found) {
+        await onUpdateBookmark(bm.id, title, bm.url);
       }
       if (onRefresh) await onRefresh();
     } catch (err) {
@@ -157,20 +171,32 @@ export const CleanupView: React.FC<CleanupViewProps> = ({
     setSitesAccessDenied(false);
     setIsScanningHealth(true);
     setHealthResults([]);
-    setHealthProgress({ current: 0, total: Math.min(allItems.length, 300) });
+    const controller = new AbortController();
+    healthAbortRef.current = controller;
 
     try {
-      // Check first 200-300 or all bookmarks in parallel batches
-      const sample = allItems.filter((i) => i.url).slice(0, 300);
-      const results = await checkBookmarksHealth(sample, (curr, tot) => {
-        setHealthProgress({ current: curr, total: tot });
-      });
+      // Todos os favoritos http/https, não só uma amostra
+      const targets = allItems.filter((i) => i.url && i.url.startsWith('http'));
+      setHealthProgress({ current: 0, total: targets.length });
+      const results = await checkBookmarksHealth(
+        targets,
+        (curr, tot) => {
+          setHealthProgress({ current: curr, total: tot });
+        },
+        HEALTH_SCAN_CONCURRENCY,
+        controller.signal
+      );
       setHealthResults(results);
     } catch (err) {
       console.warn('Falha no escaneamento de integridade:', err);
     } finally {
+      healthAbortRef.current = null;
       setIsScanningHealth(false);
     }
+  };
+
+  const handleCancelHealthScan = () => {
+    healthAbortRef.current?.abort();
   };
 
   // Handler: Delete all broken links
@@ -544,6 +570,16 @@ export const CleanupView: React.FC<CleanupViewProps> = ({
                 </button>
               )}
 
+              {isScanningHealth && (
+                <button
+                  type="button"
+                  onClick={handleCancelHealthScan}
+                  className="px-3 py-1.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg font-medium transition-colors cursor-pointer text-xs"
+                >
+                  Cancelar
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={handleStartHealthScan}
@@ -596,7 +632,7 @@ export const CleanupView: React.FC<CleanupViewProps> = ({
               {brokenLinksList.length === 0 && redirectedLinksList.length === 0 && !isScanningHealth ? (
                 <div className="p-8 text-center text-emerald-600 dark:text-emerald-400">
                   <CheckCircle2 className="w-8 h-8 mx-auto mb-2" />
-                  <p className="font-semibold">Nenhum problema encontrado na amostra!</p>
+                  <p className="font-semibold">Nenhum problema encontrado!</p>
                   <p className="text-xs text-slate-500 mt-1">Todos os sites responderam normalmente sem erros ou redirecionamentos pendentes.</p>
                 </div>
               ) : (

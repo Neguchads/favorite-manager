@@ -2,6 +2,23 @@
 
 Registro curto de passagem de turno. Entrada mais recente no topo.
 
+## 2026-10-03 — Claude Code — Fechamento da PR #13 e pacote da loja
+- PR #13 (favicons locais, atalhos com checkbox, varredura completa de links e títulos, status 401/429/410) com CI verde e mesclada na `main`.
+- Pacote `Favorite-Manager.zip` (versão 1.2.0, permissões conferidas no manifest) gerado a partir do `dist/` e entregue ao usuário. O `npm run package` só funciona no Windows (PowerShell); no Linux o zip foi feito com `zip -r` dentro de `dist/`.
+- Falta (usuário): conferir no Edge ícones, pedido da permissão de sites e omnibox; atualizar o gist da política (`docs/PRIVACIDADE.md`, comando em `docs/LOJA.md`); incluir a justificativa `favicon` no Partner Center; enviar o zip; apagar `docs/Store_Assets/` na pasta local.
+
+## 2026-10-03 — Claude Code — Revisão final de prontidão e correções
+- Arquivos alterados:
+  - `src/utils/url.ts`, `public/manifest.json`: ícones dos sites agora vêm do cache local do navegador (`/_favicon/`, permissão nova `favicon`). Antes cada domínio dos favoritos ia para `google.com/s2/favicons`, o que contradizia a política de privacidade ("nenhum dado a terceiros"). Fora da extensão (`npm run dev`) ainda usa o Google.
+  - `docs/PRIVACIDADE.md`, `docs/LOJA.md`, `README.md`: permissão `favicon` listada e justificada. **Atualizar o gist da política** (comando em `docs/LOJA.md`) e **adicionar a justificativa `favicon` no Partner Center**.
+  - `src/services/health/index.ts`, `src/background/index.ts`: 401/429 contam como link vivo; 410 conta como quebrado; títulos buscados não decodificam entidades duas vezes (`&amp;lt;`) e aceitam `&#NNN;`.
+  - Testes novos: `tests/favicon.test.ts`, casos 401/429/410 em `tests/health.test.ts`.
+- Verificado: `npm test` 94/94, `npm run build`, as três páginas (index, popup, sidepanel) carregam e respondem a cliques sem erros de console contra o mock.
+- Testes ponta a ponta feitos em Chromium real com a extensão carregada (`dist/`, API `chrome.bookmarks` de verdade, locale pt-BR), fora do repositório: ~110 verificações, todas passando. Cobriram: popup salvando a aba atual, Ctrl+D com auto-organização ligada/desligada/pasta escolhida/trava em massa, `_favicon`, verificação de links (200/401/404/410/500/redirect), busca de títulos, Ollama falso que recusa `Origin: chrome-extension://` (regra DNR reescreve só para a extensão; site comum continua com o Origin original), organizar com IA (semântico e Ollama, Cancelar, chat), sync entre dois perfis com broker MQTT local (merge, tempo real criar/apagar, sem eco, tópico e payload cifrados), exportar/importar HTML e JSON e restaurar snapshot com auto-organização ligada, Central de Limpeza (UTM, títulos, pastas vazias), duplicados, A-Z, exclusão/Ctrl+Z na posição original, atalhos com modal/campo, `#search=`, painel lateral escuro e 3.500 favoritos (proposta em ~0,3 s, aplicar em ~3,5 s, nenhuma pasta duplicada).
+- Bugs achados nesses testes e corrigidos: (1) Delete/Ctrl+A não funcionavam com o foco na caixa de seleção do favorito (`src/utils/keyboard.ts`, `App.tsx`, testes novos); (2) "Escanear Favoritos" verificava só os 300 primeiros e "Buscar e Atualizar Títulos" só 50 por clique, sem avisar: agora varrem todos, com Cancelar na varredura (`CleanupView.tsx`).
+- Não deu para testar fora do Edge de verdade: o pedido da permissão opcional de todos os sites (não aparece em Chromium sem tela; o teste simulou "permitir"), o omnibox `fav` (a barra de endereço não é controlável por script; só o destino `#search=` foi testado) e o Edge em si.
+- Pendente (só no Edge): confirmar que os ícones aparecem via `/_favicon/` (se não aparecerem, o fallback do componente mostra o ícone genérico); pedido da permissão de sites; omnibox; envio no Partner Center.
+
 ## 2026-10-01 — Claude Code — Estado ao fim da sessão
 - Tudo na `main` (PRs #1 a #11 mesclados, CI verde), pasta principal em dia com o GitHub. Nada pendente na branch `claude/favorite-manager-audit-bdc274`.
 - `docs/ROADMAP.md` atualizado: status da Fase 0 em 01/10, itens das Fases 1–3 conferidos (1.1, 1.2, 1.3, 1.5 e 1.6 agora feitos), o que foi feito depois da Fase 0 e o próximo passo.

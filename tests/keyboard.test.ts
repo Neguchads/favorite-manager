@@ -57,3 +57,23 @@ describe('parseSearchHash', () => {
     expect(parseSearchHash('')).toBeNull();
   });
 });
+
+describe('shouldHandleListShortcut com caixa de seleção focada', () => {
+  it('Delete, setas e Ctrl+A valem com foco em checkbox (depois de marcar um favorito)', () => {
+    for (const key of ['Delete', 'ArrowDown', 'a', 'Escape']) {
+      expect(
+        shouldHandleListShortcut({ tagName: 'INPUT', inputType: 'checkbox', key, overlayOpen: false })
+      ).toBe(true);
+    }
+  });
+
+  it('Espaço e Enter ficam com o checkbox', () => {
+    expect(shouldHandleListShortcut({ tagName: 'INPUT', inputType: 'checkbox', key: ' ', overlayOpen: false })).toBe(false);
+    expect(shouldHandleListShortcut({ tagName: 'INPUT', inputType: 'checkbox', key: 'Enter', overlayOpen: false })).toBe(false);
+  });
+
+  it('campo de texto continua bloqueando tudo', () => {
+    expect(shouldHandleListShortcut({ tagName: 'INPUT', inputType: 'text', key: 'Delete', overlayOpen: false })).toBe(false);
+    expect(shouldHandleListShortcut({ tagName: 'INPUT', inputType: 'search', key: 'a', overlayOpen: false })).toBe(false);
+  });
+});

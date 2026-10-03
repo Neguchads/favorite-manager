@@ -186,8 +186,8 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
         if (res) {
           const status = res.status;
-          // If status is 2xx/3xx, or 403 (server exists and responded, but forbids bot reading), consider online
-          const ok = res.ok || (status >= 200 && status < 400) || status === 403;
+          // 2xx/3xx, ou 401/403/405/429 (o servidor respondeu, mas pede login, recusa robôs ou limita requisições): online
+          const ok = res.ok || (status >= 200 && status < 400) || [401, 403, 405, 429].includes(status);
           const finalUrl = res.url || message.url;
           const isRedirected = Boolean(
             res.redirected || (res.url && res.url !== message.url && res.url.replace(/\/$/, '') !== message.url.replace(/\/$/, ''))
@@ -197,7 +197,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
             ok,
             redirected: isRedirected,
             finalUrl: isRedirected ? finalUrl : undefined,
-            error: ok ? null : (status === 404 ? 'not_found' : `http_${status}`),
+            error: ok ? null : (status === 404 || status === 410 ? 'not_found' : `http_${status}`),
           });
         } else {
           sendResponse({ status: 0, ok: false, error: 'network_error' });
@@ -261,15 +261,18 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           if (ogMatch) title = ogMatch[1].trim();
         }
 
-        // Clean common HTML entities
+        // Decodifica entidades comuns; &amp; por último para não decodificar duas vezes (&amp;lt; -> &lt;)
         title = title
-          .replace(/&amp;/g, '&')
+          .replace(/&#(\d+);/g, (_m, n) => String.fromCodePoint(Number(n)))
+          .replace(/&#x([0-9a-f]+);/gi, (_m, n) => String.fromCodePoint(parseInt(n, 16)))
           .replace(/&lt;/g, '<')
           .replace(/&gt;/g, '>')
           .replace(/&quot;/g, '"')
-          .replace(/&#39;/g, "'")
+          .replace(/&apos;/g, "'")
           .replace(/&nbsp;/g, ' ')
-          .replace(/\s+/g, ' ');
+          .replace(/&amp;/g, '&')
+          .replace(/\s+/g, ' ')
+          .trim();
 
         sendResponse({ success: true, title });
       } catch (err: any) {
