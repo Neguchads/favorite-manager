@@ -2,6 +2,14 @@
 
 Registro curto de passagem de turno. Entrada mais recente no topo.
 
+## 2026-10-07 — Claude Code — Dependabot, vulnerabilidades e nota de visibilidade
+- Arquivos alterados:
+  - `.github/dependabot.yml` (novo): atualizações semanais de npm e GitHub Actions; minor e patch chegam agrupadas num PR só.
+  - `package-lock.json`: `npm audit fix` sem `--force` (só versões compatíveis). Altas caíram de 7 para 6; o que sobra (vite, vitest, esbuild, braces) só sai com troca de versão principal e fica para o Dependabot.
+  - `AGENTS.md`: o repositório agora é público, não privado.
+- Verificado: `npm test` 94/94 e `npm run build` passando.
+- Falta (usuário): ligar "Dependabot alerts" e "security updates" em Settings → Code security do repositório.
+
 ## 2026-10-03 — Claude Code — Fechamento da PR #13 e pacote da loja
 - PR #13 (favicons locais, atalhos com checkbox, varredura completa de links e títulos, status 401/429/410) com CI verde e mesclada na `main`.
 - Pacote `Favorite-Manager.zip` (versão 1.2.0, permissões conferidas no manifest) gerado a partir do `dist/` e entregue ao usuário. O `npm run package` só funciona no Windows (PowerShell); no Linux o zip foi feito com `zip -r` dentro de `dist/`.
