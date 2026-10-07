@@ -2,6 +2,14 @@
 
 Registro curto de passagem de turno. Entrada mais recente no topo.
 
+## 2026-10-07 — Claude Code — Versões principais de build e testes
+- Arquivos alterados:
+  - `package.json`, `package-lock.json`: vite 5 → 8, @vitejs/plugin-react 4 → 6, vitest 3 → 5, @types/chrome 0.0.280 → 0.3.4. O lockfile foi regenerado (o antigo travava a resolução do vite 8).
+  - `src/components/modals/AiOrganizeModal.tsx`, `src/services/sync/syncService.ts`: com os tipos novos, `chrome.storage.local.get` devolve `unknown`; os valores lidos agora são validados (motor `ollama`/`semantic`, modelo e chave de sync como string) em vez de usados direto.
+- Verificado: `npm test` 94/94, `npm run build`, `dist/` com a mesma estrutura (manifest 1.2.0, service worker como módulo).
+- Fica para depois: Tailwind 3 → 4 é uma migração de configuração; o Dependabot foi instruído a ignorar essa versão principal. Os 2 alertas que sobram (braces, postcss-selector-parser) vêm do Tailwind 3.
+- Pendente (usuário): carregar o `dist/` no Edge e conferir as telas antes de publicar.
+
 ## 2026-10-03 — Claude Code — Fechamento da PR #13 e pacote da loja
 - PR #13 (favicons locais, atalhos com checkbox, varredura completa de links e títulos, status 401/429/410) com CI verde e mesclada na `main`.
 - Pacote `Favorite-Manager.zip` (versão 1.2.0, permissões conferidas no manifest) gerado a partir do `dist/` e entregue ao usuário. O `npm run package` só funciona no Windows (PowerShell); no Linux o zip foi feito com `zip -r` dentro de `dist/`.
