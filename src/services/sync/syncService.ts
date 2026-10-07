@@ -120,8 +120,9 @@ class CrossBrowserSyncService {
     try {
       if (typeof chrome !== 'undefined' && chrome.storage?.local) {
         chrome.storage.local.get([STORAGE_SYNC_KEY, STORAGE_AUTO_SYNC], (res) => {
-          if (res[STORAGE_SYNC_KEY]) {
-            this.syncKey = res[STORAGE_SYNC_KEY];
+          const savedKey = res[STORAGE_SYNC_KEY];
+          if (typeof savedKey === 'string' && savedKey) {
+            this.syncKey = savedKey;
             this.autoSync = res[STORAGE_AUTO_SYNC] !== false;
             // Chave legada fica visível para o aviso na UI, mas não conecta
             if (!isLegacySyncKey(this.syncKey!)) this.connect(this.syncKey!);

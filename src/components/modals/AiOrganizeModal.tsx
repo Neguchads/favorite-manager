@@ -181,9 +181,12 @@ export const AiOrganizeModal: React.FC<AiOrganizeModalProps> = ({
     try {
       if (typeof chrome !== 'undefined' && chrome.storage?.local) {
         chrome.storage.local.get([STORAGE_KEY_ENGINE, STORAGE_KEY_MODEL], (data) => {
-          if (data[STORAGE_KEY_ENGINE]) setSelectedEngine(data[STORAGE_KEY_ENGINE]);
-          if (data[STORAGE_KEY_MODEL]) {
-            setOllamaConfig((prev) => ({ ...prev, model: data[STORAGE_KEY_MODEL] }));
+          // O storage devolve valores sem tipo: só aceita o que tem o formato esperado
+          const engine = data[STORAGE_KEY_ENGINE];
+          if (engine === 'ollama' || engine === 'semantic') setSelectedEngine(engine);
+          const model = data[STORAGE_KEY_MODEL];
+          if (typeof model === 'string' && model) {
+            setOllamaConfig((prev) => ({ ...prev, model }));
           }
         });
       } else {
