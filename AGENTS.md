@@ -7,7 +7,7 @@ Este arquivo vale para qualquer agente de IA que trabalhe neste projeto.
 - Extensão Manifest V3 para Microsoft Edge: gerenciador de favoritos.
 - Stack: React 18, TypeScript, Vite 5, Tailwind 3. Sem backend.
 - Pasta local: `A:\AI\Claude Code Projects\Favorite Manager`
-- Repositório: https://github.com/Neguchads/favorite-manager (privado, branch `main`)
+- Repositório: https://github.com/Neguchads/favorite-manager (público, branch `main`)
 - Sistema: Windows 11 + PowerShell.
 
 ## Comandos
