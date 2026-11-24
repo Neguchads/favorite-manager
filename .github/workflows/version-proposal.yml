@@ -16,6 +16,8 @@ concurrency:
 
 jobs:
   propose:
+    # Repo admin must enable workflow-created PRs before setting this variable.
+    if: vars.RELEASE_PLEASE_ENABLED == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
