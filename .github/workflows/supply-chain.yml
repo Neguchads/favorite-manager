@@ -1,0 +1,82 @@
+# Manual evidence only. Never publishes a GitHub Release or uploads game-derived binaries.
+name: Package integrity and SBOM (manual)
+'on':
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+jobs:
+  evidence:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Create evidence staging directory
+        run: mkdir -p evidence
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: Verify and build MV3 extension
+        run: npm test -- --run
+      - run: npm run build
+      - name: Package deterministic extension ZIP with original folder layout
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, zipfile
+          from pathlib import Path
+          dist = Path('dist')
+          data = json.loads((dist / 'manifest.json').read_text())
+          version = json.loads(Path('package.json').read_text())['version']
+          assert data['manifest_version'] == 3
+          assert data['version'] == version, (data['version'], version)
+          paths = sorted(p for p in dist.rglob('*') if p.is_file())
+          assert paths and not any(p.is_symlink() for p in paths)
+          with zipfile.ZipFile('evidence/favorite-manager-extension.zip', 'w', zipfile.ZIP_DEFLATED) as out:
+              for path in paths:
+                  name = path.relative_to(dist).as_posix()
+                  info = zipfile.ZipInfo(name, (2020, 1, 1, 0, 0, 0))
+                  info.compress_type = zipfile.ZIP_DEFLATED
+                  info.external_attr = 0o644 << 16
+                  out.writestr(info, path.read_bytes())
+          PY
+      - name: Generate source dependency inventory (SPDX JSON)
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
+        with:
+          path: .
+          format: spdx-json
+          output-file: evidence/sbom.spdx.json
+          upload-artifact: "false"
+          upload-release-assets: "false"
+      - name: Build evidence bundle and checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd evidence
+          sha256sum favorite-manager-extension.zip > "favorite-manager-extension.zip.sha256"
+      - name: Attest package provenance (Sigstore)
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-path: evidence/favorite-manager-extension.zip
+      - name: Attest SPDX SBOM to the same package
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-path: evidence/favorite-manager-extension.zip
+          sbom-path: evidence/sbom.spdx.json
+      - name: Save reviewable evidence; no release publication
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: favorite-manager-stage2-evidence
+          path: |
+            evidence/favorite-manager-extension.zip
+            evidence/favorite-manager-extension.zip.sha256
+            evidence/sbom.spdx.json
+          retention-days: 14
+          if-no-files-found: error
