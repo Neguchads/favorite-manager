@@ -160,3 +160,9 @@ favorite-manager/
 ---
 
 *Favorite Manager — Organização profissional, privacidade absoluta e máxima performance para os seus favoritos.*
+
+## Automação de CI e distribuição — Etapa 2
+
+As verificações de navegador, as propostas de versão e os artefatos de
+integridade estão descritos em [docs/CI_AUTOMATION.md](docs/CI_AUTOMATION.md).
+A publicação de releases permanece sujeita a revisão humana.
