@@ -1,0 +1,27 @@
+# Prepares version bump and CHANGELOG PRs, but NEVER creates a GitHub Release.
+# Publishing needs a separate reviewed workflow_dispatch.
+name: Version and changelog proposal
+'on':
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: release-please-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  propose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Propose version and changelog via Conventional Commits
+        uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4
+        with:
+          release-type: node
+          target-branch: main
+          skip-github-release: true
