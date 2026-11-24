@@ -1,0 +1,39 @@
+# Real Chromium smoke tests of compiled frontend; no paid API keys or production data.
+name: Browser E2E (Playwright)
+'on':
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: browser-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  chromium:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
+      - name: Install isolated Playwright without modifying lockfile
+        shell: bash
+        run: |
+          npm install --prefix "$RUNNER_TEMP/playwright" --no-save --no-audit --no-fund --ignore-scripts playwright@1.57.0
+          "$RUNNER_TEMP/playwright/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Load unpacked Manifest V3 extension in Chromium
+        shell: bash
+        run: NODE_PATH="$RUNNER_TEMP/playwright/node_modules" node --test tests/e2e/*.test.cjs
+
