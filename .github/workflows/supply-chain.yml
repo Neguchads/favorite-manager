@@ -24,7 +24,7 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Verify and build MV3 extension
-        run: npm test -- --run
+        run: npm test
       - run: npm run build
       - name: Package deterministic extension ZIP with original folder layout
         shell: bash
